@@ -24,8 +24,7 @@ const nextConfig = {
   env: {
     // Use NEXT_PUBLIC_BASE_URL as the primary URL
     // This should be set to https://printboothpro.com in Vercel
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_BASE_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    NEXT_PUBLIC_SITE_URL: 'https://printboothpro.com'
   },
   // Add headers to ensure HTTPS and prevent caching
   async headers() {
