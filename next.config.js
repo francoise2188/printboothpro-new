@@ -21,6 +21,32 @@ const nextConfig = {
     ],
     unoptimized: true
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        has: [
+          {
+            type: 'host',
+            value: 'www.printboothpro.com',
+          },
+        ],
+        destination: 'https://printboothpro.com',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.printboothpro.com',
+          },
+        ],
+        destination: 'https://printboothpro.com/:path*',
+        permanent: true,
+      }
+    ]
+  },
   env: {
     // Use NEXT_PUBLIC_BASE_URL as the primary URL
     // This should be set to https://printboothpro.com in Vercel
