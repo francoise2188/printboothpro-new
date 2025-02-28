@@ -100,10 +100,16 @@ const nextConfig = {
         destination: 'https://printboothpro.com/:path*',
         permanent: true,
       },
-      // Redirect any old camera URLs to home
+      // Redirect old camera URL format to new format
       {
         source: '/camera',
-        destination: '/',
+        has: [
+          {
+            type: 'query',
+            key: 'event',
+          }
+        ],
+        destination: '/camera/:event',
         permanent: true,
       }
     ]
