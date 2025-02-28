@@ -1,0 +1,81 @@
+/* Design System - PrintBooth Pro */
+:root {
+  /* Color Palette */
+  --primary-green: #2C3639;     /* Deep forest green for main elements */
+  --secondary-sage: #A27B5C;    /* Warm sage accent */
+  --accent-tan: #DCD7C9;        /* Light tan for subtle accents */
+  --background-light: #F5F5F5;  /* Off-white for backgrounds */
+  --text-dark: #2C3639;         /* Dark green-gray for text */
+  --text-light: #F5F5F5;        /* Light text */
+  
+  /* Typography */
+  --font-primary: var(--font-outfit);
+  --font-accent: var(--font-playfair);
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 4rem;
+}
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-primary);
+  color: var(--text-dark);
+  line-height: 1.6;
+  background-color: var(--background-light);
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-accent);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Only keep black background for camera and landing pages */
+.camera-container,
+.landing-background {
+  background-color: black;
+}
+
+/* Keep your other existing styles */
+.landing-background {
+  min-height: 100vh;
+  width: 100vw;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.camera-container {
+  width: 100%;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Add hover effects */
+button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--secondary-sage) !important;
+  transition: border-color 0.3s ease;
+} 

@@ -1,0 +1,201 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #f8fafc;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: #2C3639;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.navButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.navButton:hover {
+  background-color: #e0e0e0;
+}
+
+.navButton.active {
+  background-color: #A27B5C;
+  color: white;
+}
+
+.content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  color: #2C3639;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.checklistItem {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.checklistItem h3 {
+  color: #A27B5C;
+  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+}
+
+.checklistItem p {
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.link {
+  display: inline-block;
+  color: #A27B5C;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.link:hover {
+  color: #8B6B4F;
+  text-decoration: underline;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.featureCard {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: transform 0.3s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-5px);
+}
+
+.featureCard h3 {
+  color: #A27B5C;
+  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+}
+
+.featureCard p {
+  color: #666;
+  line-height: 1.5;
+}
+
+.setupGuide {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.setupSection {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.setupSection h3 {
+  color: #A27B5C;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.stepsList {
+  padding-left: 1.5rem;
+  color: #666;
+}
+
+.stepsList li {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.faqItem {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.faqItem h3 {
+  color: #A27B5C;
+  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+}
+
+.faqItem p {
+  color: #666;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .navigation {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navButton {
+    width: 100%;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+}

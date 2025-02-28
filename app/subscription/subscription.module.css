@@ -1,0 +1,560 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #f8fafc, #ffffff);
+  padding: 3rem 1rem;
+}
+
+.content {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+/* Header/Hero Section */
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: var(--primary-green);
+  border-radius: 1rem;
+}
+
+.title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.subtitle {
+  margin-top: 0;
+  margin-bottom: 2rem;
+  font-size: 1.25rem;
+  color: var(--accent-tan);
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.userBadge {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--accent-tan);
+  border-radius: 9999px;
+  font-size: 0.875rem;
+}
+
+/* Business Models Section */
+.businessModels {
+  margin: 4rem 0;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2rem;
+}
+
+.modelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.modelCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modelTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #A16D47;
+  margin-bottom: 1.5rem;
+}
+
+.modelFeatures {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modelFeatures li {
+  padding: 0.5rem 0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+.modelFeatures li:before {
+  content: "✓";
+  color: #A16D47;
+  margin-right: 0.5rem;
+}
+
+/* Program Name */
+.programName {
+  font-family: var(--font-accent);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-green);
+  text-align: center;
+  padding: 1rem 0;
+  margin-bottom: 2rem;
+}
+
+/* Business Potential Section */
+.potentialSection {
+  margin: 4rem 0;
+  background: var(--primary-green);
+  padding: 3rem 2rem;
+  border-radius: 1rem;
+}
+
+.potentialSection .sectionTitle {
+  color: var(--text-light);
+}
+
+.potentialContent {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.potentialCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.potentialTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #A16D47;
+  margin-bottom: 1.5rem;
+}
+
+.potentialList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+}
+
+.potentialList li {
+  padding: 0.75rem 0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+.potentialList li:before {
+  content: "•";
+  color: #A16D47;
+  margin-right: 0.75rem;
+  font-size: 1.5rem;
+}
+
+.potentialFeatures {
+  border-top: 1px solid #E9EDC9;
+  padding-top: 1.5rem;
+}
+
+.potentialFeatures p {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.potentialFeatures ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.potentialFeatures li {
+  padding: 0.5rem 0;
+  color: #475569;
+}
+
+.potentialFeatures li:before {
+  content: "✓";
+  color: #A16D47;
+  margin-right: 0.5rem;
+}
+
+/* Equipment Section */
+.equipmentSection {
+  margin: 4rem 0;
+}
+
+.equipmentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.equipmentCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.equipmentTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #A16D47;
+  margin-bottom: 1.5rem;
+}
+
+.equipmentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.equipmentList li {
+  margin-bottom: 1.5rem;
+}
+
+.equipmentList strong {
+  display: block;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.equipmentList ul {
+  list-style: none;
+  padding-left: 1.5rem;
+}
+
+.equipmentList ul li {
+  color: #475569;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.equipmentList ul li:before {
+  content: "•";
+  color: #A16D47;
+  position: absolute;
+  left: -1rem;
+}
+
+.equipmentNote {
+  text-align: center;
+  color: #64748b;
+  margin-top: 2rem;
+  font-style: italic;
+}
+
+/* Pricing Card */
+.pricingCard {
+  max-width: 32rem;
+  margin: 3rem auto 0;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cardContent {
+  padding: 2rem;
+}
+
+.planHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.planName {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.priceContainer {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  margin-top: 1rem;
+}
+
+.price {
+  font-size: 3.75rem;
+  font-weight: 800;
+  color: #A16D47;
+}
+
+.interval {
+  margin-left: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #64748b;
+  align-self: flex-end;
+}
+
+.featuresList {
+  margin: 2rem 0;
+  list-style: none;
+  padding: 0;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  color: #475569;
+}
+
+.featureIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #A16D47;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.subscribeButton {
+  width: 100%;
+  padding: 1rem;
+  background-color: #A16D47;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subscribeButton:hover {
+  background-color: #825636;
+  transform: translateY(-1px);
+}
+
+.subscribeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #FAEDCD;
+  color: #A16D47;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.guarantee {
+  margin-top: 1.5rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* FAQ Section */
+.faqSection {
+  margin: 4rem 0;
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.faqItem {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.faqItem h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #A16D47;
+  margin-bottom: 1rem;
+}
+
+.faqItem p {
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* Features Showcase */
+.featuresShowcase {
+  margin: 4rem 0;
+  padding: 2rem 0;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.featureCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-5px);
+}
+
+.featureTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  margin-bottom: 1.5rem;
+}
+
+.featureDetails {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.featureDetails li {
+  padding: 0.75rem 0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+.featureDetails li:before {
+  content: "→";
+  color: var(--secondary-sage);
+  margin-right: 0.75rem;
+  font-weight: bold;
+}
+
+/* Why PrintBooth Pro Section */
+.whySection {
+  margin: 4rem 0;
+  padding: 3rem 2rem;
+  background: var(--accent-tan);
+  border-radius: 1rem;
+}
+
+.whyContent {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.whyCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.whyTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.whyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.whyList li {
+  margin-bottom: 2rem;
+}
+
+.whyList li:last-child {
+  margin-bottom: 0;
+}
+
+.whyList strong {
+  display: block;
+  color: var(--secondary-sage);
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.whyList p {
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .title {
+    font-size: 2.5rem;
+  }
+  
+  .modelGrid,
+  .equipmentGrid,
+  .faqGrid,
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .content {
+    padding: 1rem;
+  }
+  
+  .potentialSection {
+    padding: 2rem 1rem;
+  }
+  
+  .whySection {
+    padding: 2rem 1rem;
+  }
+}
+
+.loginSection {
+  margin-top: 1.5rem;
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.loginText {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.loginButton {
+  display: inline-block;
+  padding: 0.5rem 2rem;
+  color: var(--primary-green);
+  background-color: transparent;
+  border: 2px solid var(--primary-green);
+  border-radius: 0.5rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.loginButton:hover {
+  background-color: var(--primary-green);
+  color: white;
+  transform: translateY(-1px);
+} 

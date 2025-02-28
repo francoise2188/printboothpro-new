@@ -1,0 +1,3 @@
+[33md675ea9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcamera-test[m[33m, [m[1;31morigin/camera-test[m[33m)[m fix: camera zoom and aspect ratio issues in EventCameraComponent
+[33mddb3e70[m fix: update camera capture to maintain template ratio while fixing zoom issues
+[33mb389b3e[m fix: simplify camera implementation to match MarketCamera style

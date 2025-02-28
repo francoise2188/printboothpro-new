@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "public": true,
+  "builds": [
+    {
+      "src": "next.config.js",
+      "use": "@vercel/next"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/event/:path*",
+      "destination": "/event/:path*"
+    },
+    {
+      "source": "/camera",
+      "destination": "/camera"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+} 

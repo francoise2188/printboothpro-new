@@ -1,0 +1,141 @@
+.adminContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background-light);
+}
+
+.sidebar {
+  width: 250px;
+  background-color: var(--primary-green);
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.logo {
+  color: var(--text-light);
+  font-family: var(--font-accent);
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--accent-tan);
+  background-color: transparent;
+  border-radius: 8px;
+  text-decoration: none;
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.menuItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(4px);
+}
+
+.menuItemActive {
+  composes: menuItem;
+  background-color: var(--secondary-sage);
+  color: var(--text-light);
+}
+
+/* Menu item container */
+.menuItemContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.subMenu {
+  margin-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.subMenuItem {
+  composes: menuItem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.subMenuItemActive {
+  composes: subMenuItem;
+  background-color: var(--secondary-sage);
+  color: var(--text-light);
+}
+
+.signOutButton {
+  composes: menuItem;
+  border: none;
+  cursor: pointer;
+  margin-top: auto;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--accent-tan);
+}
+
+.signOutButton:hover {
+  background-color: rgba(220, 215, 201, 0.1);
+}
+
+.mainContent {
+  flex: 1;
+  padding: 2rem;
+  background-color: var(--background-light);
+}
+
+/* Dashboard card styles */
+.card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.cardTitle {
+  font-family: var(--font-accent);
+  color: var(--primary-green);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.cardContent {
+  font-family: var(--font-primary);
+  color: var(--text-dark);
+}
+
+.menuIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.75rem;
+  stroke-width: 1.5;
+  color: #A16D47;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.menuItem:hover .menuIcon,
+.menuItemActive .menuIcon {
+  color: #825636;
+}
+
+.subMenuItem .menuIcon {
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.8;
+}
+
+.subMenuItemActive .menuIcon {
+  opacity: 1;
+} 

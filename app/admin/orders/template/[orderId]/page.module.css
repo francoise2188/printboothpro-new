@@ -1,0 +1,75 @@
+.container {
+  padding: 1.5rem;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+.orderDetails {
+  color: var(--text-dark);
+  opacity: 0.8;
+  margin-bottom: 1rem;
+}
+
+.urlInput {
+  width: 100%;
+  padding: 0.625rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: var(--secondary-sage);
+  box-shadow: 0 0 0 3px rgba(162, 123, 92, 0.1);
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton {
+  composes: button;
+  background-color: var(--secondary-sage);
+  color: var(--text-light);
+}
+
+.primaryButton:hover {
+  background-color: var(--primary-green);
+}
+
+.secondaryButton {
+  composes: button;
+  background-color: var(--accent-tan);
+  color: var(--primary-green);
+}
+
+.secondaryButton:hover {
+  background-color: #c5beb2;
+} 

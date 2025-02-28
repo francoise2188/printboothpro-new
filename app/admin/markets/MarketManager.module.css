@@ -1,0 +1,82 @@
+.container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.designSection {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--secondary-sage);
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.designSection:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sectionTitle {
+  font-family: var(--font-primary);
+  color: var(--primary-green);
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--accent-tan);
+}
+
+.uploadContainer {
+  background: var(--background-light);
+  border: 1px solid var(--accent-tan);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.uploadContainer:hover {
+  border-color: var(--secondary-sage);
+}
+
+.uploadTitle {
+  font-family: var(--font-primary);
+  color: var(--primary-green);
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.uploadButton {
+  background-color: var(--primary-green);
+  color: white;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.uploadButton:hover {
+  background-color: var(--secondary-sage);
+  transform: translateY(-2px);
+}
+
+.removeButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #dc2626;
+  background: transparent;
+  color: #dc2626;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.75rem;
+}
+
+.removeButton:hover {
+  background-color: #fee2e2;
+  color: #991b1b;
+}

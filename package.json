@@ -1,0 +1,58 @@
+{
+  "name": "photobooth",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@fullcalendar/core": "^6.1.15",
+    "@fullcalendar/daygrid": "^6.1.15",
+    "@fullcalendar/interaction": "^6.1.15",
+    "@fullcalendar/react": "^6.1.15",
+    "@fullcalendar/timegrid": "^6.1.15",
+    "@headlessui/react": "^1.7.17",
+    "@stripe/stripe-js": "^5.5.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.0",
+    "@use-gesture/react": "^10.3.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.4.7",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.460.0",
+    "next": "latest",
+    "next-auth": "^4.24.10",
+    "nodemailer": "^6.10.0",
+    "printnode-client": "^1.0.3",
+    "qrcode.react": "^4.2.0",
+    "react": "latest",
+    "react-big-calendar": "^1.17.1",
+    "react-dom": "latest",
+    "react-draggable": "^4.4.6",
+    "react-easy-crop": "^5.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-image-crop": "^11.0.7",
+    "react-zoom-pan-pinch": "^3.6.1",
+    "stripe": "^17.5.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "5.7.3"
+  },
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).",
+  "main": "tailwind.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "directories": {
+    "lib": "lib"
+  }
+}

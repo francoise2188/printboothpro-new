@@ -1,0 +1,117 @@
+.container {
+  padding: 2rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.marketSelect {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.625rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.marketSelect:focus {
+  outline: none;
+  border-color: #A16D47;
+  box-shadow: 0 0 0 3px rgba(161, 109, 71, 0.1);
+}
+
+.templateContainer {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton {
+  composes: button;
+  background-color: #A16D47;
+  color: white;
+}
+
+.primaryButton:hover {
+  background-color: #8B5E3C;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.urlInput {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.urlLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.urlField {
+  flex: 1;
+  max-width: 400px;
+  padding: 0.625rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.urlField:focus {
+  outline: none;
+  border-color: #A16D47;
+  box-shadow: 0 0 0 3px rgba(161, 109, 71, 0.1);
+} 
