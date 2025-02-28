@@ -15,10 +15,8 @@ const nextConfig = {
     domains: [
       'localhost', 
       'printboothpro.com', 
-      'printbooth-pro.vercel.app', 
-      'printbooth-pro-git-camera-test.vercel.app',
-      'printbooth-pro-git-camera-test-francoise-tonetos-projects.vercel.app',
-      'printbooth-62zcllyci-francoise-tonetos-projects.vercel.app',
+      'www.printboothpro.com',
+      'printboothpro.vercel.app',
       'vercel.app'
     ],
     unoptimized: true
@@ -44,24 +42,6 @@ const nextConfig = {
             value: 'no-store, max-age=0'
           }
         ],
-      },
-      {
-        source: '/camera/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0'
-          }
-        ],
-      },
-      {
-        source: '/event/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0'
-          }
-        ],
       }
     ]
   },
@@ -72,20 +52,7 @@ const nextConfig = {
     }
     return config
   },
-  // Update rewrites to handle all routes properly
-  async rewrites() {
-    return [
-      {
-        source: '/event/:path*',
-        destination: '/event/:path*',
-      },
-      {
-        source: '/camera/:id',
-        destination: '/camera/:id',
-      }
-    ]
-  },
-  // Add redirects for old routes
+  // Add redirects for domain handling
   async redirects() {
     return [
       // Force www to non-www
@@ -98,18 +65,6 @@ const nextConfig = {
           },
         ],
         destination: 'https://printboothpro.com/:path*',
-        permanent: true,
-      },
-      // Redirect old camera URL format to new format
-      {
-        source: '/camera',
-        has: [
-          {
-            type: 'query',
-            key: 'event',
-          }
-        ],
-        destination: '/camera/:event',
         permanent: true,
       }
     ]
