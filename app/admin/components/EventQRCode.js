@@ -16,13 +16,15 @@ export default function EventQRCode({ eventId, eventName }) {
     
     // Debug: Log all environment variables
     console.log('Debug - Environment Variables:', {
-      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
-      VERCEL_URL: process.env.VERCEL_URL,
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+      NODE_ENV: process.env.NODE_ENV,
       window_location: typeof window !== 'undefined' ? window.location.origin : 'no window'
     });
 
-    // Get the base URL from environment variables
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Always use the production URL for QR codes, even in development
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://printboothpro.com'
+      : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     
     // Create the event URL using the base URL
     const newEventUrl = `${baseUrl}/event/${eventId}`;
