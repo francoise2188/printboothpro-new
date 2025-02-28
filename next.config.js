@@ -52,23 +52,6 @@ const nextConfig = {
     }
     return config
   },
-  // Add redirects for domain handling
-  async redirects() {
-    return [
-      // Force www to non-www
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'www.printboothpro.com',
-          },
-        ],
-        destination: 'https://printboothpro.com/:path*',
-        permanent: true,
-      }
-    ]
-  },
 }
 
 module.exports = nextConfig
