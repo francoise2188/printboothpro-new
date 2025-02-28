@@ -21,10 +21,10 @@ export default function EventQRCode({ eventId, eventName }) {
       window_location: typeof window !== 'undefined' ? window.location.origin : 'no window'
     });
 
-    // Force HTTPS and use NEXT_PUBLIC_BASE_URL
-    const baseUrl = 'https://printboothpro.com';
+    // Get the base URL from environment variables
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     
-    // Create the event URL using the new /event/[id] route
+    // Create the event URL using the base URL
     const newEventUrl = `${baseUrl}/event/${eventId}`;
     console.log('Generated Event URL:', newEventUrl);
     setEventUrl(newEventUrl);
