@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import ImagePreview from '../../../components/ImagePreview';
 import { supabase } from '../../../lib/supabase';
 import styles from './page.module.css';
+import { format, parseISO } from 'date-fns';
+import { zonedTimeToUtc, utcToZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 const EventQRCode = dynamic(
   () => import('../../components/EventQRCode'),
@@ -14,66 +16,38 @@ const EventQRCode = dynamic(
   }
 );
 
-const formatDateTime = (dateString, timezone) => {
-  if (!dateString) return 'Not set';
+// Get user's timezone
+const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+console.log('User timezone:', userTimeZone);
+
+const formatDateTime = (dateString) => {
   try {
-    // Create a date object from the string
-    const date = new Date(dateString);
-    // Format it according to the timezone
-    return date.toLocaleString('en-US', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZoneName: 'short'
-    });
+    if (!dateString) return '';
+    console.log('Formatting datetime:', dateString);
+    return formatInTimeZone(parseISO(dateString), userTimeZone, 'MM/dd/yyyy hh:mm a');
   } catch (error) {
     console.error('Date formatting error:', error);
-    return 'Invalid Date';
+    return dateString;
   }
 };
 
 const formatDateForInput = (dateString) => {
-  if (!dateString) return '';
   try {
-    // Add additional validation
-    if (typeof dateString !== 'string' || !Date.parse(dateString)) {
-      console.log('Invalid date string:', dateString);
-      return '';
-    }
-
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.log('Invalid date object:', date);
-      return '';
-    }
-
-    // Format as YYYY-MM-DDTHH:mm
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    if (!dateString) return '';
+    console.log('Formatting date for input:', dateString);
+    return formatInTimeZone(parseISO(dateString), userTimeZone, "yyyy-MM-dd'T'HH:mm");
   } catch (error) {
     console.error('Date formatting error:', error);
-    console.log('Problematic date string:', dateString);
-    return '';
+    return dateString;
   }
 };
 
 const formatTimeToStandard = (time) => {
-  if (!time) return 'Not set';
   try {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const standardHour = hour % 12 || 12;
-    return `${standardHour}:${minutes} ${ampm}`;
+    if (!time) return '';
+    console.log('Formatting time:', time);
+    const dummyDate = parseISO(`2000-01-01T${time}`);
+    return format(dummyDate, 'h:mm a');
   } catch (error) {
     console.error('Time formatting error:', error);
     return time;
@@ -215,12 +189,20 @@ const EventDetailsPage = ({ params }) => {
     try {
       setError(null);
       
+      // Convert local dates to UTC for storage
+      const localEventDate = parseISO(editForm.eventDate);
+      const localEndDate = parseISO(editForm.endDate);
+      
+      // Convert to UTC before saving
+      const utcEventDate = zonedTimeToUtc(localEventDate, userTimeZone);
+      const utcEndDate = zonedTimeToUtc(localEndDate, userTimeZone);
+      
       // Step 1: Update event details first
       const updatePayload = {
         name: editForm.eventName,
-        date: editForm.eventDate,
-        start_time: editForm.eventDate.split('T')[1] || '00:00',
-        end_time: editForm.endDate.split('T')[1] || '00:00',
+        date: format(utcEventDate, "yyyy-MM-dd'T'HH:mm:ssXXX"), // Store in UTC with timezone offset
+        start_time: format(utcEventDate, 'HH:mm:ss'),
+        end_time: format(utcEndDate, 'HH:mm:ss'),
         photo_limit: parseInt(editForm.photoLimit) || 0,
         status: editForm.status,
         event_type: editForm.eventType,
@@ -724,7 +706,7 @@ const EventDetailsPage = ({ params }) => {
                     </div>
                     <div className={styles.infoItem}>
                       <span className={styles.label}>Date</span>
-                      <span className={styles.value}>{new Date(event.date).toLocaleDateString()}</span>
+                      <span className={styles.value}>{formatDateTime(event.date)}</span>
                     </div>
                     <div className={styles.infoItem}>
                       <span className={styles.label}>Time</span>
