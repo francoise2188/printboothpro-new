@@ -103,10 +103,26 @@ export default function EventPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center text-white">
-          <h2 className="text-xl font-semibold">{error}</h2>
-          <p className="mt-2 text-gray-400">Event ID: {eventId}</p>
+      <div className="min-h-screen flex items-center justify-center bg-black px-4">
+        <div className="text-center text-white max-w-md">
+          {error === 'This event is no longer active' ? (
+            <>
+              <h2 className="text-2xl sm:text-3xl font-semibold mb-4">
+                Thank you for celebrating!
+              </h2>
+              <p className="text-lg sm:text-xl leading-relaxed">
+                This event has ended and the photo booth is no longer active.
+              </p>
+              <p className="text-lg sm:text-xl leading-relaxed mt-4">
+                We hope you enjoyed capturing memories with us!
+              </p>
+              <p className="text-base sm:text-lg text-gray-300 mt-6">
+                If you have any questions, please contact the event organizer.
+              </p>
+            </>
+          ) : (
+            <h2 className="text-xl font-semibold">{error}</h2>
+          )}
         </div>
       </div>
     );
