@@ -1,9 +1,9 @@
 'use client';
 
-// Camera Route v2.0 - Using NewEventBoothCamera (2023)
+// Camera Route v3.0 - Using EventBoothCameraV2 (2023)
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
-import NewEventBoothCamera from '../../../components/NewEventBoothCamera';
+import EventBoothCameraV2 from '../../../components/EventBoothCameraV2';
 
 export default function CameraPage() {
   const { id: eventId } = useParams();
@@ -11,7 +11,7 @@ export default function CameraPage() {
   useEffect(() => {
     console.log('Camera page mounted with event ID:', eventId);
     // Force component refresh
-    console.log('Using NewEventBoothCamera v2.0');
+    console.log('Using EventBoothCameraV2');
   }, [eventId]);
 
   if (!eventId) {
@@ -23,5 +23,5 @@ export default function CameraPage() {
     );
   }
 
-  return <NewEventBoothCamera eventId={eventId} key={`camera-${eventId}-v2`} />;
+  return <EventBoothCameraV2 eventId={eventId} key={`camera-${eventId}-v3`} />;
 } 
