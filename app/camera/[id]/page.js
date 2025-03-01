@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
-import NewBoothCamera from '../../../components/NewBoothCamera';
+import NewEventBoothCamera from '../../../components/NewEventBoothCamera';
 
 export default function CameraPage() {
   const { id: eventId } = useParams();
@@ -20,5 +20,5 @@ export default function CameraPage() {
     );
   }
 
-  return <NewBoothCamera eventId={eventId} />;
+  return <NewEventBoothCamera eventId={eventId} />;
 } 
