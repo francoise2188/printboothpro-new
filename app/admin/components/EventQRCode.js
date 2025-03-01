@@ -17,11 +17,12 @@ export default function EventQRCode({ eventId, eventName }) {
     // Debug: Log current URL and environment
     console.log('Debug - Current Environment:', {
       currentUrl: typeof window !== 'undefined' ? window.location.href : 'no window',
-      isProduction: process.env.NODE_ENV === 'production'
+      isProduction: process.env.NODE_ENV === 'production',
+      siteUrl: process.env.NEXT_PUBLIC_SITE_URL
     });
 
-    // Always use the production domain for QR codes
-    const eventUrl = `https://printboothpro.com/event/${eventId}`;
+    // Use the environment variable for consistent URLs
+    const eventUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/event/${eventId}`;
     console.log('Generated Event URL:', eventUrl);
     setEventUrl(eventUrl);
     
