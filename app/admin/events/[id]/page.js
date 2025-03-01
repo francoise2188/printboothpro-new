@@ -23,8 +23,8 @@ console.log('User timezone:', userTimeZone);
 const formatDateTime = (dateString) => {
   try {
     if (!dateString) return '';
-    console.log('Formatting datetime:', dateString);
-    return formatInTimeZone(parseISO(dateString), userTimeZone, 'MM/dd/yyyy hh:mm a');
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return formatInTimeZone(date, userTimeZone, 'MM/dd/yyyy hh:mm a');
   } catch (error) {
     console.error('Date formatting error:', error);
     return dateString;
@@ -34,8 +34,8 @@ const formatDateTime = (dateString) => {
 const formatDateForInput = (dateString) => {
   try {
     if (!dateString) return '';
-    console.log('Formatting date for input:', dateString);
-    return formatInTimeZone(parseISO(dateString), userTimeZone, "yyyy-MM-dd'T'HH:mm");
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return formatInTimeZone(date, userTimeZone, "yyyy-MM-dd'T'HH:mm");
   } catch (error) {
     console.error('Date formatting error:', error);
     return dateString;
@@ -45,8 +45,8 @@ const formatDateForInput = (dateString) => {
 const formatTimeToStandard = (time) => {
   try {
     if (!time) return '';
-    console.log('Formatting time:', time);
-    const dummyDate = parseISO(`2000-01-01T${time}`);
+    // Create a dummy date with the time
+    const dummyDate = new Date(`2000-01-01T${time}`);
     return format(dummyDate, 'h:mm a');
   } catch (error) {
     console.error('Time formatting error:', error);
@@ -187,157 +187,46 @@ const EventDetailsPage = ({ params }) => {
 
   const handleSave = async () => {
     try {
-      setError(null);
+      setLoading(true);
       
       // Convert local dates to UTC for storage
-      const localEventDate = parseISO(editForm.eventDate);
-      const localEndDate = parseISO(editForm.endDate);
+      const localEventDate = new Date(event.date + 'T' + event.start_time);
+      const localEndDate = new Date(event.date + 'T' + event.end_time);
       
-      // Convert to UTC before saving
-      const utcEventDate = zonedTimeToUtc(localEventDate, userTimeZone);
-      const utcEndDate = zonedTimeToUtc(localEndDate, userTimeZone);
-      
-      // Step 1: Update event details first
+      // Convert to UTC using the user's timezone
+      const utcEventDate = formatInTimeZone(localEventDate, userTimeZone, "yyyy-MM-dd'T'HH:mm:ssXXX");
+      const utcEndDate = formatInTimeZone(localEndDate, userTimeZone, "yyyy-MM-dd'T'HH:mm:ssXXX");
+
       const updatePayload = {
-        name: editForm.eventName,
-        date: format(utcEventDate, "yyyy-MM-dd'T'HH:mm:ssXXX"), // Store in UTC with timezone offset
-        start_time: format(utcEventDate, 'HH:mm:ss'),
-        end_time: format(utcEndDate, 'HH:mm:ss'),
-        photo_limit: parseInt(editForm.photoLimit) || 0,
-        status: editForm.status,
-        event_type: editForm.eventType,
-        location: editForm.location,
-        address: editForm.address,
-        expected_guests: parseInt(editForm.expectedGuests) || 0,
-        package: editForm.package,
-        package_price: parseFloat(editForm.packagePrice) || 0
+        name: event.name,
+        description: event.description,
+        date: utcEventDate,
+        start_time: format(localEventDate, 'HH:mm:ss'),
+        end_time: format(localEndDate, 'HH:mm:ss'),
+        location: event.location,
+        is_active: event.status === 'active'
       };
 
-      console.log('Updating event with payload:', updatePayload);
+      console.log('Saving event with payload:', updatePayload);
 
-      const response = await fetch(`/api/events/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatePayload),
-      });
+      const { data, error } = await supabase
+        .from('events')
+        .update(updatePayload)
+        .eq('id', id)
+        .select()
+        .single();
 
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to update event');
-      }
+      if (error) throw error;
 
-      // Step 2: Handle file uploads if any
-      let designSettingsChanged = false;
-      let landingBackgroundUrl = event.design_settings?.[0]?.landing_background;
-      let frameOverlayUrl = event.design_settings?.[0]?.frame_overlay;
-
-      if (landingPageImage) {
-        const timestamp = Date.now();
-        const landingFileName = `events/${id}/landing_${timestamp}`;
-        
-        console.log('Starting landing image upload...', landingFileName);
-        
-        // Upload the file to Supabase storage
-        const { data: landingData, error: landingError } = await supabase.storage
-          .from('designs')
-          .upload(landingFileName, landingPageImage, {
-            cacheControl: '3600',
-            upsert: true
-          });
-
-        if (landingError) {
-          console.error('Landing image upload error:', landingError);
-          throw new Error(`Landing image upload failed: ${landingError.message}`);
-        }
-
-        console.log('Landing image uploaded successfully');
-
-        // Get the public URL
-        const { data } = supabase.storage
-          .from('designs')
-          .getPublicUrl(landingFileName);
-
-        landingBackgroundUrl = data.publicUrl;
-        designSettingsChanged = true;
-      }
-
-      if (cameraOverlay) {
-        const timestamp = Date.now();
-        const overlayFileName = `events/${id}/overlay_${timestamp}`;
-        
-        console.log('Starting frame overlay upload...', overlayFileName);
-        
-        // Upload the frame overlay to Supabase storage
-        const { data: overlayData, error: overlayError } = await supabase.storage
-          .from('designs')
-          .upload(overlayFileName, cameraOverlay, {
-            cacheControl: '3600',
-            upsert: true
-          });
-
-        if (overlayError) {
-          console.error('Frame overlay upload error:', overlayError);
-          throw new Error(`Frame overlay upload failed: ${overlayError.message}`);
-        }
-
-        console.log('Frame overlay uploaded successfully');
-
-        // Get the public URL for the frame overlay
-        const { data: overlayUrl } = supabase.storage
-          .from('designs')
-          .getPublicUrl(overlayFileName);
-
-        frameOverlayUrl = overlayUrl.publicUrl;
-        designSettingsChanged = true;
-      }
-
-      // Step 3: Update design settings only if files were uploaded
-      if (designSettingsChanged) {
-        console.log('Updating design settings with URLs:', {
-          landing_background: landingBackgroundUrl,
-          frame_overlay: frameOverlayUrl
-        });
-
-        const { data: existingSettings } = await supabase
-          .from('design_settings')
-          .select('*')
-          .eq('event_id', id)
-          .maybeSingle();
-
-        const designSettingsPayload = {
-          id: existingSettings?.id,
-          event_id: id,
-          landing_background: landingBackgroundUrl,
-          frame_overlay: frameOverlayUrl,
-          updated_at: new Date().toISOString()
-        };
-
-        console.log('Design settings payload:', designSettingsPayload);
-
-        const { error: designError } = await supabase
-          .from('design_settings')
-          .upsert(designSettingsPayload);
-
-        if (designError) {
-          console.error('Design settings update error:', designError);
-          throw new Error(`Design settings update failed: ${designError.message}`);
-        }
-
-        console.log('Design settings updated successfully');
-      }
-
-      // Show success message and refresh
-      setIsEditing(false);
-      setSuccessMessage('Event updated successfully');
+      setSuccessMessage('Event updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
-      await fetchEventDetails();
-
-    } catch (err) {
-      console.error('Save error:', err);
-      setError(err.message || 'Failed to update event');
+      
+    } catch (error) {
+      console.error('Save error:', error);
+      setError(error.message || 'Failed to update event');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setLoading(false);
     }
   };
 
