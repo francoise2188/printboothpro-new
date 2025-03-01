@@ -7,6 +7,14 @@ export function middleware(request: NextRequest) {
   const isVercelUrl = hostname.includes('vercel.app')
   const isProd = process.env.NODE_ENV === 'production'
 
+  // Log the request details for debugging
+  console.log('🔄 Middleware:', {
+    hostname,
+    isVercelUrl,
+    isProd,
+    path: url.pathname
+  })
+
   // If we're on the Vercel domain in production, redirect to the main domain
   if (isProd && isVercelUrl) {
     url.protocol = 'https'

@@ -45,6 +45,24 @@ const nextConfig = {
         },
       ],
     }
+  },
+  // Force full page reload on route changes to clear cache
+  experimental: {
+    strictNextHead: true
+  },
+  // Disable static optimization for camera routes
+  async headers() {
+    return [
+      {
+        source: '/camera/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate'
+          }
+        ],
+      }
+    ]
   }
 }
 
