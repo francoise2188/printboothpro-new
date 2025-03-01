@@ -191,14 +191,28 @@ export default function NewEventCamera({ eventId }) {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode,
-          width: { ideal: 1080 },
-          height: { ideal: 1440 }
+          width: { min: 1280, ideal: 1920, max: 2560 },
+          height: { min: 720, ideal: 1080, max: 1440 },
+          aspectRatio: { ideal: 16/9 },
+          zoom: 1.0,
+          focusMode: 'continuous',
+          frameRate: { min: 24, ideal: 30, max: 60 }
         },
         audio: false
       });
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Try to set zoom to 1x if supported
+        const [videoTrack] = stream.getVideoTracks();
+        if (videoTrack) {
+          const capabilities = videoTrack.getCapabilities();
+          if (capabilities.zoom) {
+            await videoTrack.applyConstraints({
+              advanced: [{ zoom: 1 }]
+            });
+          }
+        }
       }
     } catch (error) {
       console.error('Camera error:', error);
