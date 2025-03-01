@@ -1,46 +1,24 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import NewEventCamera from '../../../components/NewEventCamera';
+import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
+import NewBoothCamera from '../../../components/NewBoothCamera';
 
 export default function CameraPage() {
-  const params = useParams();
-  const router = useRouter();
-  const eventId = params?.id;
+  const { id: eventId } = useParams();
 
   useEffect(() => {
-    // Debug logging
-    console.log('Camera Page Mounted');
-    console.log('Event ID:', eventId);
+    console.log('Camera page mounted with event ID:', eventId);
   }, [eventId]);
 
-  // If no event ID, redirect to home
   if (!eventId) {
-    console.log('No event ID found, should redirect');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center text-white">
-          <h2 className="text-xl font-semibold">No event ID provided</h2>
-          <p className="mt-2 text-gray-400">Please scan a valid QR code</p>
-        </div>
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Please scan a valid QR code</h1>
+        <p>You will be redirected to the home page...</p>
       </div>
     );
   }
 
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center text-white">
-          <h2 className="text-xl font-semibold">Initializing Camera...</h2>
-          <p className="mt-2 text-gray-400">Please wait while we set up your photo booth</p>
-          <p className="mt-2 text-sm text-gray-500">Event ID: {eventId}</p>
-        </div>
-      </div>
-    }>
-      <div className="min-h-screen bg-black">
-        <NewEventCamera eventId={eventId} />
-      </div>
-    </Suspense>
-  );
+  return <NewBoothCamera eventId={eventId} />;
 } 
