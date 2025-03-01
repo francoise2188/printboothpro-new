@@ -24,9 +24,44 @@ const nextConfig = {
   env: {
     // Use NEXT_PUBLIC_BASE_URL as the primary URL
     // This should be set to https://printboothpro.com in Vercel
-    NEXT_PUBLIC_SITE_URL: process.env.NODE_ENV === 'production'
-      ? 'https://printboothpro.com'
-      : 'http://localhost:3000'
+    NEXT_PUBLIC_SITE_URL: 'https://printboothpro.com'
+  },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        has: [
+          {
+            type: 'host',
+            value: 'www.printboothpro.com',
+          },
+        ],
+        destination: 'https://printboothpro.com',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.printboothpro.com',
+          },
+        ],
+        destination: 'https://printboothpro.com/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'printboothpro.vercel.app',
+          },
+        ],
+        destination: 'https://printboothpro.com/:path*',
+        permanent: true,
+      }
+    ];
   },
   // Add headers to ensure HTTPS and prevent caching
   async headers() {
@@ -37,6 +72,14 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'no-store, max-age=0'
+          },
+          {
+            key: 'X-Debug-Host',
+            value: ':host'
+          },
+          {
+            key: 'X-Debug-URL',
+            value: ':url'
           }
         ],
       }

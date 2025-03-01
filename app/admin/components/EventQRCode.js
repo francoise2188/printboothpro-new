@@ -14,22 +14,16 @@ export default function EventQRCode({ eventId, eventName }) {
   useEffect(() => {
     setMounted(true);
     
-    // Debug: Log all environment variables
-    console.log('Debug - Environment Variables:', {
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-      NODE_ENV: process.env.NODE_ENV,
-      window_location: typeof window !== 'undefined' ? window.location.origin : 'no window'
+    // Debug: Log current URL and environment
+    console.log('Debug - Current Environment:', {
+      currentUrl: typeof window !== 'undefined' ? window.location.href : 'no window',
+      isProduction: process.env.NODE_ENV === 'production'
     });
 
-    // Always use the production URL for QR codes, even in development
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://printboothpro.com'
-      : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    
-    // Create the event URL using the base URL
-    const newEventUrl = `${baseUrl}/event/${eventId}`;
-    console.log('Generated Event URL:', newEventUrl);
-    setEventUrl(newEventUrl);
+    // Always use the production domain for QR codes
+    const eventUrl = `https://printboothpro.com/event/${eventId}`;
+    console.log('Generated Event URL:', eventUrl);
+    setEventUrl(eventUrl);
     
     // Fetch initial event status
     async function fetchEventStatus() {
