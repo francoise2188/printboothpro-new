@@ -3,7 +3,7 @@
 // Camera Route v2.0 - Using NewEventBoothCamera (2023)
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
-import NewEventBoothCamera from '@/components/NewEventBoothCamera';
+import NewEventBoothCamera from '../../../components/NewEventBoothCamera';
 
 export default function CameraPage() {
   const { id: eventId } = useParams();
