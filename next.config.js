@@ -27,6 +27,24 @@ const nextConfig = {
     NEXT_PUBLIC_SITE_URL: process.env.NODE_ENV === 'production'
       ? 'https://www.printboothpro.com'
       : 'http://localhost:3000'
+  },
+  // Add async rewrites to handle domain redirects
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // Handle www subdomain
+        {
+          source: '/:path*',
+          has: [
+            {
+              type: 'host',
+              value: 'printboothpro.vercel.app',
+            },
+          ],
+          destination: 'https://www.printboothpro.com/:path*',
+        },
+      ],
+    }
   }
 }
 
