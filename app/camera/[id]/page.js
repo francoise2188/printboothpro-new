@@ -1,5 +1,6 @@
 'use client';
 
+// Camera Route v2 - Using NewEventBoothCamera
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import NewEventBoothCamera from '../../../components/NewEventBoothCamera';
