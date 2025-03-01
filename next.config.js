@@ -28,6 +28,15 @@ const nextConfig = {
       ? 'https://www.printboothpro.com'
       : 'http://localhost:3000'
   },
+  // Force clean builds
+  generateBuildId: async () => {
+    return `build-${Date.now()}`
+  },
+  // Disable cache during builds
+  onDemandEntries: {
+    maxInactiveAge: 0,
+    pagesBufferLength: 0
+  },
   // Add async rewrites to handle domain redirects
   async rewrites() {
     return {
@@ -46,7 +55,7 @@ const nextConfig = {
       ],
     }
   },
-  // Force full page reload on route changes to clear cache
+  // Force full page reload on route changes
   experimental: {
     strictNextHead: true
   },
@@ -55,6 +64,15 @@ const nextConfig = {
     return [
       {
         source: '/camera/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate'
+          }
+        ],
+      },
+      {
+        source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',

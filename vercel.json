@@ -2,6 +2,8 @@
   "version": 2,
   "public": true,
   "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/(.*)",
@@ -12,5 +14,10 @@
         }
       ]
     }
-  ]
+  ],
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_FORCE_REBUILD": "true"
+    }
+  }
 } 
