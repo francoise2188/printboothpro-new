@@ -1,5 +1,6 @@
 'use client';
 
+// Version 2.0 - Force cache bust
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
