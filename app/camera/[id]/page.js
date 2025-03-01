@@ -5,13 +5,19 @@ import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import EventBoothCameraV2 from '../../../components/EventBoothCameraV2';
 
-export default function CameraPage() {
+// Force new instance
+const CameraPageV3 = () => {
+  console.log('📸 Camera Route v3.0 - Loading EventBoothCameraV2');
+  
   const { id: eventId } = useParams();
 
   useEffect(() => {
-    console.log('Camera page mounted with event ID:', eventId);
-    // Force component refresh
-    console.log('Using EventBoothCameraV2');
+    console.log('🎥 Camera page mounted with:', {
+      eventId,
+      version: 'v3.0',
+      component: 'EventBoothCameraV2',
+      timestamp: new Date().toISOString()
+    });
   }, [eventId]);
 
   if (!eventId) {
@@ -23,5 +29,14 @@ export default function CameraPage() {
     );
   }
 
-  return <EventBoothCameraV2 eventId={eventId} key={`camera-${eventId}-v3`} />;
-} 
+  return (
+    <div key={`camera-container-${eventId}-v3`}>
+      <EventBoothCameraV2 
+        eventId={eventId} 
+        key={`camera-${eventId}-v3-${Date.now()}`} 
+      />
+    </div>
+  );
+};
+
+export default CameraPageV3; 

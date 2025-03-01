@@ -34,7 +34,8 @@ const CountdownOverlay = ({ number }) => {
   );
 };
 
-export default function NewEventBoothCamera({ eventId }) {
+export default function EventBoothCameraV2({ eventId }) {
+  console.log('🎥 EventBoothCameraV2 mounted - Version 3.0');
   const videoRef = useRef(null);
   const [photo, setPhoto] = useState(null);
   const [overlayUrl, setOverlayUrl] = useState('');
