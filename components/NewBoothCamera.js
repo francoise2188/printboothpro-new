@@ -6,26 +6,13 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'react-hot-toast';
 import Webcam from 'react-webcam';
 
-// Countdown overlay component (keeping the same design)
+// Countdown overlay component
 const CountdownOverlay = ({ number }) => {
   if (!number) return null;
   
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-[100]">
-      <div 
-        className="text-[600px] font-black text-white"
-        style={{ 
-          textShadow: '0 0 60px rgba(255,255,255,0.9)',
-          fontFamily: 'var(--font-accent)',
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          lineHeight: '0.8',
-          fontSize: 'min(600px, 50vh)',
-          color: 'var(--text-light)',
-        }}
-      >
+    <div className="countdown-overlay">
+      <div className="countdown-number">
         {number}
       </div>
     </div>
@@ -42,13 +29,19 @@ export default function NewBoothCamera({ eventId }) {
   const router = useRouter();
   const supabase = createClientComponentClient();
 
-  // Camera constraints for better quality
+  // Updated camera constraints for better quality and no zoom
   const videoConstraints = {
-    width: 1920,
-    height: 1080,
+    width: { min: 1280, ideal: 1920, max: 2560 },
+    height: { min: 720, ideal: 1080, max: 1440 },
     facingMode,
-    frameRate: { ideal: 30, max: 60 },
-    aspectRatio: 16/9,
+    frameRate: { min: 15, ideal: 30 },
+    // Advanced constraints to prevent zoom
+    advanced: [
+      {
+        zoom: 1,
+        digitalZoom: 1
+      }
+    ]
   };
 
   // Fetch frame overlay when component mounts (keeping the same overlay logic)
@@ -259,12 +252,17 @@ export default function NewBoothCamera({ eventId }) {
   return (
     <div className="min-h-screen bg-black flex flex-col">
       {/* Camera Container */}
-      <div className="flex-1 relative" style={{ minHeight: '75vh', backgroundColor: '#000' }}>
+      <div className="flex-1 relative" style={{ 
+        minHeight: '75vh', 
+        backgroundColor: '#000',
+        maxHeight: '80vh' // Added to prevent stretching on mobile
+      }}>
         {photo ? (
           <img
             src={photo}
             alt="Captured photo"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain" // Changed from object-cover to object-contain
+            style={{ maxHeight: '80vh' }} // Added to maintain aspect ratio
           />
         ) : (
           <Webcam
@@ -272,76 +270,38 @@ export default function NewBoothCamera({ eventId }) {
             audio={false}
             screenshotFormat="image/jpeg"
             videoConstraints={videoConstraints}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain" // Changed from object-cover to object-contain
+            style={{ maxHeight: '80vh' }} // Added to maintain aspect ratio
             mirrored={facingMode === 'user'}
           />
         )}
 
-        {/* Countdown Overlay */}
+        {/* Countdown Overlay - Made more visible */}
         <CountdownOverlay number={countdownNumber} />
       </div>
 
-      {/* Controls */}
-      <div style={{ backgroundColor: '#000000', padding: '1rem 0 2rem 0', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+      {/* Controls - Made more mobile-friendly */}
+      <div className="bg-black p-4 flex flex-col gap-3 items-center" style={{ 
+        minHeight: '20vh',
+        paddingBottom: 'env(safe-area-inset-bottom, 1rem)' // Added for iPhone notch
+      }}>
         {photo ? (
           <>
             <button 
               onClick={savePhoto}
-              className="py-4 rounded-lg font-bold shadow-lg active:scale-95 transition-transform"
-              style={{
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
-                fontFamily: 'var(--font-primary)',
-                border: 'none',
-                width: '80%',
-                maxWidth: '400px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                fontSize: '16px',
-              }}
+              className="w-full max-w-[300px] h-12 bg-blue-600 text-white rounded-lg font-bold active:scale-95 transition-transform"
             >
               Save Photo
             </button>
             <button 
               onClick={printPhoto}
-              className="py-4 rounded-lg font-bold shadow-lg active:scale-95 transition-transform"
-              style={{
-                backgroundColor: '#22c55e',
-                color: '#ffffff',
-                fontFamily: 'var(--font-primary)',
-                border: 'none',
-                width: '80%',
-                maxWidth: '400px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                fontSize: '16px',
-              }}
+              className="w-full max-w-[300px] h-12 bg-green-500 text-white rounded-lg font-bold active:scale-95 transition-transform"
             >
               Print My Photo
             </button>
             <button 
               onClick={handleRetake}
-              className="py-4 rounded-lg font-bold shadow-lg active:scale-95 transition-transform"
-              style={{
-                backgroundColor: '#4b5563',
-                color: '#ffffff',
-                fontFamily: 'var(--font-primary)',
-                border: 'none',
-                width: '80%',
-                maxWidth: '400px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                fontSize: '16px',
-              }}
+              className="w-full max-w-[300px] h-12 bg-gray-600 text-white rounded-lg font-bold active:scale-95 transition-transform"
             >
               Retake Photo
             </button>
@@ -350,41 +310,13 @@ export default function NewBoothCamera({ eventId }) {
           <>
             <button 
               onClick={startCountdown}
-              className="py-4 rounded-lg font-bold shadow-lg active:scale-95 transition-transform"
-              style={{
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
-                fontFamily: 'var(--font-primary)',
-                border: 'none',
-                width: '80%',
-                maxWidth: '400px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                fontSize: '16px',
-              }}
+              className="w-full max-w-[300px] h-12 bg-blue-600 text-white rounded-lg font-bold active:scale-95 transition-transform"
             >
               Take Photo
             </button>
             <button
               onClick={switchCamera}
-              className="py-4 rounded-lg font-bold shadow-lg active:scale-95 transition-transform"
-              style={{
-                backgroundColor: '#4b5563',
-                color: '#ffffff',
-                fontFamily: 'var(--font-primary)',
-                border: 'none',
-                width: '80%',
-                maxWidth: '400px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                fontSize: '16px',
-              }}
+              className="w-full max-w-[300px] h-12 bg-gray-600 text-white rounded-lg font-bold active:scale-95 transition-transform"
             >
               Switch Camera
             </button>
@@ -392,25 +324,31 @@ export default function NewBoothCamera({ eventId }) {
         )}
         <button 
           onClick={() => router.push(`/event/${eventId}`)}
-          className="py-4 rounded-lg font-bold shadow-lg active:scale-95 transition-transform"
-          style={{
-            backgroundColor: '#374151',
-            color: '#ffffff',
-            fontFamily: 'var(--font-primary)',
-            border: 'none',
-            width: '80%',
-            maxWidth: '400px',
-            height: '60px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '8px',
-            fontSize: '16px',
-          }}
+          className="w-full max-w-[300px] h-12 bg-gray-700 text-white rounded-lg font-bold active:scale-95 transition-transform"
         >
           Back to Event
         </button>
       </div>
+
+      {/* Make countdown overlay more visible */}
+      <style jsx global>{`
+        .countdown-overlay {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(8px);
+          z-index: 100;
+        }
+        .countdown-number {
+          font-size: min(40vh, 300px);
+          color: white;
+          font-weight: 900;
+          text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+      `}</style>
     </div>
   );
 } 
