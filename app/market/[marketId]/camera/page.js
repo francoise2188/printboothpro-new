@@ -218,21 +218,41 @@ export default function MarketCameraPage({ params }) {
   useEffect(() => {
     async function setupCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // First check if we have camera permissions
+        const hasPermission = await navigator.permissions.query({ name: 'camera' });
+        if (hasPermission.state === 'denied') {
+          throw new Error('Camera permission denied');
+        }
+
+        // Add mobile-specific constraints
+        const constraints = {
           video: {
             facingMode: facingMode,
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            width: { ideal: 1920, min: 640 },
+            height: { ideal: 1080, min: 480 },
+            frameRate: { ideal: 30, min: 15 }
           },
           audio: false
-        });
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          // Ensure we're properly connected to the stream
+          await new Promise((resolve) => {
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current.play().then(resolve);
+            };
+          });
         }
         setCameraActive(true);
       } catch (err) {
-        console.error('Camera error:', err);
+        console.error('Camera setup error:', err);
+        // Show a user-friendly error message
+        toast.error('Unable to access camera. Please check your permissions and try again.');
+        // Don't redirect, just show error state
+        setError('Camera access failed');
       }
     }
 
@@ -331,173 +351,252 @@ export default function MarketCameraPage({ params }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* Video/Photo Display */}
-      <div style={{
-        position: 'relative',
-        width: '100vw',
-        height: '100vh',
-        maxWidth: '800px',
-        margin: '0 auto',
-        overflow: 'hidden'
-      }}>
+      {error ? (
         <div style={{
-          position: 'relative',
-          width: '100%',
-          paddingBottom: '100%',
-          backgroundColor: 'black'
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          padding: '20px',
+          textAlign: 'center'
         }}>
-          {photo ? (
-            <img
-              src={photo}
-              alt="Captured photo"
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-            />
-          ) : (
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              muted 
-              style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }} 
-            />
-          )}
-          
-          {/* Frame Overlay */}
-          {overlayUrl && (
-            <div style={{
-              position: 'absolute',
-              top: '0%',
-              left: '-2.5%',
-              right: '-2.5%',
-              bottom: '0%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-              zIndex: 10
-            }}>
-              <img
-                src={overlayUrl}
-                alt="Frame overlay"
-                style={{
-                  width: '105%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)'
-                }}
-                onError={(e) => console.error('🖼️ Image failed to load:', e)}
-                onLoad={() => console.log('🖼️ Image loaded successfully')}
-              />
-            </div>
-          )}
+          <h2 style={{ marginBottom: '20px' }}>{error}</h2>
+          <button
+            onClick={() => {
+              setError(null);
+              startCamera();
+            }}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#3B82F6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => router.push(`/market/${marketId}`)}
+            style={{
+              marginTop: '12px',
+              padding: '12px 24px',
+              backgroundColor: '#4B5563',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            Back to Home
+          </button>
         </div>
-      </div>
-
-      {/* Controls Section */}
-      <div style={{
-        flex: 1,
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        maxWidth: '400px',
-        margin: '0 auto',
-        width: '100%'
-      }}>
-        {photo ? (
-          <>
-            {/* Add quantity selector */}
+      ) : (
+        <>
+          {/* Video/Photo Display */}
+          <div style={{
+            position: 'relative',
+            width: '100vw',
+            height: '100vh',
+            maxWidth: '800px',
+            margin: '0 auto',
+            overflow: 'hidden'
+          }}>
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              marginBottom: '10px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              padding: '10px',
-              borderRadius: '8px'
+              position: 'relative',
+              width: '100%',
+              paddingBottom: '100%',
+              backgroundColor: 'black'
             }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px'
-              }}>
-                <button 
-                  onClick={() => handleQuantityChange(-1)}
+              {photo ? (
+                <img
+                  src={photo}
+                  alt="Captured photo"
                   style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#3B82F6',
-                    color: 'white',
-                    borderRadius: '8px',
-                    border: 'none',
-                    fontSize: '20px',
-                    fontWeight: 'bold'
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
                   }}
-                >
-                  -
-                </button>
+                />
+              ) : (
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }} 
+                />
+              )}
+              
+              {/* Frame Overlay */}
+              {overlayUrl && (
                 <div style={{
-                  fontSize: '20px',
-                  color: 'white',
-                  minWidth: '60px',
-                  textAlign: 'center'
+                  position: 'absolute',
+                  top: '0%',
+                  left: '-2.5%',
+                  right: '-2.5%',
+                  bottom: '0%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                  zIndex: 10
                 }}>
-                  <div>Quantity</div>
-                  <div>{quantity}</div>
+                  <img
+                    src={overlayUrl}
+                    alt="Frame overlay"
+                    style={{
+                      width: '105%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    onError={(e) => console.error('🖼️ Image failed to load:', e)}
+                    onLoad={() => console.log('🖼️ Image loaded successfully')}
+                  />
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Controls Section */}
+          <div style={{
+            flex: 1,
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            maxWidth: '400px',
+            margin: '0 auto',
+            width: '100%'
+          }}>
+            {photo ? (
+              <>
+                {/* Add quantity selector */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  marginBottom: '10px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  padding: '10px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px'
+                  }}>
+                    <button 
+                      onClick={() => handleQuantityChange(-1)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#3B82F6',
+                        color: 'white',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontSize: '20px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      -
+                    </button>
+                    <div style={{
+                      fontSize: '20px',
+                      color: 'white',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}>
+                      <div>Quantity</div>
+                      <div>{quantity}</div>
+                    </div>
+                    <button 
+                      onClick={() => handleQuantityChange(1)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#3B82F6',
+                        color: 'white',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontSize: '20px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
                 <button 
-                  onClick={() => handleQuantityChange(1)}
+                  onClick={handleRetake}
                   style={{
-                    padding: '8px 16px',
+                    width: '100%',
+                    padding: '16px',
                     backgroundColor: '#3B82F6',
                     color: 'white',
                     borderRadius: '8px',
                     border: 'none',
-                    fontSize: '20px',
-                    fontWeight: 'bold'
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    marginBottom: '10px'
                   }}
                 >
-                  +
+                  Retake Photo
                 </button>
-              </div>
-            </div>
 
+                <button 
+                  onClick={savePhoto}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    backgroundColor: '#22C55E',
+                    color: 'white',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontSize: '16px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Print My Photo!
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={startCountdown}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  backgroundColor: '#3B82F6',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '16px',
+                  fontWeight: '500'
+                }}
+              >
+                Take Photo
+              </button>
+            )}
+            
             <button 
-              onClick={handleRetake}
+              onClick={switchCamera}
               style={{
                 width: '100%',
                 padding: '16px',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: '500',
-                marginBottom: '10px'
-              }}
-            >
-              Retake Photo
-            </button>
-
-            <button 
-              onClick={savePhoto}
-              style={{
-                width: '100%',
-                padding: '16px',
-                backgroundColor: '#22C55E',
+                backgroundColor: '#6B7280',
                 color: 'white',
                 borderRadius: '8px',
                 border: 'none',
@@ -505,61 +604,29 @@ export default function MarketCameraPage({ params }) {
                 fontWeight: '500'
               }}
             >
-              Print My Photo!
+              Switch Camera
             </button>
-          </>
-        ) : (
-          <button 
-            onClick={startCountdown}
-            style={{
-              width: '100%',
-              padding: '16px',
-              backgroundColor: '#3B82F6',
-              color: 'white',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '16px',
-              fontWeight: '500'
-            }}
-          >
-            Take Photo
-          </button>
-        )}
-        
-        <button 
-          onClick={switchCamera}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: '#6B7280',
-            color: 'white',
-            borderRadius: '8px',
-            border: 'none',
-            fontSize: '16px',
-            fontWeight: '500'
-          }}
-        >
-          Switch Camera
-        </button>
-        
-        <button 
-          onClick={() => router.push(`/market/${marketId}`)}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: '#4B5563',
-            color: 'white',
-            borderRadius: '8px',
-            border: 'none',
-            fontSize: '16px',
-            fontWeight: '500'
-          }}
-        >
-          Back to Home
-        </button>
-      </div>
+            
+            <button 
+              onClick={() => router.push(`/market/${marketId}`)}
+              style={{
+                width: '100%',
+                padding: '16px',
+                backgroundColor: '#4B5563',
+                color: 'white',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '16px',
+                fontWeight: '500'
+              }}
+            >
+              Back to Home
+            </button>
+          </div>
 
-      <CountdownOverlay number={countdownNumber} />
+          <CountdownOverlay number={countdownNumber} />
+        </>
+      )}
     </div>
   );
 } 
