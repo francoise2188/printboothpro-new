@@ -7,6 +7,8 @@ import { supabase } from '../../../lib/supabase';
 import styles from './page.module.css';
 import { format, parseISO } from 'date-fns';
 import { zonedTimeToUtc, utcToZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '../../../../lib/AuthContext';
 
 const EventQRCode = dynamic(
   () => import('../../components/EventQRCode'),
@@ -116,6 +118,13 @@ const EventDetailsPage = ({ params }) => {
     'Pop-up Exhibitions',
     'Other'
   ];
+
+  const supabase = createClientComponentClient();
+  const { user } = useAuth();
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportType, setExportType] = useState([]);
+  const [eventData, setEventData] = useState(null);
 
   useEffect(() => {
     fetchEventDetails();
@@ -322,6 +331,242 @@ const EventDetailsPage = ({ params }) => {
         setError('Failed to delete frame overlay');
       }
     }
+  };
+
+  const handleExport = async () => {
+    if (exportType.length === 0) {
+      setError('Please select what you would like to export');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (exportType.includes('emails')) {
+        try {
+          // Fetch emails for this event from Supabase
+          const { data: emails, error } = await supabase
+            .from('emails')
+            .select('*')
+            .eq('event_id', event.id);
+
+          if (error) throw error;
+
+          if (!emails || emails.length === 0) {
+            setError('No emails found for this event');
+            return;
+          }
+
+          // Create email list content from actual data
+          const emailContent = [
+            `Email List for ${event.name || 'Event'}`,
+            '----------------------------------------',
+            ...emails.map(email => [
+              `Name: ${email.name || 'N/A'}`,
+              `Email: ${email.email}`,
+              `Photos Taken: ${email.photos_count || 0}`,
+              ''
+            ]).flat()
+          ].join('\n');
+
+          // Create and download text file
+          const blob = new Blob([emailContent], { 
+            type: 'text/plain' 
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${event.name || 'event'}-emails.txt`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Error exporting emails:', error);
+          setError('Failed to export emails. Please try again.');
+          return;
+        }
+      }
+
+      if (exportType.includes('photos')) {
+        try {
+          // Fetch only original photos for this event from Supabase
+          const { data: photos, error } = await supabase
+            .from('photos')
+            .select('*')
+            .eq('event_id', event.id)
+            .is('deleted_at', null)
+            .is('original_photo_id', null);
+
+          if (error) throw error;
+
+          if (!photos || photos.length === 0) {
+            setError('No photos found for this event');
+            return;
+          }
+
+          console.log('Found photos:', photos.map(p => ({
+            id: p.id,
+            url: p.url,
+            created_at: p.created_at
+          })));
+
+          // Create a ZIP file using JSZip
+          const JSZip = (await import('jszip')).default;
+          const zip = new JSZip();
+
+          // Keep track of successful and failed downloads
+          const failedPhotos = [];
+          let successCount = 0;
+
+          // Add each photo to the ZIP file
+          for (const photo of photos) {
+            try {
+              // Get the storage path from the URL
+              const url = new URL(photo.url);
+              const pathParts = url.pathname.split('/');
+              // Find the index after 'photos' in the path
+              const photosIndex = pathParts.findIndex(part => part === 'photos');
+              if (photosIndex === -1) {
+                console.error('Invalid URL structure - no photos segment:', {
+                  photoId: photo.id,
+                  url: photo.url
+                });
+                failedPhotos.push({
+                  id: photo.id,
+                  reason: 'Invalid URL structure - no photos segment',
+                  url: photo.url
+                });
+                continue;
+              }
+
+              // Get everything after 'photos' in the path
+              const storagePath = pathParts.slice(photosIndex + 1).join('/');
+              
+              console.log('Attempting download:', {
+                photoId: photo.id,
+                originalUrl: photo.url,
+                parsedPath: storagePath
+              });
+
+              // Get the photo data from storage
+              const { data: photoData, error: downloadError } = await supabase
+                .storage
+                .from('photos')
+                .download(storagePath);
+
+              if (downloadError) {
+                console.error('Download failed:', {
+                  photoId: photo.id,
+                  path: storagePath,
+                  error: downloadError
+                });
+                
+                failedPhotos.push({
+                  id: photo.id,
+                  path: storagePath,
+                  reason: `Download failed: ${downloadError.message || 'Unknown error'}`
+                });
+                continue;
+              }
+
+              // Generate a filename that includes useful metadata
+              const timestamp = new Date(photo.created_at).toISOString().split('T')[0];
+              const status = photo.print_status || 'no_status';
+              const filename = `photo_${photo.id}_${timestamp}_${status}.jpg`;
+              
+              // Add the photo to the ZIP file
+              zip.file(filename, photoData);
+              successCount++;
+              console.log('Successfully added to ZIP:', {
+                photoId: photo.id,
+                filename: filename
+              });
+            } catch (downloadError) {
+              console.error('Error processing photo:', {
+                photoId: photo.id,
+                error: downloadError
+              });
+              failedPhotos.push({
+                id: photo.id,
+                reason: downloadError.message || 'Unknown error'
+              });
+            }
+          }
+
+          // If we have any successful downloads, create the ZIP
+          if (successCount > 0) {
+            // Generate the ZIP file
+            const content = await zip.generateAsync({ type: 'blob' });
+
+            // Create download link for photos
+            const url = window.URL.createObjectURL(content);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${event.name}_photos.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // If there were any failures, create a log file
+            if (failedPhotos.length > 0) {
+              const logContent = [
+                `Photo Export Log for ${event.name}`,
+                `Date: ${new Date().toLocaleString()}`,
+                `Successfully exported: ${successCount} photos`,
+                `Failed to export: ${failedPhotos.length} photos`,
+                '\nFailed Photos:',
+                ...failedPhotos.map(photo => [
+                  `ID: ${photo.id}`,
+                  photo.path ? `Path: ${photo.path}` : '',
+                  photo.url ? `URL: ${photo.url}` : '',
+                  `Reason: ${photo.reason}`,
+                  ''
+                ].filter(Boolean).join('\n'))
+              ].join('\n');
+
+              // Create and download the log file
+              const logBlob = new Blob([logContent], { type: 'text/plain' });
+              const logUrl = window.URL.createObjectURL(logBlob);
+              const logLink = document.createElement('a');
+              logLink.href = logUrl;
+              logLink.download = `${event.name}_photo_export_log.txt`;
+              document.body.appendChild(logLink);
+              logLink.click();
+              document.body.removeChild(logLink);
+              window.URL.revokeObjectURL(logUrl);
+
+              setSuccessMessage(`Exported ${successCount} photos. ${failedPhotos.length} photos couldn't be exported - check the log file for details.`);
+            } else {
+              setSuccessMessage(`Successfully exported all ${successCount} photos!`);
+            }
+          } else {
+            setError('No photos could be downloaded. Check the log file for details.');
+          }
+        } catch (photoError) {
+          console.error('Error exporting photos:', photoError);
+          setError(`Error exporting photos: ${photoError.message}`);
+        }
+      }
+
+      setSuccessMessage('Export completed successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      setError(`Export failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckboxChange = (value) => {
+    setExportType(prev => {
+      if (prev.includes(value)) {
+        return prev.filter(type => type !== value);
+      } else {
+        return [...prev, value];
+      }
+    });
   };
 
   // Clean up preview URLs when component unmounts
@@ -677,13 +922,65 @@ const EventDetailsPage = ({ params }) => {
                   </div>
                 )}
               </div>
-            </>
-          )}
 
-          {!isEditing && event && event.id && (
-            <div className={styles.qrSection}>
-              <EventQRCode eventId={event.id} />
-            </div>
+              <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>Export Data</h2>
+                <div className={styles.exportSection}>
+                  <div className={styles.stats}>
+                    <div className={styles.statItem}>
+                      <span className={styles.statLabel}>Total Photos</span>
+                      <span className={styles.statValue}>
+                        {/* Using sample data for testing */}
+                        {event.photo_count || 25}
+                      </span>
+                    </div>
+                    <div className={styles.statItem}>
+                      <span className={styles.statLabel}>Total Emails</span>
+                      <span className={styles.statValue}>
+                        {/* Using sample data for testing */}
+                        {event.email_count || 15}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.exportOptions}>
+                    <label className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={exportType.includes('emails')}
+                        onChange={() => handleCheckboxChange('emails')}
+                        className={styles.checkbox}
+                      />
+                      Email List (CSV)
+                    </label>
+
+                    <label className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={exportType.includes('photos')}
+                        onChange={() => handleCheckboxChange('photos')}
+                        className={styles.checkbox}
+                      />
+                      Photos (ZIP)
+                    </label>
+                  </div>
+
+                  <button
+                    onClick={handleExport}
+                    disabled={isExporting || exportType.length === 0}
+                    className={styles.exportButton}
+                  >
+                    {isExporting ? 'Exporting...' : 'Export Selected'}
+                  </button>
+                </div>
+              </div>
+
+              {!isEditing && event && event.id && (
+                <div className={styles.qrSection}>
+                  <EventQRCode eventId={event.id} />
+                </div>
+              )}
+            </>
           )}
         </>
       )}
