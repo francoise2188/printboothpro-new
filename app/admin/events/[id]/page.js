@@ -930,15 +930,13 @@ const EventDetailsPage = ({ params }) => {
                     <div className={styles.statItem}>
                       <span className={styles.statLabel}>Total Photos</span>
                       <span className={styles.statValue}>
-                        {/* Using sample data for testing */}
-                        {event.photo_count || 25}
+                        {event.photo_count || 0}
                       </span>
                     </div>
                     <div className={styles.statItem}>
                       <span className={styles.statLabel}>Total Emails</span>
                       <span className={styles.statValue}>
-                        {/* Using sample data for testing */}
-                        {event.email_count || 15}
+                        {event.email_count || 0}
                       </span>
                     </div>
                   </div>
