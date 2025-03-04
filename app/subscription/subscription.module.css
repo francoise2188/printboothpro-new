@@ -1,23 +1,155 @@
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f8fafc, #ffffff);
+  background: linear-gradient(135deg, #E5E6DC 0%, #D8D9CF 100%);
   padding: 3rem 1rem;
 }
 
 .content {
   max-width: 72rem;
   margin: 0 auto;
+  position: relative;
+}
+
+.gradientBg {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.98) 100%
+  );
+  border-radius: 2rem;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+.accentBg {
+  background: linear-gradient(
+    135deg,
+    rgba(229, 230, 220, 0.15) 0%,
+    rgba(216, 217, 207, 0.15) 100%
+  );
+  padding: 4rem 2rem;
+  border-radius: 2rem;
+  margin: 6rem 0;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.accentBg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(216, 217, 207, 0.3),
+    transparent
+  );
 }
 
 /* Header/Hero Section */
 .header {
   text-align: center;
   margin-bottom: 3rem;
-  padding: 2rem;
+  padding: 3rem 2rem;
   background: var(--primary-green);
-  border-radius: 1rem;
+  border-radius: 2rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='rgba(255,255,255,0.05)' fill-rule='evenodd'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+/* Icon Styles */
+.iconWrapper {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, rgba(var(--primary-green-rgb), 0.1) 0%, rgba(var(--accent-tan-rgb), 0.1) 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 2rem;
+}
+
+.featureIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, rgba(var(--primary-green-rgb), 0.1) 0%, rgba(var(--accent-tan-rgb), 0.1) 100%);
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+}
+
+.equipmentIcon {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Card Styles */
+.whyCard, .featureCard, .equipmentCard, .roadmapCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05),
+              0 10px 20px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(var(--primary-green-rgb), 0.1);
+}
+
+.whyCard:hover, .featureCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1),
+              0 15px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Section Titles */
+.sectionTitle {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, var(--primary-green) 0%, #2d4f3c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-green), var(--accent-tan));
+  border-radius: 2px;
+}
+
+/* Header/Hero Section */
 .title {
   font-size: 3.5rem;
   font-weight: 800;
@@ -49,14 +181,6 @@
 /* Business Models Section */
 .businessModels {
   margin: 4rem 0;
-}
-
-.sectionTitle {
-  text-align: center;
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 2rem;
 }
 
 .modelGrid {
@@ -345,6 +469,18 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  background-color: #64748b;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #64748b;
+}
+
+.disabled:hover {
+  background-color: #64748b;
+  transform: none;
 }
 
 .error {
@@ -502,7 +638,74 @@
   margin: 0;
 }
 
-/* Responsive Design */
+/* Why Section Grid */
+.whyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.whyCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.whyCard h3 {
+  color: var(--primary-green);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.whyCard p {
+  color: #475569;
+}
+
+/* Roadmap Section */
+.roadmapSection {
+  margin: 4rem 0;
+  padding: 2rem;
+}
+
+.roadmapGrid {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.roadmapCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.roadmapList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.roadmapList li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: #475569;
+  font-size: 1.1rem;
+}
+
+.roadmapList li:before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-green);
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .title {
     font-size: 2.5rem;
@@ -525,6 +728,22 @@
   
   .whySection {
     padding: 2rem 1rem;
+  }
+  
+  .whyGrid,
+  .featuresGrid,
+  .roadmapList {
+    grid-template-columns: 1fr;
+  }
+  
+  .whyCard,
+  .featureCard,
+  .roadmapCard {
+    padding: 1.5rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.75rem;
   }
 }
 
