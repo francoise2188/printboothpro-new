@@ -24,9 +24,10 @@ export default function ContactPage() {
     setStatus('sending');
 
     try {
+      // First email: Send the contact form message to PrintBooth Pro
       await emailjs.send(
         'service_763qumt',
-        'template_daiienw',
+        'template_daiienw', // Admin notification template
         {
           from_name: formData.name,
           from_email: formData.email,
@@ -35,6 +36,21 @@ export default function ContactPage() {
           to_name: 'PrintBooth Pro Team',
           to_email: 'info@printboothpro.com',
           reply_to: formData.email
+        }
+      );
+
+      // Second email: Send auto-response to the person who filled out the form
+      await emailjs.send(
+        'service_763qumt',
+        'template_0qe35yc', // Auto-response template
+        {
+          to_name: formData.name,
+          to_email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          from_name: 'PrintBooth Pro Team',
+          from_email: 'info@printboothpro.com',
+          reply_to: 'info@printboothpro.com'
         }
       );
 
