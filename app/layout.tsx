@@ -2,6 +2,7 @@ import './globals.css';
 import { Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { Outfit, Playfair_Display } from 'next/font/google';
+import Navigation from './components/Navigation';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full ${outfit.variable} ${playfair.variable}`}>
       <body className="h-full">
+        <Navigation />
         {children}
         <Toaster 
           position="bottom-right"

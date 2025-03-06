@@ -3,192 +3,170 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Head from 'next/head';
 import styles from './subscription.module.css';
+import {
+  SparklesIcon,
+  BoltIcon,
+  CheckBadgeIcon,
+  BriefcaseIcon,
+  ArrowPathIcon,
+  HeartIcon,
+  CpuChipIcon,
+  ChartBarIcon,
+  SwatchIcon
+} from '@heroicons/react/24/outline';
 
 export default function SubscriptionPage() {
   const router = useRouter();
 
   return (
-    <div className={styles.container}>
-      <div className={`${styles.content} ${styles.gradientBg}`}>
-        {/* Program Name */}
-        <div className={styles.programName}>
-          PrintBooth Pro
-        </div>
+    <>
+      <Head>
+        <title>PrintBooth Pro - Transform Your Events with Photo Magnets</title>
+        <meta name="description" content="PrintBooth Pro - The ultimate 2x2 photo magnet solution for events and markets. Create lasting memories with our professional-grade photo booth software." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="keywords" content="photo booth, photo magnets, event photography, market photography, professional photo booth" />
+        <meta property="og:title" content="PrintBooth Pro - Transform Your Events with Photo Magnets" />
+        <meta property="og:description" content="Create lasting memories with our professional-grade 2x2 photo magnet solution for events and markets." />
+        <meta property="og:type" content="website" />
+      </Head>
 
-        {/* Hero Section */}
-        <div className={styles.header}>
-          <h1 className={styles.title}>The Event-Based Photo Magnet Specialists</h1>
-          <p className={styles.subtitle}>
-            A precision-focused solution built specifically for 2x2 square magnets, perfect for events, markets, and online orders.
-          </p>
-          <div className={styles.userBadge}>Beta Testing in Progress</div>
-        </div>
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <header className={styles.header}>
+            <h1 className={styles.title}>Transform Events with Instant Photo Magnets</h1>
+            <p className={styles.subtitle}>
+              A precision-focused solution built specifically for 2x2 square photo magnets, perfect for events, markets, and online orders.
+            </p>
+            <div className={styles.userBadge}>Beta Testing in Progress</div>
+          </header>
 
-        {/* Why 2x2 Section */}
-        <div className={styles.whySection}>
-          <div className={styles.whyContent}>
-            <h2 className={styles.whyTitle}>Why 2x2 Square Magnets?</h2>
-            <div className={styles.whyGrid}>
-              <div className={styles.whyCard}>
-                <div className={styles.iconWrapper}>
-                  <span className={styles.icon}>💫</span>
+          <section className={styles.whySection}>
+            <div className={styles.whyContent}>
+              <h2 className={styles.sectionTitle}>Why Choose PrintBooth Pro?</h2>
+              <div className={styles.whyGrid}>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <SparklesIcon />
+                  </div>
+                  <h3>Perfect Size</h3>
+                  <p>2x2 square magnets - the ideal format for memorable moments</p>
                 </div>
-                <h3>Compact and Versatile</h3>
-                <p>Perfect size for memorable moments</p>
-              </div>
-              <div className={styles.whyCard}>
-                <div className={styles.iconWrapper}>
-                  <span className={styles.icon}>🎯</span>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <BoltIcon />
+                  </div>
+                  <h3>Lightning Fast</h3>
+                  <p>Instant printing and processing for quick turnaround</p>
                 </div>
-                <h3>Easy to Display</h3>
-                <p>Ideal for any magnetic surface</p>
-              </div>
-              <div className={styles.whyCard}>
-                <div className={styles.iconWrapper}>
-                  <span className={styles.icon}>✨</span>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <CheckBadgeIcon />
+                  </div>
+                  <h3>Professional Quality</h3>
+                  <p>High-resolution output with perfect color accuracy</p>
                 </div>
-                <h3>Professional Finish</h3>
-                <p>High-quality keepsake that lasts</p>
-              </div>
-              <div className={styles.whyCard}>
-                <div className={styles.iconWrapper}>
-                  <span className={styles.icon}>📸</span>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <BriefcaseIcon />
+                  </div>
+                  <h3>Business Ready</h3>
+                  <p>Complete solution for events and market operations</p>
                 </div>
-                <h3>Perfect Framing</h3>
-                <p>Optimal size for portrait shots</p>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <ArrowPathIcon />
+                  </div>
+                  <h3>Easy Integration</h3>
+                  <p>Seamless setup with your existing equipment and workflow</p>
+                </div>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <HeartIcon />
+                  </div>
+                  <h3>Customer Love</h3>
+                  <p>Create lasting memories that clients cherish forever</p>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Features Section */}
-        <div className={`${styles.featuresShowcase} ${styles.accentBg}`}>
-          <h2 className={styles.sectionTitle}>The PrintBooth Pro Advantage</h2>
-          <div className={styles.featuresGrid}>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>🤖</div>
-              <h3 className={styles.featureTitle}>Smart Automation</h3>
-              <ul className={styles.featureDetails}>
-                <li>Automatic Template Filling</li>
-                <li>Zero-Touch Printing</li>
-                <li>Streamlined Workflow</li>
-              </ul>
-            </div>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>💼</div>
-              <h3 className={styles.featureTitle}>Business Management</h3>
-              <ul className={styles.featureDetails}>
-                <li>Event Planning Tools</li>
-                <li>Market Integration</li>
-                <li>Order Management</li>
-              </ul>
-            </div>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>🎨</div>
-              <h3 className={styles.featureTitle}>Versatile Applications</h3>
-              <ul className={styles.featureDetails}>
-                <li>Event Commemorations</li>
-                <li>Corporate Branding</li>
-                <li>Personal Celebrations</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Equipment Section */}
-        <div className={styles.equipmentSection}>
-          <h2 className={styles.sectionTitle}>Simple Setup Requirements</h2>
-          <div className={styles.equipmentCard}>
-            <div className={styles.equipmentIcon}>⚡</div>
-            <ul className={styles.equipmentList}>
-              <li><strong>Basic Needs:</strong>
-                <ul>
-                  <li>WiFi Connection</li>
-                  <li>Laptop (Mobile/Tablet Support Coming Soon)</li>
-                  <li>Compatible Printer</li>
-                  <li>2x2 Magnet Printing Equipment</li>
+          <section className={styles.featuresShowcase}>
+            <h2 className={styles.sectionTitle}>Powerful Features</h2>
+            <div className={styles.featuresGrid}>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <CpuChipIcon />
+                </div>
+                <h3 className={styles.featureTitle}>Smart Automation</h3>
+                <ul className={styles.featureDetails}>
+                  <li>Automatic template filling</li>
+                  <li>Zero-touch printing process</li>
+                  <li>Streamlined workflow</li>
                 </ul>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Pricing Section */}
-        <div className={styles.pricingCard}>
-          <div className={styles.cardContent}>
-            <div className={styles.planHeader}>
-              <h3 className={styles.planName}>Launch Special</h3>
-              <div className={styles.priceContainer}>
-                <span className={styles.price}>$59</span>
-                <span className={styles.interval}>/month</span>
+              </div>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <ChartBarIcon />
+                </div>
+                <h3 className={styles.featureTitle}>Business Tools</h3>
+                <ul className={styles.featureDetails}>
+                  <li>Event management dashboard</li>
+                  <li>Sales tracking & analytics</li>
+                  <li>Customer database</li>
+                </ul>
+              </div>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <SwatchIcon />
+                </div>
+                <h3 className={styles.featureTitle}>Design Freedom</h3>
+                <ul className={styles.featureDetails}>
+                  <li>Custom templates</li>
+                  <li>Brand integration</li>
+                  <li>Multiple layouts</li>
+                </ul>
               </div>
             </div>
+          </section>
 
-            <ul className={styles.featuresList}>
-              <li className={styles.featureItem}>
-                <svg className={styles.featureIcon} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Unlimited 2x2 Magnet Templates</span>
-              </li>
-              <li className={styles.featureItem}>
-                <svg className={styles.featureIcon} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Event and Market Support</span>
-              </li>
-              <li className={styles.featureItem}>
-                <svg className={styles.featureIcon} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Online Order Management</span>
-              </li>
-              <li className={styles.featureItem}>
-                <svg className={styles.featureIcon} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-                <span>No Hidden Fees</span>
-              </li>
-              <li className={styles.featureItem}>
-                <svg className={styles.featureIcon} fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Cancel Anytime</span>
-              </li>
-            </ul>
+          <section className={styles.pricingCard}>
+            <div className={styles.cardContent}>
+              <div className={styles.planHeader}>
+                <h3 className={styles.planName}>Launch Special</h3>
+                <div className={styles.priceContainer}>
+                  <span className={styles.price}>$59</span>
+                  <span className={styles.interval}>/month</span>
+                </div>
+              </div>
 
-            <button
-              disabled
-              className={`${styles.subscribeButton} ${styles.disabled}`}
-            >
-              Coming Soon
-            </button>
-
-            <div className={styles.loginSection}>
-              <p className={styles.loginText}>Already a beta tester?</p>
-              <Link href="/login" className={styles.loginButton}>
-                Log In
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Future Roadmap */}
-        <div className={styles.roadmapSection}>
-          <h2 className={styles.sectionTitle}>Future Roadmap</h2>
-          <div className={styles.roadmapGrid}>
-            <div className={styles.roadmapCard}>
-              <ul className={styles.roadmapList}>
-                <li>Exploring Additional Magnet Sizes</li>
-                <li>Mobile & Tablet Support</li>
-                <li>Enhanced Feature Development</li>
-                <li>User-Driven Improvements</li>
+              <ul className={styles.featureDetails}>
+                <li>✓ Unlimited 2x2 Magnet Templates</li>
+                <li>✓ Event and Market Support</li>
+                <li>✓ Online Order Management</li>
+                <li>✓ Business Analytics</li>
+                <li>✓ Priority Support</li>
+                <li>✓ Cancel Anytime</li>
               </ul>
+
+              <button
+                disabled
+                className={`${styles.subscribeButton} ${styles.disabled}`}
+              >
+                Coming Soon
+              </button>
+
+              <div className={styles.loginSection}>
+                <p className={styles.loginText}>Already a beta tester?</p>
+                <Link href="/login" className={styles.loginButton}>
+                  Log In
+                </Link>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
-    </div>
+    </>
   );
 } 
