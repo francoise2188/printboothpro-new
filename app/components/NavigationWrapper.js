@@ -11,11 +11,13 @@ function shouldShowNavigation(pathname) {
     '/about',
     '/faq',
     '/contact',
-    '/privacy'
+    '/privacy',
+    '/blog'
   ];
 
   // Check if current path matches any of the navigation paths
-  return navigationPaths.some(path => pathname === path);
+  // or if it's a blog post page
+  return navigationPaths.some(path => pathname === path) || pathname.startsWith('/blog/');
 }
 
 export default function NavigationWrapper() {
