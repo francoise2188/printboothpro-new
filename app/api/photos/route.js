@@ -16,6 +16,47 @@ export async function POST(request) {
       );
     }
 
+    if (eventId) {
+      // Check event photo limit
+      const { data: eventData, error: eventError } = await supabaseServer
+        .from('events')
+        .select('photo_limit')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) {
+        console.error('❌ Error fetching event:', eventError);
+        throw eventError;
+      }
+
+      if (eventData.photo_limit) {
+        // Count existing photos
+        const { count, error: countError } = await supabaseServer
+          .from('photos')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .is('deleted_at', null);
+
+        if (countError) {
+          console.error('❌ Error counting photos:', countError);
+          throw countError;
+        }
+
+        if (count >= eventData.photo_limit) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              message: `This event has reached its photo limit. Please see the event host if you have any questions.`,
+              details: {
+                limitReached: true
+              }
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     console.log('📸 Processing photo for', eventId ? `event: ${eventId}` : 'direct save');
 
     // Remove the data:image/jpeg;base64 prefix

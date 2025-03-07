@@ -228,10 +228,10 @@ export default function EventBoothCameraV2({ eventId }) {
     try {
       const loadingToast = toast.loading('Sending photo to print queue...');
       
-      // Verify event exists first
+      // First, verify event exists and check photo limit
       const { data: eventData, error: eventError } = await supabase
         .from('events')
-        .select('id, name')
+        .select('id, name, photo_limit')
         .eq('id', eventId)
         .single();
 
@@ -240,6 +240,31 @@ export default function EventBoothCameraV2({ eventId }) {
         toast.dismiss(loadingToast);
         toast.error('Invalid event selected. Please check the event and try again.');
         return;
+      }
+
+      // If there's a photo limit, check current count
+      if (eventData.photo_limit) {
+        const { count, error: countError } = await supabase
+          .from('photos')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .is('deleted_at', null);
+
+        if (countError) {
+          console.error('Error counting photos:', countError);
+          toast.dismiss(loadingToast);
+          toast.error('Failed to check photo limit. Please try again.');
+          return;
+        }
+
+        if (count >= eventData.photo_limit) {
+          toast.dismiss(loadingToast);
+          toast.error(
+            `📸 This event has reached its photo limit. Please see the event host if you have any questions.`, 
+            { duration: 5000 }
+          );
+          return;
+        }
       }
 
       // Convert base64 to blob
@@ -267,15 +292,20 @@ export default function EventBoothCameraV2({ eventId }) {
         .getPublicUrl(filename);
 
       // Save to database
-      const { error: dbError } = await supabase
+      const { data, error: dbError } = await supabase
         .from('photos')
         .insert([{
           event_id: eventId,
           url: publicUrl,
           status: 'pending',
+          created_at: new Date().toISOString(),
+          template_position: null,
+          template_id: null,
           print_status: 'pending',
-          source: 'event_booth',
-          created_at: new Date().toISOString()
+          storage_status: 'uploaded',
+          error_message: null,
+          error_timestamp: null,
+          source: 'event_booth'
         }])
         .select()
         .single();
@@ -283,12 +313,16 @@ export default function EventBoothCameraV2({ eventId }) {
       if (dbError) throw dbError;
 
       toast.dismiss(loadingToast);
-      toast.success('Your photo is being printed!');
+      toast.success('Photo sent to print queue!');
       router.push('/thank-you');
 
     } catch (error) {
       console.error('Error in print process:', error);
-      toast.error('Failed to send photo to print queue. Please try again.');
+      if (error.message === 'Photo limit reached for this event') {
+        toast.error('Photo limit has been reached for this event.');
+      } else {
+        toast.error('Failed to send photo to print queue. Please try again.');
+      }
     }
   };
 

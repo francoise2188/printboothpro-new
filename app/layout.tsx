@@ -2,7 +2,7 @@ import './globals.css';
 import { Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { Outfit, Playfair_Display } from 'next/font/google';
-import Navigation from './components/Navigation';
+import NavigationWrapper from './components/NavigationWrapper';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -35,21 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full ${outfit.variable} ${playfair.variable}`}>
-      <body className="h-full">
-        <Navigation />
+    <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
+      <body>
+        <NavigationWrapper />
         {children}
-        <Toaster 
-          position="bottom-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: 'var(--primary-green)',
-              color: 'var(--text-light)',
-              fontFamily: 'var(--font-primary)',
-            },
-          }}
-        />
+        <Toaster position="bottom-center" />
       </body>
     </html>
   );

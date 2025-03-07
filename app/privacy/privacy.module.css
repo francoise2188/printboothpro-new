@@ -1,65 +1,48 @@
 .privacyContent {
   max-width: 800px;
   margin: 0 auto;
-  background: white;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  padding: 20px;
 }
 
 .section {
-  margin-bottom: 2.5rem;
-}
-
-.section:last-child {
-  margin-bottom: 0;
+  margin-bottom: 40px;
 }
 
 .section h2 {
+  color: #333;
+  margin-bottom: 15px;
   font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 1rem 0;
 }
 
 .section p {
-  color: #4b5563;
-  line-height: 1.7;
-  margin: 0 0 1rem 0;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 15px;
 }
 
 .section ul {
-  list-style: disc;
-  padding-left: 1.5rem;
-  margin: 1rem 0;
+  list-style-type: disc;
+  margin-left: 20px;
+  color: #666;
 }
 
-.section li {
-  color: #4b5563;
-  line-height: 1.7;
-  margin-bottom: 0.5rem;
+.section ul li {
+  margin-bottom: 8px;
 }
 
 .section a {
-  color: #2d4f3c;
+  color: #0070f3;
   text-decoration: none;
-  transition: color 0.2s ease;
 }
 
 .section a:hover {
-  color: #1a332a;
   text-decoration: underline;
 }
 
 .updateInfo {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  text-align: center;
-}
-
-.updateInfo p {
-  color: #6b7280;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #eaeaea;
+  color: #999;
   font-size: 0.9rem;
-  margin: 0;
 } 

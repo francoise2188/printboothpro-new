@@ -199,34 +199,46 @@ const EventDetailsPage = ({ params }) => {
       setLoading(true);
       
       // Convert local dates to UTC for storage
-      const localEventDate = new Date(event.date + 'T' + event.start_time);
-      const localEndDate = new Date(event.date + 'T' + event.end_time);
+      const localEventDate = new Date(editForm.eventDate);
+      const localEndDate = new Date(editForm.endDate);
       
       // Convert to UTC using the user's timezone
       const utcEventDate = formatInTimeZone(localEventDate, userTimeZone, "yyyy-MM-dd'T'HH:mm:ssXXX");
       const utcEndDate = formatInTimeZone(localEndDate, userTimeZone, "yyyy-MM-dd'T'HH:mm:ssXXX");
 
       const updatePayload = {
-        name: event.name,
-        description: event.description,
+        name: editForm.eventName,
         date: utcEventDate,
         start_time: format(localEventDate, 'HH:mm:ss'),
         end_time: format(localEndDate, 'HH:mm:ss'),
-        location: event.location,
-        is_active: event.status === 'active'
+        location: editForm.location,
+        address: editForm.address,
+        event_type: editForm.eventType,
+        expected_guests: parseInt(editForm.expectedGuests) || 0,
+        package: editForm.package,
+        package_price: parseFloat(editForm.packagePrice) || 0,
+        photo_limit: parseInt(editForm.photoLimit) || 0,
+        status: editForm.status
       };
 
       console.log('Saving event with payload:', updatePayload);
 
-      const { data, error } = await supabase
-        .from('events')
-        .update(updatePayload)
-        .eq('id', id)
-        .select()
-        .single();
+      const response = await fetch(`/api/events/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatePayload)
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update event');
+      }
 
+      const result = await response.json();
+      setEvent(result.event);
+      setIsEditing(false);
       setSuccessMessage('Event updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
       
@@ -696,10 +708,22 @@ const EventDetailsPage = ({ params }) => {
                       value={editForm.packagePrice}
                       onChange={(e) => setEditForm({...editForm, packagePrice: e.target.value})}
                       className={styles.formInput}
-                      step="0.01"
                       min="0"
+                      step="0.01"
                     />
                   </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Photo Limit</label>
+                  <input
+                    type="number"
+                    value={editForm.photoLimit}
+                    onChange={(e) => setEditForm({...editForm, photoLimit: e.target.value})}
+                    min="0"
+                    className={styles.formInput}
+                    placeholder="0 for unlimited"
+                  />
                 </div>
 
                 <div className={styles.formGroup}>
