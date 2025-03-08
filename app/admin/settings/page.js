@@ -238,6 +238,27 @@ export default function AdminSettingsPage() {
 
         {/* Pricing Section */}
         <div className={styles.section}>
+          {/* Add Info Box */}
+          <div className={styles.infoBox} style={{
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #e9ecef',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '24px'
+          }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#1e40af' }}>
+              How Pricing Works
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginBottom: '8px' }}>
+              The system automatically calculates the best price for customers based on the package sizes you set:
+            </p>
+            <ul style={{ fontSize: '0.875rem', color: '#4b5563', paddingLeft: '20px', listStyle: 'disc' }}>
+              <li>When customers order magnets, they'll get the most cost-effective combination of packages</li>
+              <li>Example: For 5 magnets, they'll be charged for one 3-magnet package plus two single magnets</li>
+              <li>This ensures customers get the best possible price while maximizing your revenue</li>
+            </ul>
+          </div>
+
           <h2 className={styles.sectionTitle}>Pricing</h2>
           <div className={styles.grid}>
             <div className={styles.formGroup}>
