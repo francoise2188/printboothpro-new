@@ -23,13 +23,14 @@ export default function SubscriptionPage() {
   return (
     <>
       <Head>
-        <title>PrintBooth Pro - Transform Your Events with Photo Magnets</title>
-        <meta name="description" content="PrintBooth Pro - The ultimate 2x2 photo magnet solution for events and markets. Create lasting memories with our professional-grade photo booth software." />
+        <title>PrintBooth Pro - The Tech Behind Tomorrow's Keepsakes</title>
+        <meta name="description" content="PrintBooth Pro - The tech behind tomorrow's keepsakes. Transform your events with instant 2x2 photo magnets, perfect for creating lasting memories at events and markets." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="keywords" content="photo booth, photo magnets, event photography, market photography, professional photo booth" />
-        <meta property="og:title" content="PrintBooth Pro - Transform Your Events with Photo Magnets" />
-        <meta property="og:description" content="Create lasting memories with our professional-grade 2x2 photo magnet solution for events and markets." />
+        <meta name="keywords" content="photo booth, photo magnets, event photography, market photography, professional photo booth, instant photo magnets, keepsakes" />
+        <meta property="og:title" content="PrintBooth Pro - The Tech Behind Tomorrow's Keepsakes" />
+        <meta property="og:description" content="Transform your events with instant photo magnets. Create lasting memories with our professional-grade 2x2 photo magnet solution." />
         <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="PrintBooth Pro" />
       </Head>
 
       <div className={styles.container}>

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './page.module.css';
+import Head from 'next/head';
 
 function HomeContent() {
   const [email, setEmail] = useState('');
@@ -155,6 +156,16 @@ function HomeContent() {
   // If no eventId, show the main homepage
   return (
     <div className={styles.container}>
+      <Head>
+        <title>PrintBooth Pro - The Tech Behind Tomorrow's Keepsakes</title>
+        <meta name="description" content="PrintBooth Pro - The tech behind tomorrow's keepsakes. Transform your events with instant 2x2 photo magnets, perfect for creating lasting memories at events and markets." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="keywords" content="photo booth, photo magnets, event photography, market photography, professional photo booth, instant photo magnets, keepsakes" />
+        <meta property="og:title" content="PrintBooth Pro - The Tech Behind Tomorrow's Keepsakes" />
+        <meta property="og:description" content="Transform your events with instant photo magnets. Create lasting memories with our professional-grade 2x2 photo magnet solution." />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="PrintBooth Pro" />
+      </Head>
       <div className={styles.content}>
         <h1 className={styles.title}>
           PrintBooth Pro
