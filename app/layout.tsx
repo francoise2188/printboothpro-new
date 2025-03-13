@@ -1,6 +1,7 @@
 import './globals.css';
 import { Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
 import { Outfit, Playfair_Display } from 'next/font/google';
 import NavigationWrapper from './components/NavigationWrapper';
 
@@ -40,6 +41,7 @@ export default function RootLayout({
         <NavigationWrapper />
         {children}
         <Toaster position="bottom-center" />
+        <Analytics />
       </body>
     </html>
   );

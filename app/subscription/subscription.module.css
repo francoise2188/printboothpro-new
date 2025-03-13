@@ -281,4 +281,22 @@
   .pricingCard {
     margin: 4rem auto;
   }
+}
+
+.videoSection {
+  width: 100%;
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.videoWrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 1rem;
 } 
