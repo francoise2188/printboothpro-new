@@ -151,7 +151,7 @@ export default function AdminGuidePage() {
   const faqs = [
     {
       question: 'What are the exact photo specifications?',
-      answer: 'Photos are printed at 2x2 inches (50.8mm x 50.8mm) at 300 DPI for professional quality. They are arranged in a 3x3 grid on standard Letter size paper (8.5x11 inches). Landing page backgrounds should be 1920x1080 pixels, and camera overlays should match the photo size of 50.8mm x 50.8mm.'
+      answer: 'Photos are printed at 2x2 inches (50.8mm x 50.8mm) at 300 DPI for professional quality. They are arranged in a 3x3 grid on standard Letter size paper (8.5x11 inches). Landing page backgrounds should be 1080x1920 pixels, and camera overlays should match the photo size of 50.8mm x 50.8mm.'
     },
     {
       question: 'How do I get my PrintNode API key?',
