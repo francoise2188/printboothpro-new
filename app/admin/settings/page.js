@@ -18,7 +18,8 @@ export default function AdminSettingsPage() {
     nine_magnets_price: '0',
     enable_tax: false,
     tax_rate: '0',
-    coupons: []
+    coupons: [],
+    square_location_id: ''
   });
 
   const [message, setMessage] = useState('');
@@ -37,41 +38,42 @@ export default function AdminSettingsPage() {
         return;
       }
 
-      console.log('🎯 Fetching settings for user:', user.id);
+      console.log('🎯 Attempting to fetch settings for user:', user.id);
 
-      // First, try to get existing settings
-      const { data: existingSettings, error: fetchError } = await supabase
+      // Get the most recent settings for this user
+      const { data: settings, error: fetchError } = await supabase
         .from('payment_settings')
-        .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('❌ Error fetching settings:', fetchError);
-        throw fetchError;
+        console.error('❌ Database error:', fetchError);
+        throw new Error('Unable to access payment settings. The system will be available soon.');
       }
 
-      // If we found existing settings, use them
-      if (existingSettings) {
-        console.log('✅ Found existing settings:', existingSettings);
+      // If we found settings, use them
+      if (settings) {
+        console.log('✅ Found existing settings:', settings);
         setSettings({
-          paypal_username: existingSettings.paypal_username || '',
-          venmo_username: existingSettings.venmo_username || '',
-          single_magnet_price: existingSettings.single_magnet_price || '0',
-          three_magnets_price: existingSettings.three_magnets_price || '0',
-          six_magnets_price: existingSettings.six_magnets_price || '0',
-          nine_magnets_price: existingSettings.nine_magnets_price || '0',
-          enable_tax: existingSettings.enable_tax || false,
-          tax_rate: existingSettings.tax_rate || '0',
-          coupons: existingSettings.coupons || []
+          paypal_username: settings.paypal_username || '',
+          venmo_username: settings.venmo_username || '',
+          single_magnet_price: settings.single_magnet_price || '0',
+          three_magnets_price: settings.three_magnets_price || '0',
+          six_magnets_price: settings.six_magnets_price || '0',
+          nine_magnets_price: settings.nine_magnets_price || '0',
+          enable_tax: settings.enable_tax || false,
+          tax_rate: settings.tax_rate || '0',
+          coupons: settings.coupons || [],
+          square_location_id: settings.square_location_id || ''
         });
         return;
       }
 
       // If no settings found, create new ones
-      console.log('⚠️ No settings found, creating new ones');
+      console.log('⚠️ No settings found, creating default settings...');
       const defaultSettings = {
         user_id: user.id,
         paypal_username: '',
@@ -82,36 +84,40 @@ export default function AdminSettingsPage() {
         nine_magnets_price: '0',
         enable_tax: false,
         tax_rate: '0',
-        coupons: []
+        coupons: [],
+        square_location_id: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
-      const { data: newData, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('payment_settings')
-        .insert([defaultSettings])
-        .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons')
-        .single();
+        .insert([defaultSettings]);
 
       if (insertError) {
-        console.error('❌ Insert error:', insertError);
-        throw insertError;
+        console.error('❌ Error creating settings:', insertError);
+        throw new Error('Unable to create payment settings. Please try again later.');
       }
 
-      console.log('✅ Created new settings:', newData);
+      // Set the default values in the form
       setSettings({
-        paypal_username: newData.paypal_username || '',
-        venmo_username: newData.venmo_username || '',
-        single_magnet_price: newData.single_magnet_price || '0',
-        three_magnets_price: newData.three_magnets_price || '0',
-        six_magnets_price: newData.six_magnets_price || '0',
-        nine_magnets_price: newData.nine_magnets_price || '0',
-        enable_tax: newData.enable_tax || false,
-        tax_rate: newData.tax_rate || '0',
-        coupons: newData.coupons || []
+        paypal_username: '',
+        venmo_username: '',
+        single_magnet_price: '0',
+        three_magnets_price: '0',
+        six_magnets_price: '0',
+        nine_magnets_price: '0',
+        enable_tax: false,
+        tax_rate: '0',
+        coupons: [],
+        square_location_id: ''
       });
+      
+      console.log('✅ Created default settings successfully');
       setMessage('');
     } catch (error) {
       console.error('❌ Error in fetchSettings:', error);
-      setMessage(`Error: ${error.message}`);
+      setMessage(error.message || 'An error occurred while loading settings');
     }
   };
 
@@ -137,6 +143,7 @@ export default function AdminSettingsPage() {
         enable_tax: Boolean(settings.enable_tax),
         tax_rate: Number(settings.tax_rate || 0).toString(),
         coupons: settings.coupons || [],
+        square_location_id: settings.square_location_id || '',
         updated_at: new Date().toISOString()
       };
 
@@ -157,7 +164,7 @@ export default function AdminSettingsPage() {
         saveResult = await supabase
           .from('payment_settings')
           .insert([sanitizedSettings])
-          .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons')
+          .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons, square_location_id')
           .single();
       } else {
         console.log('🔄 Updating existing settings with ID:', existingData.id);
@@ -165,7 +172,7 @@ export default function AdminSettingsPage() {
           .from('payment_settings')
           .update(sanitizedSettings)
           .eq('id', existingData.id)  // Use the specific record ID
-          .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons')
+          .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons, square_location_id')
           .single();
       }
 
@@ -185,7 +192,8 @@ export default function AdminSettingsPage() {
         nine_magnets_price: saveResult.data.nine_magnets_price || '0',
         enable_tax: saveResult.data.enable_tax || false,
         tax_rate: saveResult.data.tax_rate || '0',
-        coupons: saveResult.data.coupons || []
+        coupons: saveResult.data.coupons || [],
+        square_location_id: saveResult.data.square_location_id || ''
       });
       setMessage('Settings saved successfully!');
     } catch (error) {
@@ -232,6 +240,17 @@ export default function AdminSettingsPage() {
                 className={styles.input}
                 placeholder="Enter Venmo username"
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Square Location ID</label>
+              <input
+                type="text"
+                value={settings.square_location_id}
+                onChange={(e) => setSettings({...settings, square_location_id: e.target.value})}
+                className={styles.input}
+                placeholder="Enter Square Location ID (optional)"
+              />
+              <p className={styles.helpText}>Find this in your Square Dashboard under Business Settings {'>'} Locations</p>
             </div>
           </div>
         </div>

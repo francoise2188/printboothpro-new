@@ -6,6 +6,18 @@ import styles from './guide.module.css';
 export default function AdminGuidePage() {
   const [activeSection, setActiveSection] = useState('getting-started');
   const [mounted, setMounted] = useState(false);
+  const [settings, setSettings] = useState({
+    paypal_username: '',
+    venmo_username: '',
+    square_location_id: '',
+    single_magnet_price: '0',
+    three_magnets_price: '0',
+    six_magnets_price: '0',
+    nine_magnets_price: '0',
+    enable_tax: false,
+    tax_rate: '0',
+    coupons: []
+  });
 
   useEffect(() => {
     setMounted(true);

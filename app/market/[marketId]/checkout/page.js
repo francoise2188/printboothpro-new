@@ -27,7 +27,8 @@ export default function CheckoutPage() {
     nine_magnets_price: '0',
     enable_tax: false,
     tax_rate: '0',
-    coupons: []
+    coupons: [],
+    square_location_id: ''
   });
 
   const [pricing, setPricing] = useState({
@@ -63,7 +64,7 @@ export default function CheckoutPage() {
         // Get the most recent settings for the market owner
         const { data: ownerSettings, error: settingsError } = await supabase
           .from('payment_settings')
-          .select('paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons')
+          .select('paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons, square_location_id')
           .eq('user_id', marketOwnerId)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -85,7 +86,8 @@ export default function CheckoutPage() {
             nine_magnets_price: '0',
             enable_tax: false,
             tax_rate: '0',
-            coupons: []
+            coupons: [],
+            square_location_id: ''
           });
           return;
         }
@@ -100,7 +102,8 @@ export default function CheckoutPage() {
           nine_magnets_price: ownerSettings.nine_magnets_price || '0',
           enable_tax: ownerSettings.enable_tax || false,
           tax_rate: ownerSettings.tax_rate || '0',
-          coupons: ownerSettings.coupons || []
+          coupons: ownerSettings.coupons || [],
+          square_location_id: ownerSettings.square_location_id || ''
         });
       } catch (error) {
         console.error('Error in fetchSettings:', error);
@@ -114,7 +117,8 @@ export default function CheckoutPage() {
           nine_magnets_price: '0',
           enable_tax: false,
           tax_rate: '0',
-          coupons: []
+          coupons: [],
+          square_location_id: ''
         });
       }
     }
@@ -485,7 +489,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Payment Buttons */}
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4 mt-6">
             <button
               onClick={handlePayPal}
               disabled={pricing.total <= 0}
@@ -520,6 +524,25 @@ export default function CheckoutPage() {
             >
               Pay with Venmo
             </button>
+            {settings.square_location_id && (
+              <button
+                onClick={() => window.location.href = `https://square.link/u/${settings.square_location_id}/${pricing.total.toFixed(2)}`}
+                disabled={pricing.total <= 0}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  backgroundColor: '#006aff',
+                  color: 'var(--text-light)',
+                  borderRadius: '8px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  opacity: pricing.total <= 0 ? '0.5' : '1',
+                  fontSize: '1rem'
+                }}
+              >
+                Pay with Card (Square)
+              </button>
+            )}
           </div>
         </div>
       </div>
