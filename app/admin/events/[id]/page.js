@@ -56,6 +56,15 @@ const formatTimeToStandard = (time) => {
   }
 };
 
+const convertFileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 const EventDetailsPage = ({ params }) => {
   const router = useRouter();
   const resolvedParams = use(params);
@@ -197,6 +206,7 @@ const EventDetailsPage = ({ params }) => {
   const handleSave = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Convert local dates to UTC for storage
       const localEventDate = new Date(editForm.eventDate);
@@ -218,10 +228,31 @@ const EventDetailsPage = ({ params }) => {
         package: editForm.package,
         package_price: parseFloat(editForm.packagePrice) || 0,
         photo_limit: parseInt(editForm.photoLimit) || 0,
-        status: editForm.status
+        status: editForm.status,
+        // Initialize with existing values
+        landing_background: event.design_settings?.[0]?.landing_background || null,
+        frame_overlay: event.design_settings?.[0]?.frame_overlay || null
       };
 
-      console.log('Saving event with payload:', updatePayload);
+      // Handle new landing image
+      if (editForm.landingImage instanceof File) {
+        console.log('Converting landing image to base64...');
+        const base64Landing = await convertFileToBase64(editForm.landingImage);
+        updatePayload.landing_background = base64Landing;
+      }
+      
+      // Handle new frame overlay
+      if (editForm.frameOverlay instanceof File) {
+        console.log('Converting frame overlay to base64...');
+        const base64Frame = await convertFileToBase64(editForm.frameOverlay);
+        updatePayload.frame_overlay = base64Frame;
+      }
+
+      console.log('Saving event with payload:', {
+        ...updatePayload,
+        landing_background: updatePayload.landing_background ? '[BASE64_DATA]' : null,
+        frame_overlay: updatePayload.frame_overlay ? '[BASE64_DATA]' : null
+      });
 
       const response = await fetch(`/api/events/${id}`, {
         method: 'PUT',
@@ -237,9 +268,19 @@ const EventDetailsPage = ({ params }) => {
       }
 
       const result = await response.json();
+      
+      // Update the local state with the new data
       setEvent(result.event);
       setIsEditing(false);
       setSuccessMessage('Event updated successfully!');
+      
+      // Clear the file inputs
+      setEditForm(prev => ({
+        ...prev,
+        landingImage: null,
+        frameOverlay: null
+      }));
+
       setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (error) {
@@ -284,18 +325,32 @@ const EventDetailsPage = ({ params }) => {
   const handleLandingImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setLandingPageImage(file);
-      // Create a preview URL for the selected file
-      setPreviewLandingImage(URL.createObjectURL(file));
+      setEditForm(prev => ({
+        ...prev,
+        landingImage: file
+      }));
+      // Create a temporary URL for preview
+      const tempUrl = URL.createObjectURL(file);
+      setEvent(prev => ({
+        ...prev,
+        landing_background: tempUrl
+      }));
     }
   };
 
   const handleFrameOverlayChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setCameraOverlay(file);
-      // Create a preview URL for the selected file
-      setPreviewFrameOverlay(URL.createObjectURL(file));
+      setEditForm(prev => ({
+        ...prev,
+        frameOverlay: file
+      }));
+      // Create a temporary URL for preview
+      const tempUrl = URL.createObjectURL(file);
+      setEvent(prev => ({
+        ...prev,
+        frame_overlay: tempUrl
+      }));
     }
   };
 

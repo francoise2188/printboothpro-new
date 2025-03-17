@@ -84,47 +84,59 @@ export async function PUT(request, { params }) {
 
     // Then handle design settings if provided
     if (body.landing_background || body.frame_overlay) {
+      console.log('Updating design settings:', {
+        landing_background: !!body.landing_background,
+        frame_overlay: !!body.frame_overlay
+      });
+
+      // First check if design settings exist
+      const { data: existingDesign } = await supabaseServer
+        .from('design_settings')
+        .select('*')
+        .eq('event_id', id)
+        .single();
+
       const designData = {
         event_id: id,
-        landing_background: body.landing_background,
-        frame_overlay: body.frame_overlay,
+        landing_background: body.landing_background || null,
+        frame_overlay: body.frame_overlay || null,
         updated_at: new Date().toISOString()
       };
 
-      const { error: designError } = await supabaseServer
-        .from('design_settings')
-        .upsert(designData)
-        .eq('event_id', id);
+      let designResult;
+      if (existingDesign) {
+        // Update existing design settings
+        designResult = await supabaseServer
+          .from('design_settings')
+          .update(designData)
+          .eq('event_id', id)
+          .select()
+          .single();
+      } else {
+        // Insert new design settings
+        designResult = await supabaseServer
+          .from('design_settings')
+          .insert(designData)
+          .select()
+          .single();
+      }
 
-      if (designError) {
-        console.error('Error updating design settings:', designError);
+      if (designResult.error) {
+        console.error('Error updating design settings:', designResult.error);
         return NextResponse.json(
           { error: 'Failed to update design settings' },
           { status: 500 }
         );
       }
+
+      // Add design settings to the response
+      eventData.design_settings = [designResult.data];
     }
 
-    // Fetch the updated event with design settings
-    const { data: updatedEvent, error: fetchError } = await supabaseServer
-      .from('events')
-      .select(`
-        *,
-        design_settings (*)
-      `)
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .single();
-
-    if (fetchError) {
-      console.error('Error fetching updated event:', fetchError);
-      return NextResponse.json(
-        { error: 'Failed to fetch updated event' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true, event: updatedEvent });
+    return NextResponse.json({ 
+      event: eventData,
+      message: 'Event updated successfully' 
+    });
   } catch (error) {
     console.error('Error in PUT:', error);
     return NextResponse.json(
