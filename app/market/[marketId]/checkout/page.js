@@ -526,8 +526,16 @@ export default function CheckoutPage() {
             </button>
             {settings.square_location_id && (
               <button
-                onClick={() => window.location.href = `https://square.link/u/${settings.square_location_id}/${pricing.total.toFixed(2)}`}
-                disabled={pricing.total <= 0}
+                onClick={() => {
+                  if (settings.square_location_id) {
+                    // Create a proper Square payment link
+                    const amount = Math.round(pricing.total * 100); // Convert to cents
+                    window.location.href = `https://checkout.square.site/${settings.square_location_id}?l=en&amount=${amount}`;
+                  } else {
+                    alert('Square payments are not configured. Please contact the administrator.');
+                  }
+                }}
+                disabled={pricing.total <= 0 || !settings.square_location_id}
                 style={{
                   width: '100%',
                   padding: '0.875rem 1rem',
@@ -536,7 +544,7 @@ export default function CheckoutPage() {
                   borderRadius: '8px',
                   fontWeight: '500',
                   transition: 'all 0.2s ease',
-                  opacity: pricing.total <= 0 ? '0.5' : '1',
+                  opacity: (pricing.total <= 0 || !settings.square_location_id) ? '0.5' : '1',
                   fontSize: '1rem'
                 }}
               >
