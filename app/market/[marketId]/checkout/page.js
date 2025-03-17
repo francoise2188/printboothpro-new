@@ -539,7 +539,7 @@ export default function CheckoutPage() {
                 style={{
                   width: '100%',
                   padding: '0.875rem 1rem',
-                  backgroundColor: '#006aff',
+                  backgroundColor: 'var(--secondary-sage)',
                   color: 'var(--text-light)',
                   borderRadius: '8px',
                   fontWeight: '500',
