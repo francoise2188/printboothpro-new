@@ -228,30 +228,55 @@ const EventDetailsPage = ({ params }) => {
         package: editForm.package,
         package_price: parseFloat(editForm.packagePrice) || 0,
         photo_limit: parseInt(editForm.photoLimit) || 0,
-        status: editForm.status,
-        // Initialize with existing values
-        landing_background: event.design_settings?.[0]?.landing_background || null,
-        frame_overlay: event.design_settings?.[0]?.frame_overlay || null
+        status: editForm.status
       };
 
-      // Handle new landing image
-      if (editForm.landingImage instanceof File) {
-        console.log('Converting landing image to base64...');
-        const base64Landing = await convertFileToBase64(editForm.landingImage);
-        updatePayload.landing_background = base64Landing;
-      }
-      
-      // Handle new frame overlay
-      if (editForm.frameOverlay instanceof File) {
-        console.log('Converting frame overlay to base64...');
-        const base64Frame = await convertFileToBase64(editForm.frameOverlay);
-        updatePayload.frame_overlay = base64Frame;
+      // Only include design settings if we have new images or existing ones
+      if (editForm.landingImage instanceof File || editForm.frameOverlay instanceof File || 
+          event.design_settings?.[0]?.landing_background || event.design_settings?.[0]?.frame_overlay) {
+        
+        updatePayload.landing_background = event.design_settings?.[0]?.landing_background || null;
+        updatePayload.frame_overlay = event.design_settings?.[0]?.frame_overlay || null;
+
+        // Handle new landing image
+        if (editForm.landingImage instanceof File) {
+          console.log('Converting landing image to base64...', {
+            fileName: editForm.landingImage.name,
+            fileSize: editForm.landingImage.size
+          });
+          
+          // Check file size (max 5MB)
+          if (editForm.landingImage.size > 5 * 1024 * 1024) {
+            throw new Error('Landing image must be less than 5MB');
+          }
+          
+          const base64Landing = await convertFileToBase64(editForm.landingImage);
+          updatePayload.landing_background = base64Landing;
+        }
+        
+        // Handle new frame overlay
+        if (editForm.frameOverlay instanceof File) {
+          console.log('Converting frame overlay to base64...', {
+            fileName: editForm.frameOverlay.name,
+            fileSize: editForm.frameOverlay.size
+          });
+          
+          // Check file size (max 5MB)
+          if (editForm.frameOverlay.size > 5 * 1024 * 1024) {
+            throw new Error('Frame overlay must be less than 5MB');
+          }
+          
+          const base64Frame = await convertFileToBase64(editForm.frameOverlay);
+          updatePayload.frame_overlay = base64Frame;
+        }
       }
 
       console.log('Saving event with payload:', {
         ...updatePayload,
-        landing_background: updatePayload.landing_background ? '[BASE64_DATA]' : null,
-        frame_overlay: updatePayload.frame_overlay ? '[BASE64_DATA]' : null
+        hasLandingBackground: !!updatePayload.landing_background,
+        hasFrameOverlay: !!updatePayload.frame_overlay,
+        landingBackgroundSize: updatePayload.landing_background?.length,
+        frameOverlaySize: updatePayload.frame_overlay?.length
       });
 
       const response = await fetch(`/api/events/${id}`, {
@@ -262,12 +287,22 @@ const EventDetailsPage = ({ params }) => {
         body: JSON.stringify(updatePayload)
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update event');
+        console.error('Server error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          result
+        });
+        throw new Error(result.error || result.details || 'Failed to update event');
       }
 
-      const result = await response.json();
+      console.log('Update successful:', {
+        hasDesignSettings: !!result.event.design_settings?.length,
+        designSettingsCount: result.event.design_settings?.length,
+        message: result.message
+      });
       
       // Update the local state with the new data
       setEvent(result.event);

@@ -16,7 +16,7 @@ export async function PUT(request, { params }) {
     const body = await request.json();
     
     // Get the authenticated user using cookies from the request
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabaseServer = createServerComponentClient({ cookies: () => cookieStore });
     const { data: { user }, error: userError } = await supabaseServer.auth.getUser();
     
@@ -83,56 +83,96 @@ export async function PUT(request, { params }) {
     }
 
     // Then handle design settings if provided
-    if (body.landing_background || body.frame_overlay) {
-      console.log('Updating design settings:', {
-        landing_background: !!body.landing_background,
-        frame_overlay: !!body.frame_overlay
-      });
-
-      // First check if design settings exist
-      const { data: existingDesign } = await supabaseServer
-        .from('design_settings')
-        .select('*')
-        .eq('event_id', id)
-        .single();
-
-      const designData = {
-        event_id: id,
-        landing_background: body.landing_background || null,
-        frame_overlay: body.frame_overlay || null,
-        updated_at: new Date().toISOString()
-      };
-
-      let designResult;
-      if (existingDesign) {
-        // Update existing design settings
-        designResult = await supabaseServer
+    if (body.landing_background !== undefined || body.frame_overlay !== undefined) {
+      try {
+        // First check if design settings exist
+        const { data: existingDesigns, error: checkError } = await supabaseServer
           .from('design_settings')
-          .update(designData)
-          .eq('event_id', id)
-          .select()
-          .single();
-      } else {
-        // Insert new design settings
-        designResult = await supabaseServer
-          .from('design_settings')
-          .insert(designData)
-          .select()
-          .single();
-      }
+          .select('id')
+          .eq('event_id', id);
 
-      if (designResult.error) {
-        console.error('Error updating design settings:', designResult.error);
+        if (checkError) {
+          console.error('Error checking existing design settings:', {
+            error: checkError,
+            message: checkError.message,
+            details: checkError.details
+          });
+          throw checkError;
+        }
+
+        const existingDesign = existingDesigns?.[0];
+
+        console.log('Existing design check:', {
+          exists: !!existingDesign,
+          id: existingDesign?.id
+        });
+
+        const designData = {
+          event_id: id,
+          landing_background: body.landing_background,
+          frame_overlay: body.frame_overlay,
+          updated_at: new Date().toISOString()
+        };
+
+        let designResult;
+        if (existingDesign) {
+          // Update existing design settings
+          console.log('Updating existing design settings for ID:', existingDesign.id);
+          designResult = await supabaseServer
+            .from('design_settings')
+            .update(designData)
+            .eq('id', existingDesign.id)
+            .select()
+            .single();
+        } else {
+          // Insert new design settings
+          console.log('Inserting new design settings for event:', id);
+          designResult = await supabaseServer
+            .from('design_settings')
+            .insert([designData])
+            .select()
+            .single();
+        }
+
+        if (designResult.error) {
+          console.error('Error in design settings operation:', {
+            operation: existingDesign ? 'update' : 'insert',
+            error: designResult.error,
+            message: designResult.error.message,
+            details: designResult.error.details,
+            code: designResult.error.code,
+            hint: designResult.error.hint
+          });
+          throw designResult.error;
+        }
+
+        // Fetch the updated event with design settings
+        const { data: updatedEvent, error: fetchError } = await supabaseServer
+          .from('events')
+          .select('*, design_settings(*)')
+          .eq('id', id)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching updated event:', fetchError);
+          throw fetchError;
+        }
+
+        return NextResponse.json({ 
+          event: updatedEvent,
+          message: 'Event updated successfully' 
+        });
+
+      } catch (error) {
+        console.error('Error in design settings update:', error);
         return NextResponse.json(
-          { error: 'Failed to update design settings' },
+          { error: 'Failed to update design settings', details: error.message },
           { status: 500 }
         );
       }
-
-      // Add design settings to the response
-      eventData.design_settings = [designResult.data];
     }
 
+    // If no design settings were updated, return the event as is
     return NextResponse.json({ 
       event: eventData,
       message: 'Event updated successfully' 
@@ -140,7 +180,7 @@ export async function PUT(request, { params }) {
   } catch (error) {
     console.error('Error in PUT:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
@@ -150,10 +190,9 @@ export async function PUT(request, { params }) {
 export async function GET(request, { params }) {
   try {
     const { id } = params;
-    console.log('Fetching event with ID:', id);
     
     // Get the authenticated user using cookies from the request
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabaseServer = createServerComponentClient({ cookies: () => cookieStore });
     
     // Check if user is authenticated
@@ -168,7 +207,6 @@ export async function GET(request, { params }) {
     }
 
     if (!session) {
-      console.error('No active session found');
       return NextResponse.json(
         { error: 'No active session' },
         { status: 401 }
@@ -177,31 +215,18 @@ export async function GET(request, { params }) {
 
     const { data: { user }, error: userError } = await supabaseServer.auth.getUser();
     
-    if (userError) {
+    if (userError || !user) {
       console.error('Authentication error:', userError);
       return NextResponse.json(
-        { error: 'Authentication failed', details: userError.message },
+        { error: 'Authentication failed' },
         { status: 401 }
       );
     }
-
-    if (!user) {
-      console.error('No authenticated user found');
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 }
-      );
-    }
-    
-    console.log('Authenticated user ID:', user.id);
     
     // Fetch the event with design settings and user_id check
     const { data: event, error: eventError } = await supabaseServer
       .from('events')
-      .select(`
-        *,
-        design_settings (*)
-      `)
+      .select('*, design_settings(*)')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
@@ -215,14 +240,12 @@ export async function GET(request, { params }) {
     }
 
     if (!event) {
-      console.error('Event not found or access denied for ID:', id);
       return NextResponse.json(
         { error: 'Event not found or access denied' },
         { status: 404 }
       );
     }
 
-    console.log('Successfully fetched event:', event.id);
     return NextResponse.json(event);
   } catch (error) {
     console.error('Unexpected error in GET:', error);
