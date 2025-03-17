@@ -59,7 +59,9 @@ export default function EventBoothCameraV2({ eventId }) {
           .from('design_settings')
           .select('frame_overlay')
           .eq('event_id', eventId)
-          .maybeSingle();
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
 
         if (error) {
           console.error('Error fetching frame overlay:', error);
