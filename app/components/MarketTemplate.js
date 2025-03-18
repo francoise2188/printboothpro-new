@@ -687,7 +687,7 @@ export default function MarketTemplate({ marketId }) {
                       position: 'absolute',
                       width: '50.8mm',
                       textAlign: 'center',
-                      top: 'calc(9.1mm + 52.8mm)',
+                      top: 'calc(9.1mm + 51mm)',
                       left: '9.1mm',
                       fontSize: '8pt',
                       color: 'black',
@@ -844,7 +844,7 @@ export default function MarketTemplate({ marketId }) {
             position: absolute !important;
             width: 50.8mm !important;
             text-align: center !important;
-            top: calc(9.1mm + 52.8mm) !important;
+            top: calc(9.1mm + 51mm) !important;
             left: 9.1mm !important;
             font-size: 8pt !important;
             color: black !important;
