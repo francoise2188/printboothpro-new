@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import Cropper from 'react-easy-crop';
 import styles from '../admin/markets/template/template.module.css';
 import { QRCodeSVG } from 'qrcode.react';
+import { processForPrint } from '../../lib/imageProcessing';
 
 export default function MarketTemplate({ marketId }) {
   console.log('🎯 MarketTemplate Component - Received marketId:', marketId);
@@ -415,7 +416,7 @@ export default function MarketTemplate({ marketId }) {
     }
   };
 
-  // Update print handler to check for unsaved changes
+  // Update print handler to process photos before printing
   const handlePrint = async () => {
     try {
       // Check for any unsaved changes
@@ -433,14 +434,28 @@ export default function MarketTemplate({ marketId }) {
         }
       }
 
-      const photoIds = template
+      // Process all photos before printing
+      const photoPromises = template
         .filter(photo => photo !== null)
-        .map(photo => photo.id);
+        .map(async (photo) => {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}`);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            const base64 = await new Promise((resolve) => {
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+            
+            // Process the photo for optimal print quality
+            return await processForPrint(base64);
+          } catch (error) {
+            console.error('Error processing photo for print:', error);
+            return null;
+          }
+        });
 
-      if (photoIds.length === 0) {
-        toast.error('No photos to print');
-        return;
-      }
+      await Promise.all(photoPromises);
 
       // Show print dialog
       window.print();
@@ -450,6 +465,10 @@ export default function MarketTemplate({ marketId }) {
       
       if (didPrint) {
         // Only update database if user confirms they printed
+        const photoIds = template
+          .filter(photo => photo !== null)
+          .map(photo => photo.id);
+
         const { error: updateError } = await supabase
           .from('market_photos')
           .update({ 

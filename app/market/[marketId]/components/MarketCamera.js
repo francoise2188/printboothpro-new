@@ -5,6 +5,7 @@ import { supabase } from '../../../../lib/supabase';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '../../../../lib/AuthContext';
+import { processForPrint, processForDisplay } from '../../../../lib/imageProcessing';
 
 // Sharing functions
 const shareToInstagram = async (photoUrl) => {
@@ -204,11 +205,18 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(videoRef.current, 0, 0);
       
-      // Convert to high quality JPEG
-      const photoUrl = canvas.toDataURL('image/jpeg', 1.0);
-      console.log('Photo captured, size:', Math.round(photoUrl.length / 1024), 'KB');
+      // Convert to base64 first
+      const rawPhotoUrl = canvas.toDataURL('image/jpeg', 1.0);
       
-      setPhoto(photoUrl);
+      // Process the photo for display (less saturation adjustment)
+      const displayPhoto = await processForDisplay(rawPhotoUrl);
+      
+      // Store both the display version and the raw version
+      setPhoto({
+        display: displayPhoto,
+        raw: rawPhotoUrl
+      });
+      
       setCountdownNumber(null);
       setPhotosTaken(prev => prev + 1);
     } catch (error) {
@@ -222,13 +230,16 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
   };
 
   const savePhoto = async () => {
-    if (!photo || !user) return;
+    if (!photo?.raw || !user) return;
 
     try {
       console.log('Starting save process');
 
+      // Process the photo for printing
+      const processedPhoto = await processForPrint(photo.raw);
+
       // Convert base64 to blob
-      const base64Data = photo.replace(/^data:image\/\w+;base64,/, '');
+      const base64Data = processedPhoto.replace(/^data:image\/\w+;base64,/, '');
       const photoBlob = Buffer.from(base64Data, 'base64');
 
       // Generate unique filename with market_camera path
@@ -330,7 +341,7 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
         {photo ? (
           <div style={{ position: 'relative', height: '100%', width: '100%' }}>
             <img 
-              src={photo} 
+              src={photo.display} 
               alt="Captured photo"
               style={{
                 width: '100%',

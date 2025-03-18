@@ -36,6 +36,7 @@ export default function TemplateGrid({ selectedEventId }) {
   const [currentPrintJob, setCurrentPrintJob] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [loadedImages, setLoadedImages] = useState(new Set());
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Keep track of the last processed photo ID
   const [lastProcessedPhotoId, setLastProcessedPhotoId] = useState(null);
@@ -1315,6 +1316,105 @@ export default function TemplateGrid({ selectedEventId }) {
     }
   };
 
+  // Add Print Preview Modal
+  if (showPrintPreview) {
+    return (
+      <div className={styles.modal}>
+        <div className={styles.modalContent} style={{ backgroundColor: 'white', padding: '2rem' }}>
+          <div className={styles.modalHeader}>
+            <div>
+              <h3 className={styles.modalTitle}>Print Preview</h3>
+              <p className={styles.modalSubtitle}>This is how your template will look when printed</p>
+            </div>
+            <button
+              onClick={() => setShowPrintPreview(false)}
+              className={styles.closeButton}
+            >
+              <span className="text-2xl">×</span>
+            </button>
+          </div>
+
+          <div style={{ 
+            transform: 'scale(0.8)',
+            transformOrigin: 'top center',
+            backgroundColor: 'white',
+            padding: '1in',
+            width: '8.5in',
+            height: '11in',
+            margin: '0 auto',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '8.151in',
+              height: '8.151in',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 2.717in)',
+              gap: '0px'
+            }}>
+              {template.map((photo, index) => (
+                <div 
+                  key={index}
+                  style={{
+                    width: '2.717in',
+                    height: '2.717in',
+                    position: 'relative',
+                    border: '1px solid #eee'
+                  }}
+                >
+                  {photo && (
+                    <>
+                      <img 
+                        src={photo.url}
+                        alt={`Print Preview ${index + 1}`}
+                        style={{
+                          width: '2in',
+                          height: '2in',
+                          position: 'absolute',
+                          top: '0.3585in',
+                          left: '0.3585in',
+                          objectFit: 'cover',
+                          zIndex: 0
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        width: '2in',
+                        textAlign: 'center',
+                        bottom: '0.15in',
+                        left: '0.3585in',
+                        fontSize: '8pt',
+                        color: 'black',
+                        transform: 'rotate(180deg)'
+                      }}>
+                        {websiteUrl}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.modalFooter}>
+            <div className={styles.footerButtons}>
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className={styles.secondaryButton}
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Add error boundary
   if (error) {
     console.error('Template Error:', error);
@@ -1349,6 +1449,12 @@ export default function TemplateGrid({ selectedEventId }) {
           </div>
         </div>
         <div className={styles.controls}>
+          <button
+            onClick={() => setShowPrintPreview(true)}
+            className={styles.secondaryButton}
+          >
+            Preview Print Layout
+          </button>
           <button
             onClick={cleanupTemplateState}
             className={styles.secondaryButton}
@@ -1429,7 +1535,7 @@ export default function TemplateGrid({ selectedEventId }) {
                   position: 'relative'
                 }}
               >
-                {photo ? (
+                {photo && (
                   <>
                     <div className={styles.photoContainer}>
                       <img 
@@ -1486,10 +1592,6 @@ export default function TemplateGrid({ selectedEventId }) {
                       {websiteUrl}
                     </div>
                   </>
-                ) : (
-                  <div className={styles.emptySlot}>
-                    Empty Slot {index + 1}
-                  </div>
                 )}
               </div>
             ))}
@@ -1511,56 +1613,6 @@ export default function TemplateGrid({ selectedEventId }) {
                 }}
               >
                 {websiteUrl}
-              </div>
-            ))}
-          </div>
-          
-          {/* Print-only grid */}
-          <div 
-            className="print-only-grid"
-            style={{ display: 'none' }}
-          >
-            {template.map((photo, index) => (
-              <div 
-                key={`print-${index}`}
-                className="print-cell"
-                style={{
-                  width: '2.717in',
-                  height: '2.717in',
-                  position: 'relative',
-                  pageBreakInside: 'avoid'
-                }}
-              >
-                {photo && (
-                  <>
-                    <img 
-                      src={photo.url} 
-                      alt={`Print Photo ${index + 1}`}
-                      style={{
-                        width: '2in',
-                        height: '2in',
-                        position: 'absolute',
-                        top: '0.3585in',
-                        left: '0.3585in',
-                        objectFit: 'cover'
-                      }}
-                    />
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        width: '2in',
-                        textAlign: 'center',
-                        bottom: '0.15in',
-                        left: '0.3585in',
-                        fontSize: '8pt',
-                        color: 'black',
-                        transform: 'rotate(180deg)'
-                      }}
-                    >
-                      {websiteUrl}
-                    </div>
-                  </>
-                )}
               </div>
             ))}
           </div>
@@ -1632,7 +1684,7 @@ export default function TemplateGrid({ selectedEventId }) {
         </div>
       )}
 
-      <style>{`
+      <style jsx global>{`
         @media print {
           @page { 
             size: 8.5in 11in;
@@ -1683,6 +1735,7 @@ export default function TemplateGrid({ selectedEventId }) {
             height: 2.717in !important;
             position: relative !important;
             border: none !important;
+            overflow: visible !important;
           }
           
           .print-image {
@@ -1692,6 +1745,7 @@ export default function TemplateGrid({ selectedEventId }) {
             top: 0.3585in !important;
             left: 0.3585in !important;
             object-fit: cover !important;
+            z-index: 0 !important;
           }
         }
       `}</style>
