@@ -445,6 +445,19 @@ export default function OrderTemplate({ params }) {
     zIndex: 10
   };
 
+  // Add the larger cutting guide for printing
+  const printCuttingGuideStyle = {
+    position: 'absolute',
+    pointerEvents: 'none',
+    border: '1px dashed #000',  // Black dashed border for printing
+    width: '69mm',  // 2.717 inches in mm
+    height: '69mm', // 2.717 inches in mm
+    top: '0',
+    left: '0',
+    zIndex: 11,
+    display: 'none'  // Hidden by default, shown only when printing
+  };
+
   // Update cell controls style to span full width
   const cellControlsStyle = {
     position: 'absolute',
@@ -599,6 +612,9 @@ export default function OrderTemplate({ params }) {
 
               <div style={cuttingGuideStyle} className="cutting-guide" />
               
+              {/* Add the larger printing cutting guide */}
+              <div style={printCuttingGuideStyle} className="print-cutting-guide" />
+              
               {/* Cell Controls */}
               <div style={cellControlsStyle} className="print:hidden">
                 {photo ? (
@@ -743,7 +759,8 @@ export default function OrderTemplate({ params }) {
           #printArea .reactEasyCrop_Image,
           #printArea .order-code,
           #printArea .website-url,
-          #printArea .cutting-guide {
+          #printArea .cutting-guide,
+          #printArea .print-cutting-guide {
             visibility: visible !important;
           }
 
@@ -803,6 +820,19 @@ export default function OrderTemplate({ params }) {
             top: 9.1mm !important;
             left: 9.1mm !important;
             z-index: 10 !important;
+          }
+
+          /* Style the larger print cutting guide */
+          .print-cutting-guide {
+            visibility: visible !important;
+            display: block !important;
+            position: absolute !important;
+            border: 1px dashed #000 !important;
+            width: 69mm !important;  /* 2.717 inches in mm */
+            height: 69mm !important; /* 2.717 inches in mm */
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 11 !important;
           }
 
           /* Style the order code */

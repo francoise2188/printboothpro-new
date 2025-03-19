@@ -310,4 +310,24 @@
 .checkbox:checked {
   border-color: #2563eb;
   background-color: #2563eb;
+}
+
+@media print {
+  .cutting-guide {
+    border: 2px solid #bbb !important;
+    width: 2.717in !important;
+    height: 2.717in !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 999 !important;
+    display: block !important;
+    visibility: visible !important;
+    pointer-events: none !important;
+    page-break-inside: avoid !important;
+    background-color: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 } 

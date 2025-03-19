@@ -9,19 +9,19 @@ export async function POST(request) {
     const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
     const inputBuffer = Buffer.from(base64Data, 'base64');
 
-    // Process settings - aggressive saturation reduction for glossy paper
+    // Process settings - restored to normal now that printer settings are correct
     const settings = type === 'print' ? {
-      saturation: 0.4,    // Reduce saturation by 60% (aggressive reduction for glossy paper)
-      gamma: 1.3,         // Further increase gamma to lighten midtones
-      quality: 95,        // Keep high quality for printing
-      brightness: 0.9,    // Further reduce brightness for glossy paper
-      contrast: 1.0       // Neutral contrast
+      saturation: 1.0,    // Normal saturation
+      gamma: 1.0,         // Normal gamma
+      quality: 95,        // High quality for printing
+      brightness: 1.0,    // Normal brightness
+      contrast: 1.0       // Normal contrast
     } : {
-      saturation: 0.9,    // Display settings remain the same
+      saturation: 1.0,    // Normal display settings
       gamma: 1.0,
       quality: 85,
       brightness: 1.0,
-      contrast: 1.05
+      contrast: 1.0
     };
 
     // Process image

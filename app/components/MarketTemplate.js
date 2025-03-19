@@ -4,7 +4,6 @@ import { toast } from 'react-hot-toast';
 import Cropper from 'react-easy-crop';
 import styles from '../admin/markets/template/template.module.css';
 import { QRCodeSVG } from 'qrcode.react';
-import { processForPrint } from '../../lib/imageProcessing';
 
 export default function MarketTemplate({ marketId }) {
   console.log('🎯 MarketTemplate Component - Received marketId:', marketId);
@@ -105,12 +104,13 @@ export default function MarketTemplate({ marketId }) {
   const cuttingGuideStyle = {
     position: 'absolute',
     pointerEvents: 'none',
-    border: '1px dashed #ddd',
-    width: '52.8mm',  // 50.8mm + 2mm for the border
-    height: '52.8mm', // 50.8mm + 2mm for the border
-    top: '8.1mm',    // 9.1mm - 1mm to account for border
-    left: '8.1mm',   // 9.1mm - 1mm to account for border
-    zIndex: 1
+    border: '2px solid #bbb',  // Changed from #999 to #bbb for even lighter gray
+    width: '69mm',     // 2.717 inches
+    height: '69mm',    // 2.717 inches
+    top: '0',
+    left: '0',
+    zIndex: 1,
+    boxSizing: 'border-box'
   };
 
   const cellControlsStyle = {
@@ -416,7 +416,7 @@ export default function MarketTemplate({ marketId }) {
     }
   };
 
-  // Update print handler to process photos before printing
+  // Update print handler to check for unsaved changes
   const handlePrint = async () => {
     try {
       // Check for any unsaved changes
@@ -434,28 +434,14 @@ export default function MarketTemplate({ marketId }) {
         }
       }
 
-      // Process all photos before printing
-      const photoPromises = template
+      const photoIds = template
         .filter(photo => photo !== null)
-        .map(async (photo) => {
-          try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}`);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            const base64 = await new Promise((resolve) => {
-              reader.onloadend = () => resolve(reader.result);
-              reader.readAsDataURL(blob);
-            });
-            
-            // Process the photo for optimal print quality
-            return await processForPrint(base64);
-          } catch (error) {
-            console.error('Error processing photo for print:', error);
-            return null;
-          }
-        });
+        .map(photo => photo.id);
 
-      await Promise.all(photoPromises);
+      if (photoIds.length === 0) {
+        toast.error('No photos to print');
+        return;
+      }
 
       // Show print dialog
       window.print();
@@ -465,10 +451,6 @@ export default function MarketTemplate({ marketId }) {
       
       if (didPrint) {
         // Only update database if user confirms they printed
-        const photoIds = template
-          .filter(photo => photo !== null)
-          .map(photo => photo.id);
-
         const { error: updateError } = await supabase
           .from('market_photos')
           .update({ 
@@ -773,20 +755,21 @@ export default function MarketTemplate({ marketId }) {
             visibility: visible !important;
           }
 
-          /* Hide all controls and non-essential elements */
-          button,
-          input,
-          .empty-slot,
-          [class*="controls"],
-          .text-gray-400,
-          .print:hidden,
-          .reactEasyCrop_CropArea,
-          .reactEasyCrop_Container > *:not(.reactEasyCrop_Image):not(.print-overlay) {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
+          /* Ensure cutting guides print clearly */
+          .cutting-guide {
+            border: 2px solid #bbb !important;  // Changed from #999 to #bbb for even lighter gray
+            visibility: visible !important;
+            display: block !important;
+            width: 69mm !important;
+            height: 69mm !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            box-sizing: border-box !important;
+            z-index: 1 !important;
           }
 
+          /* Keep all other print styles unchanged */
           #printArea {
             position: fixed !important;
             left: 50% !important;
@@ -815,77 +798,7 @@ export default function MarketTemplate({ marketId }) {
             padding: 0 !important;
             border: none !important;
             background-color: white !important;
-            overflow: hidden !important;
-          }
-
-          .reactEasyCrop_Container {
-            width: 50.8mm !important;
-            height: 50.8mm !important;
-            position: absolute !important;
-            top: 9.1mm !important;
-            left: 9.1mm !important;
-            background: white !important;
-            overflow: hidden !important;
-          }
-
-          .reactEasyCrop_Image {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
-            transform-origin: center !important;
-          }
-
-          .print-overlay {
-            width: 50.8mm !important;
-            height: 50.8mm !important;
-            position: absolute !important;
-            top: 9.1mm !important;
-            left: 9.1mm !important;
-            object-fit: contain !important;
-            z-index: 5 !important;
-          }
-
-          .cutting-guide {
-            visibility: visible !important;
-            display: block !important;
-            position: absolute !important;
-            border: 1px dashed #ddd !important;
-            width: 52.8mm !important;
-            height: 52.8mm !important;
-            top: 8.1mm !important;
-            left: 8.1mm !important;
-            z-index: 1 !important;
-          }
-
-          .website-url {
-            visibility: visible !important;
-            display: block !important;
-            position: absolute !important;
-            width: 50.8mm !important;
-            text-align: center !important;
-            top: calc(9.1mm + 51mm) !important;
-            left: 9.1mm !important;
-            font-size: 8pt !important;
-            color: black !important;
-            font-family: Arial, sans-serif !important;
-            transform: rotate(180deg) !important;
-            z-index: 20 !important;
-          }
-
-          .order-code {
-            visibility: visible !important;
-            display: block !important;
-            position: absolute !important;
-            width: auto !important;
-            text-align: center !important;
-            top: 35mm !important;
-            left: 4mm !important;
-            font-size: 8pt !important;
-            color: black !important;
-            font-family: Arial, sans-serif !important;
-            transform: rotate(-90deg) !important;
-            transform-origin: left top !important;
-            z-index: 20 !important;
+            overflow: visible !important;
           }
         }
       `}</style>

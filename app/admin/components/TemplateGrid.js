@@ -707,6 +707,26 @@ export default function TemplateGrid({ selectedEventId }) {
         // Add complete grid (with URLs) to PDF
         pdf.addImage(imgData, 'JPEG', X_OFFSET, Y_OFFSET, GRID_WIDTH_INCHES, GRID_WIDTH_INCHES);
 
+        // Draw cutting guides directly on PDF
+        pdf.setDrawColor(102, 102, 102); // #666666
+        pdf.setLineWidth(0.01); // Set line width to be visible but not too thick
+
+        // Draw cutting guides for each cell
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            const cellX = X_OFFSET + (col * CELL_SIZE_INCHES);
+            const cellY = Y_OFFSET + (row * CELL_SIZE_INCHES);
+            
+            // Draw rectangle for cutting guide
+            pdf.rect(
+              cellX, 
+              cellY, 
+              CELL_SIZE_INCHES, 
+              CELL_SIZE_INCHES
+            );
+          }
+        }
+
         // Get PDF as base64
         const pdfData = pdf.output('datauristring');
 
@@ -1363,7 +1383,7 @@ export default function TemplateGrid({ selectedEventId }) {
                     width: '2.717in',
                     height: '2.717in',
                     position: 'relative',
-                    border: '1px solid #eee'
+                    border: '2px solid #666'
                   }}
                 >
                   {photo && (
@@ -1393,6 +1413,25 @@ export default function TemplateGrid({ selectedEventId }) {
                       }}>
                         {websiteUrl}
                       </div>
+                      <div 
+                        className="cutting-guide"
+                        style={{
+                          position: 'absolute',
+                          border: '2px solid #666',
+                          width: '2.717in',
+                          height: '2.717in',
+                          top: '0',
+                          left: '0',
+                          pointerEvents: 'none',
+                          boxSizing: 'border-box',
+                          zIndex: 999,
+                          display: 'block',
+                          pageBreakInside: 'avoid',
+                          backgroundColor: 'transparent',
+                          margin: '0',
+                          padding: '0'
+                        }} 
+                      />
                     </>
                   )}
                 </div>
@@ -1591,6 +1630,25 @@ export default function TemplateGrid({ selectedEventId }) {
                     >
                       {websiteUrl}
                     </div>
+                    <div 
+                      className="cutting-guide"
+                      style={{
+                        position: 'absolute',
+                        border: '2px solid #666',
+                        width: '2.717in',
+                        height: '2.717in',
+                        top: '0',
+                        left: '0',
+                        pointerEvents: 'none',
+                        boxSizing: 'border-box',
+                        zIndex: 999,
+                        display: 'block',
+                        pageBreakInside: 'avoid',
+                        backgroundColor: 'transparent',
+                        margin: '0',
+                        padding: '0'
+                      }} 
+                    />
                   </>
                 )}
               </div>
@@ -1691,14 +1749,17 @@ export default function TemplateGrid({ selectedEventId }) {
             margin: 0;
           }
           
+          /* First hide everything */
           body * { 
-            visibility: hidden;
+            visibility: hidden !important;
+            display: none !important;
           }
           
+          /* Then explicitly show only what we want to print */
           .print-template,
-          .print-template .print-cell,
-          .print-template .print-image { 
-            visibility: visible !important; 
+          .print-template * { 
+            visibility: visible !important;
+            display: block !important;
           }
 
           .screen-url {
@@ -1710,10 +1771,12 @@ export default function TemplateGrid({ selectedEventId }) {
             visibility: visible !important;
           }
           
+          /* Hide UI elements */
           nav, header, h1, h2, p, button, .preview-only { 
             display: none !important;
           }
           
+          /* Template positioning */
           .print-template {
             position: fixed !important;
             left: 50% !important;
@@ -1728,16 +1791,20 @@ export default function TemplateGrid({ selectedEventId }) {
             justify-content: center !important;
             align-content: center !important;
             box-sizing: border-box !important;
+            background-color: white !important;
           }
           
+          /* Cell styling */
           .print-cell {
             width: 2.717in !important;
             height: 2.717in !important;
             position: relative !important;
             border: none !important;
             overflow: visible !important;
+            background-color: white !important;
           }
           
+          /* Image styling */
           .print-image {
             width: 2in !important;
             height: 2in !important;
@@ -1745,7 +1812,28 @@ export default function TemplateGrid({ selectedEventId }) {
             top: 0.3585in !important;
             left: 0.3585in !important;
             object-fit: cover !important;
-            z-index: 0 !important;
+            z-index: 1 !important;
+          }
+
+          /* Cutting guide - made more prominent */
+          .cutting-guide {
+            border: 2px solid #666 !important;
+            width: 2.717in !important;
+            height: 2.717in !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            box-sizing: border-box !important;
+            z-index: 9999 !important;
+            display: block !important;
+            visibility: visible !important;
+            pointer-events: none !important;
+            page-break-inside: avoid !important;
+            background-color: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
