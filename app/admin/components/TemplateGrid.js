@@ -627,13 +627,15 @@ export default function TemplateGrid({ selectedEventId }) {
       const canvas = document.createElement('canvas');
       const DPI = 300;
       const PHOTO_SIZE_INCHES = 2;
-      const CELL_SIZE_INCHES = 2.717;
+      const CELL_SIZE_INCHES = 2.803;
       const GRID_SIZE = 3;
+      const CELL_GAP = 0.05; // Reduced from 0.1 to 0.05 inch gap between cells
       
       // Calculate sizes in pixels
       const PHOTO_SIZE_PX = PHOTO_SIZE_INCHES * DPI;
       const CELL_SIZE_PX = CELL_SIZE_INCHES * DPI;
-      const TOTAL_WIDTH_PX = CELL_SIZE_PX * GRID_SIZE;
+      const CELL_GAP_PX = CELL_GAP * DPI;
+      const TOTAL_WIDTH_PX = (CELL_SIZE_PX * GRID_SIZE) + (CELL_GAP_PX * (GRID_SIZE - 1));
       
       canvas.width = TOTAL_WIDTH_PX;
       canvas.height = TOTAL_WIDTH_PX;
@@ -656,8 +658,8 @@ export default function TemplateGrid({ selectedEventId }) {
               const col = index % GRID_SIZE;
               
               // Calculate exact position for this cell
-              const cellX = col * CELL_SIZE_PX;
-              const cellY = row * CELL_SIZE_PX;
+              const cellX = col * (CELL_SIZE_PX + CELL_GAP_PX);
+              const cellY = row * (CELL_SIZE_PX + CELL_GAP_PX);
               
               // Calculate photo position within cell (centered)
               const photoX = cellX + ((CELL_SIZE_PX - PHOTO_SIZE_PX) / 2);
@@ -697,32 +699,60 @@ export default function TemplateGrid({ selectedEventId }) {
         // Calculate position to center grid on letter page
         const PAGE_WIDTH = 8.5;
         const PAGE_HEIGHT = 11;
-        const GRID_WIDTH_INCHES = CELL_SIZE_INCHES * GRID_SIZE;
-        const X_OFFSET = (PAGE_WIDTH - GRID_WIDTH_INCHES) / 2;
-        const Y_OFFSET = (PAGE_HEIGHT - GRID_WIDTH_INCHES) / 2;
+        // Calculate the total grid width including gaps
+        const TOTAL_GRID_WIDTH = (CELL_SIZE_INCHES * GRID_SIZE) + (CELL_GAP * (GRID_SIZE - 1));
+        const TOTAL_GRID_HEIGHT = (CELL_SIZE_INCHES * GRID_SIZE) + (CELL_GAP * (GRID_SIZE - 1));
+        const X_OFFSET = (PAGE_WIDTH - TOTAL_GRID_WIDTH) / 2;
+        const Y_OFFSET = (PAGE_HEIGHT - TOTAL_GRID_HEIGHT) / 2;
 
         // Convert canvas to JPEG
         const imgData = canvas.toDataURL('image/jpeg', 0.92);
 
         // Add complete grid (with URLs) to PDF
-        pdf.addImage(imgData, 'JPEG', X_OFFSET, Y_OFFSET, GRID_WIDTH_INCHES, GRID_WIDTH_INCHES);
+        pdf.addImage(imgData, 'JPEG', X_OFFSET, Y_OFFSET, TOTAL_GRID_WIDTH, TOTAL_GRID_HEIGHT);
 
         // Draw cutting guides directly on PDF
-        pdf.setDrawColor(102, 102, 102); // #666666
+        pdf.setDrawColor(192, 192, 192); // Light grey color (RGB: 192,192,192 = #c0c0c0)
         pdf.setLineWidth(0.01); // Set line width to be visible but not too thick
 
-        // Draw cutting guides for each cell
+        // Using a size of 71.2mm (about 2.8 inches) for each cell's cutting guide
+        const OCTAGON_SIZE_INCHES = 2.8;
+        
+        // Draw cutting guides for each cell as octagon shapes
         for (let row = 0; row < 3; row++) {
           for (let col = 0; col < 3; col++) {
-            const cellX = X_OFFSET + (col * CELL_SIZE_INCHES);
-            const cellY = Y_OFFSET + (row * CELL_SIZE_INCHES);
+            const centerX = X_OFFSET + (col * (CELL_SIZE_INCHES + CELL_GAP)) + (CELL_SIZE_INCHES / 2);
+            const centerY = Y_OFFSET + (row * (CELL_SIZE_INCHES + CELL_GAP)) + (CELL_SIZE_INCHES / 2);
             
-            // Draw rectangle for cutting guide
-            pdf.rect(
-              cellX, 
-              cellY, 
-              CELL_SIZE_INCHES, 
-              CELL_SIZE_INCHES
+            // Calculate octagon points (30% inset on each side)
+            const offset = OCTAGON_SIZE_INCHES * 0.5; // Half the width
+            const inset = offset * 0.3; // 30% inset
+            
+            // Define the 8 points of the octagon
+            const points = [
+              [centerX - offset + inset, centerY - offset], // top left
+              [centerX + offset - inset, centerY - offset], // top right
+              [centerX + offset, centerY - offset + inset], // right top
+              [centerX + offset, centerY + offset - inset], // right bottom
+              [centerX + offset - inset, centerY + offset], // bottom right
+              [centerX - offset + inset, centerY + offset], // bottom left
+              [centerX - offset, centerY + offset - inset], // left bottom
+              [centerX - offset, centerY - offset + inset]  // left top
+            ];
+            
+            // Draw the octagon by connecting the points
+            pdf.lines(
+              [
+                [points[1][0] - points[0][0], points[1][1] - points[0][1]], // top left to top right
+                [points[2][0] - points[1][0], points[2][1] - points[1][1]], // top right to right top
+                [points[3][0] - points[2][0], points[3][1] - points[2][1]], // right top to right bottom
+                [points[4][0] - points[3][0], points[4][1] - points[3][1]], // right bottom to bottom right
+                [points[5][0] - points[4][0], points[5][1] - points[4][1]], // bottom right to bottom left
+                [points[6][0] - points[5][0], points[6][1] - points[5][1]], // bottom left to left bottom
+                [points[7][0] - points[6][0], points[7][1] - points[6][1]], // left bottom to left top
+                [points[0][0] - points[7][0], points[0][1] - points[7][1]]  // left top to top left
+              ],
+              points[0][0], points[0][1]
             );
           }
         }
@@ -1383,7 +1413,7 @@ export default function TemplateGrid({ selectedEventId }) {
                     width: '2.717in',
                     height: '2.717in',
                     position: 'relative',
-                    border: '2px solid #666'
+                    border: 'none'
                   }}
                 >
                   {photo && (
@@ -1414,12 +1444,12 @@ export default function TemplateGrid({ selectedEventId }) {
                         {websiteUrl}
                       </div>
                       <div 
-                        className="cutting-guide"
+                        className="cutting-guide-octagon"
                         style={{
                           position: 'absolute',
-                          border: '2px solid #666',
-                          width: '2.717in',
-                          height: '2.717in',
+                          border: '3px solid #c0c0c0',
+                          width: '71.2mm',
+                          height: '71.2mm',
                           top: '0',
                           left: '0',
                           pointerEvents: 'none',
@@ -1429,7 +1459,10 @@ export default function TemplateGrid({ selectedEventId }) {
                           pageBreakInside: 'avoid',
                           backgroundColor: 'transparent',
                           margin: '0',
-                          padding: '0'
+                          padding: '0',
+                          clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+                          WebkitClipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+                          color: '#c0c0c0'
                         }} 
                       />
                     </>
@@ -1481,11 +1514,8 @@ export default function TemplateGrid({ selectedEventId }) {
 
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h2 className={styles.title}>Current Template</h2>
+          <h2 className={styles.title}>Event Template</h2>
           <p className={styles.subtitle}>3x3 Grid • 2"×2" Photos • 300 DPI</p>
-          <div className={styles.estimatedTime}>
-            Estimated Print Time: {estimatedTime || 'Calculating...'}
-          </div>
         </div>
         <div className={styles.controls}>
           <button
@@ -1554,14 +1584,16 @@ export default function TemplateGrid({ selectedEventId }) {
           <div 
             className="print-template"
             style={{
-              width: '8.151in',
-              height: '8.151in',
+              width: '8.409in',
+              height: '8.409in',
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 2.717in)',
-              gap: '0px',
+              gridTemplateColumns: 'repeat(3, 2.803in)',
+              gap: '0.05in',
               transform: 'scale(0.85)',
               transformOrigin: 'center',
-              position: 'relative'
+              position: 'relative',
+              border: '1px solid #e0e0e0',
+              backgroundColor: '#f9f9f9'
             }}
           >
             {template.map((photo, index) => (
@@ -1569,9 +1601,12 @@ export default function TemplateGrid({ selectedEventId }) {
                 key={index} 
                 className={`print-cell ${photo ? styles.cellWithPhoto : styles.cell}`}
                 style={{
-                  width: '2.717in',
-                  height: '2.717in',
-                  position: 'relative'
+                  width: '2.803in',
+                  height: '2.803in',
+                  position: 'relative',
+                  border: '1px solid #e0e0e0',
+                  boxSizing: 'border-box',
+                  backgroundColor: photo ? 'white' : '#f5f5f9'
                 }}
               >
                 {photo && (
@@ -1585,8 +1620,8 @@ export default function TemplateGrid({ selectedEventId }) {
                           width: '2in',
                           height: '2in',
                           position: 'absolute',
-                          top: '0.3585in',
-                          left: '0.3585in',
+                          top: '0.4015in',
+                          left: '0.4015in',
                           objectFit: 'cover',
                           opacity: loadedImages.has(photo.id) ? 1 : 0.5
                         }}
@@ -1621,8 +1656,8 @@ export default function TemplateGrid({ selectedEventId }) {
                         position: 'absolute',
                         width: '2in',
                         textAlign: 'center',
-                        top: 'calc(0.3585in + 2.05in)',
-                        left: '0.3585in',
+                        top: 'calc(0.4015in + 2.05in)',
+                        left: '0.4015in',
                         fontSize: '8pt',
                         color: 'black',
                         transform: 'rotate(180deg)'
@@ -1631,12 +1666,12 @@ export default function TemplateGrid({ selectedEventId }) {
                       {websiteUrl}
                     </div>
                     <div 
-                      className="cutting-guide"
+                      className="cutting-guide-octagon"
                       style={{
                         position: 'absolute',
-                        border: '2px solid #666',
-                        width: '2.717in',
-                        height: '2.717in',
+                        border: '3px solid #c0c0c0',
+                        width: '71.2mm',
+                        height: '71.2mm',
                         top: '0',
                         left: '0',
                         pointerEvents: 'none',
@@ -1646,7 +1681,10 @@ export default function TemplateGrid({ selectedEventId }) {
                         pageBreakInside: 'avoid',
                         backgroundColor: 'transparent',
                         margin: '0',
-                        padding: '0'
+                        padding: '0',
+                        clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+                        WebkitClipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+                        color: '#c0c0c0'
                       }} 
                     />
                   </>
@@ -1662,8 +1700,8 @@ export default function TemplateGrid({ selectedEventId }) {
                   position: 'absolute',
                   width: '2in',
                   textAlign: 'center',
-                  top: `${Math.floor(index / 3) * 2.717 + 2.3585}in`,
-                  left: `${(index % 3) * 2.717 + 0.3585}in`,
+                  top: `${Math.floor(index / 3) * 2.803 + 2.4015}in`,
+                  left: `${(index % 3) * 2.803 + 0.4015}in`,
                   fontSize: '8pt',
                   color: 'black',
                   transform: 'rotate(180deg)',
@@ -1757,7 +1795,10 @@ export default function TemplateGrid({ selectedEventId }) {
           
           /* Then explicitly show only what we want to print */
           .print-template,
-          .print-template * { 
+          .print-cell,
+          .print-image,
+          .cutting-guide-octagon,
+          .print-only-url { 
             visibility: visible !important;
             display: block !important;
           }
@@ -1782,22 +1823,23 @@ export default function TemplateGrid({ selectedEventId }) {
             left: 50% !important;
             top: 50% !important;
             transform: translate(-50%, -50%) !important;
-            width: 8.151in !important;
-            height: 8.151in !important;
+            width: 8.409in !important;
+            height: 8.409in !important;
             margin: 0 !important;
             display: grid !important;
-            grid-template-columns: repeat(3, 2.717in) !important;
-            gap: 0px !important;
+            grid-template-columns: repeat(3, 2.803in) !important;
+            gap: 0.05in !important;
             justify-content: center !important;
             align-content: center !important;
             box-sizing: border-box !important;
             background-color: white !important;
+            border: none !important;
           }
           
           /* Cell styling */
           .print-cell {
-            width: 2.717in !important;
-            height: 2.717in !important;
+            width: 2.803in !important;
+            height: 2.803in !important;
             position: relative !important;
             border: none !important;
             overflow: visible !important;
@@ -1809,17 +1851,17 @@ export default function TemplateGrid({ selectedEventId }) {
             width: 2in !important;
             height: 2in !important;
             position: absolute !important;
-            top: 0.3585in !important;
-            left: 0.3585in !important;
+            top: 0.4015in !important;
+            left: 0.4015in !important;
             object-fit: cover !important;
             z-index: 1 !important;
           }
 
           /* Cutting guide - made more prominent */
-          .cutting-guide {
-            border: 2px solid #666 !important;
-            width: 2.717in !important;
-            height: 2.717in !important;
+          .cutting-guide-octagon {
+            border: 3px solid #c0c0c0 !important;
+            width: 71.2mm !important;
+            height: 71.2mm !important;
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
@@ -1834,6 +1876,23 @@ export default function TemplateGrid({ selectedEventId }) {
             padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+            -webkit-clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+            color: #c0c0c0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          /* Ensure all borders are light grey in print */
+          * {
+            border-color: #c0c0c0 !important;
+            color: #c0c0c0 !important;
+          }
+
+          /* Override any red borders specifically */
+          .cutting-guide-octagon[style*="red"] {
+            border-color: #c0c0c0 !important;
           }
         }
       `}</style>
