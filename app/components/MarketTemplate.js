@@ -101,6 +101,18 @@ export default function MarketTemplate({ marketId }) {
     overflow: 'hidden'
   };
 
+  const cuttingGuideStyle = {
+    position: 'absolute',
+    pointerEvents: 'none',
+    border: '2px solid #bbb',  // Changed from #999 to #bbb for even lighter gray
+    width: '69mm',     // 2.717 inches
+    height: '69mm',    // 2.717 inches
+    top: '0',
+    left: '0',
+    zIndex: 1,
+    boxSizing: 'border-box'
+  };
+
   const cellControlsStyle = {
     position: 'absolute',
     top: '5px',
@@ -627,18 +639,7 @@ export default function MarketTemplate({ marketId }) {
                 )}
               </div>
 
-              <div className="cutting-guide" style={{
-                position: 'absolute',
-                pointerEvents: 'none',
-                border: '2px solid #bbb',
-                width: '71.2mm',
-                height: '71.2mm',
-                top: '0',
-                left: '0',
-                zIndex: 1,
-                boxSizing: 'border-box',
-                clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)'
-              }} />
+              <div style={cuttingGuideStyle} className="cutting-guide" />
               
               {photo ? (
                 <>
@@ -729,29 +730,11 @@ export default function MarketTemplate({ marketId }) {
         </div>
       </div>
 
-      {/* Add global styles to ensure cutting guide works in all contexts */}
-      <style jsx global>{`
-        /* Style for cutting guide that works in both regular view and print */
-        .cutting-guide {
-          position: absolute !important;
-          pointer-events: none !important;
-          border: 2px solid #bbb !important;
-          width: 71.2mm !important;
-          height: 71.2mm !important;
-          top: 0 !important;
-          left: 0 !important;
-          z-index: 1 !important;
-          box-sizing: border-box !important;
-          clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
-          -webkit-clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
-        }
-      `}</style>
-
       <style jsx global>{`
         @media print {
           @page { 
             size: 216mm 279mm;
-            margin: 0;
+            margin: 3mm;  /* Add small margin to prevent cutoff */
           }
           
           /* Hide everything by default */
@@ -772,34 +755,52 @@ export default function MarketTemplate({ marketId }) {
             visibility: visible !important;
           }
 
+          /* Ensure cutting guides print clearly */
+          .cutting-guide {
+            border: 1px solid #aaaaaa !important;
+            visibility: visible !important;
+            display: block !important;
+            width: 70mm !important;
+            height: 70mm !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            box-sizing: border-box !important;
+            z-index: 1 !important;
+          }
+
           /* Keep all other print styles unchanged */
           #printArea {
             position: fixed !important;
             left: 50% !important;
             top: 50% !important;
             transform: translate(-50%, -50%) !important;
-            width: 207mm !important;
-            height: 207mm !important;
+            width: 212mm !important;  /* Further reduced to account for margins */
+            height: 212mm !important; /* Further reduced to account for margins */
+            max-width: 212mm !important;
+            max-height: 212mm !important;
+            overflow: visible !important;
           }
 
           .print-template {
-            width: 207mm !important;
-            height: 207mm !important;
+            width: 212mm !important;  /* Further reduced to account for margins */
+            height: 212mm !important; /* Further reduced to account for margins */
             display: grid !important;
-            grid-template-columns: repeat(3, 69mm) !important;
-            gap: 0 !important;
+            grid-template-columns: repeat(3, 70mm) !important;
+            gap: 1mm !important;  /* Reduced gap to ensure fit */
             margin: 0 !important;
             padding: 0 !important;
             background-color: white !important;
+            transform: scale(0.98) !important; /* Slightly scale down to ensure fit */
           }
 
           .print-cell {
-            width: 69mm !important;
-            height: 69mm !important;
+            width: 70mm !important;
+            height: 70mm !important;
             position: relative !important;
             margin: 0 !important;
             padding: 0 !important;
-            border: none !important;
+            border: 1px solid #aaaaaa !important;
             background-color: white !important;
             overflow: visible !important;
           }
