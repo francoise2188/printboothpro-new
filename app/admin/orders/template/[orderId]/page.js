@@ -252,8 +252,6 @@ export default function OrderTemplate({ params }) {
         delete next[photo.id];
         return next;
       });
-
-      alert('Changes saved successfully');
     } catch (error) {
       console.error('Error saving photo edit:', error.message);
       alert('Failed to save changes: ' + error.message);
@@ -393,21 +391,21 @@ export default function OrderTemplate({ params }) {
 
   // Add template styles
   const templateStyle = {
-    width: '207mm',  // 8.151 inches in mm
+    width: '207mm',
     height: '207mm',
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 69mm)',  // 2.717 inches in mm
-    gap: '0mm',
+    gridTemplateColumns: 'repeat(3, 69mm)',
+    gap: '3mm',
     backgroundColor: '#fff',
     padding: '0',
-    margin: '0 auto'
+    margin: '0 auto'  // Changed back to auto to center on screen
   };
 
   const cellStyle = {
     width: '69mm',
     height: '69mm',
     position: 'relative',
-    border: '1px dashed #ddd',
+    border: '1px dashed #aaaaaa',  // Changed from #ddd to #aaa for more visible light gray
     boxSizing: 'border-box',
     backgroundColor: '#f8f9fa',
     overflow: 'visible'  // Keep visible for zoom controls
@@ -437,7 +435,7 @@ export default function OrderTemplate({ params }) {
   const cuttingGuideStyle = {
     position: 'absolute',
     pointerEvents: 'none',
-    border: '1px dashed #ddd',  // Light gray dashed border
+    border: '1px dashed #aaaaaa',  // Changed from #ddd to #aaa to match cell style
     width: '50.8mm',
     height: '50.8mm',
     top: '9.1mm',
@@ -792,8 +790,8 @@ export default function OrderTemplate({ params }) {
             height: 207mm !important;
             display: grid !important;
             grid-template-columns: repeat(3, 69mm) !important;
-            gap: 0 !important;
-            margin: 0 !important;
+            gap: 3mm !important;
+            margin: 0 0 0 -3mm !important;  // Only shift left when printing
             padding: 0 !important;
             background-color: white !important;
           }
@@ -804,7 +802,7 @@ export default function OrderTemplate({ params }) {
             position: relative !important;
             margin: 0 !important;
             padding: 0 !important;
-            border: none !important;
+            border: 1px dashed #aaaaaa !important;  // Added light gray border for printed cells
             background-color: white !important;
             overflow: hidden !important;
           }
@@ -814,7 +812,7 @@ export default function OrderTemplate({ params }) {
             visibility: visible !important;
             display: block !important;
             position: absolute !important;
-            border: 1px dashed #ddd !important;
+            border: 1px dashed #aaaaaa !important;  // Changed to match cell border
             width: 50.8mm !important;
             height: 50.8mm !important;
             top: 9.1mm !important;
@@ -827,9 +825,9 @@ export default function OrderTemplate({ params }) {
             visibility: visible !important;
             display: block !important;
             position: absolute !important;
-            border: 1px dashed #000 !important;
-            width: 69mm !important;  /* 2.717 inches in mm */
-            height: 69mm !important; /* 2.717 inches in mm */
+            border: 1px dashed #aaaaaa !important;  // Changed to match cell border
+            width: 69mm !important;
+            height: 69mm !important;
             top: 0 !important;
             left: 0 !important;
             z-index: 11 !important;
