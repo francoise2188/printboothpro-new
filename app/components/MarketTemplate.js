@@ -101,18 +101,6 @@ export default function MarketTemplate({ marketId }) {
     overflow: 'hidden'
   };
 
-  const cuttingGuideStyle = {
-    position: 'absolute',
-    pointerEvents: 'none',
-    border: '2px solid #bbb',  // Changed from #999 to #bbb for even lighter gray
-    width: '69mm',     // 2.717 inches
-    height: '69mm',    // 2.717 inches
-    top: '0',
-    left: '0',
-    zIndex: 1,
-    boxSizing: 'border-box'
-  };
-
   const cellControlsStyle = {
     position: 'absolute',
     top: '5px',
@@ -639,7 +627,18 @@ export default function MarketTemplate({ marketId }) {
                 )}
               </div>
 
-              <div style={cuttingGuideStyle} className="cutting-guide" />
+              <div className="cutting-guide" style={{
+                position: 'absolute',
+                pointerEvents: 'none',
+                border: '2px solid #bbb',
+                width: '71.2mm',
+                height: '71.2mm',
+                top: '0',
+                left: '0',
+                zIndex: 1,
+                boxSizing: 'border-box',
+                clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)'
+              }} />
               
               {photo ? (
                 <>
@@ -730,6 +729,24 @@ export default function MarketTemplate({ marketId }) {
         </div>
       </div>
 
+      {/* Add global styles to ensure cutting guide works in all contexts */}
+      <style jsx global>{`
+        /* Style for cutting guide that works in both regular view and print */
+        .cutting-guide {
+          position: absolute !important;
+          pointer-events: none !important;
+          border: 2px solid #bbb !important;
+          width: 71.2mm !important;
+          height: 71.2mm !important;
+          top: 0 !important;
+          left: 0 !important;
+          z-index: 1 !important;
+          box-sizing: border-box !important;
+          clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+          -webkit-clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+        }
+      `}</style>
+
       <style jsx global>{`
         @media print {
           @page { 
@@ -753,20 +770,6 @@ export default function MarketTemplate({ marketId }) {
           #printArea .website-url,
           #printArea .order-code {
             visibility: visible !important;
-          }
-
-          /* Ensure cutting guides print clearly */
-          .cutting-guide {
-            border: 2px solid #bbb !important;  // Changed from #999 to #bbb for even lighter gray
-            visibility: visible !important;
-            display: block !important;
-            width: 69mm !important;
-            height: 69mm !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            box-sizing: border-box !important;
-            z-index: 1 !important;
           }
 
           /* Keep all other print styles unchanged */
