@@ -165,6 +165,31 @@ export default function OrderTemplate({ params }) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
+        // Calculate initial scale and center position based on image dimensions
+        const { initialScale, centerX, centerY } = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            // Target size is 50.8mm (2 inches)
+            // Convert to pixels (assuming 96 DPI)
+            const targetSize = 192; // 50.8mm at 96 DPI
+            const scale = targetSize / Math.max(img.width, img.height);
+            // Ensure scale is between 0.2 and 3
+            const finalScale = Math.min(Math.max(scale, 0.2), 3);
+            
+            // Calculate center position
+            // The photo container is positioned at 9.1mm from the top and left
+            // We want the photo to be centered within the 50.8mm x 50.8mm space
+            resolve({
+              initialScale: finalScale,
+              centerX: -96, // Half of the target size (192/2) as a negative value to move left
+              centerY: -96  // Half of the target size (192/2) as a negative value to move up
+            });
+          };
+          const reader = new FileReader();
+          reader.onload = (e) => img.src = e.target.result;
+          reader.readAsDataURL(file);
+        });
+        
         // Create a unique filename
         const fileExt = file.name.split('.').pop();
         const fileName = `${orderId}/${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -185,16 +210,16 @@ export default function OrderTemplate({ params }) {
           throw new Error('Failed to get public URL');
         }
 
-        // Save photo record with initial scale of 1
+        // Save photo record with calculated initial scale and center position
         const { data: photoData, error: dbError } = await supabase
           .from('order_photos')
           .insert({
             order_id: orderId,
             photo_url: data.publicUrl,
             position: position,
-            scale: 1, // Set initial scale
-            position_x: 0, // Set initial position
-            position_y: 0,
+            scale: initialScale,
+            position_x: centerX,
+            position_y: centerY,
             status: 'pending'
           })
           .select()
@@ -202,15 +227,25 @@ export default function OrderTemplate({ params }) {
 
         if (dbError) throw dbError;
 
-        // Update local state
+        // Update local state with centered position
         setPhotoScales(prev => ({
           ...prev,
-          [photoData.id]: 1
+          [photoData.id]: initialScale
         }));
 
         setPositions(prev => ({
           ...prev,
-          [photoData.id]: { x: 0, y: 0 }
+          [photoData.id]: { x: centerX, y: centerY }
+        }));
+
+        // Set initial crop state
+        setCrops(prev => ({
+          ...prev,
+          [photoData.id]: {
+            x: centerX,
+            y: centerY,
+            zoom: initialScale
+          }
         }));
       }
 
