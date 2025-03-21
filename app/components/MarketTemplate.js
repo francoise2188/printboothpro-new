@@ -663,8 +663,9 @@ export default function MarketTemplate({ marketId }) {
                           width: '50.8mm',
                           height: '50.8mm',
                           position: 'absolute',
-                          top: '9.1mm',
-                          left: '9.1mm',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
                           backgroundColor: 'white'
                         },
                         cropAreaStyle: {
@@ -688,12 +689,12 @@ export default function MarketTemplate({ marketId }) {
                       position: 'absolute',
                       width: '50.8mm',
                       textAlign: 'center',
-                      top: 'calc(9.1mm + 51mm)',
-                      left: '9.1mm',
+                      bottom: '2mm',
+                      left: '50%',
+                      transform: 'translateX(-50%) rotate(180deg)',
                       fontSize: '8pt',
                       color: 'black',
                       fontFamily: 'Arial, sans-serif',
-                      transform: 'rotate(180deg)',
                       pointerEvents: 'none'
                     }}
                   >
@@ -706,13 +707,13 @@ export default function MarketTemplate({ marketId }) {
                       position: 'absolute',
                       width: 'auto',
                       textAlign: 'center',
-                      top: '35mm',
-                      left: '4mm',
+                      top: '50%',
+                      left: '2mm',
                       fontSize: '8pt',
                       color: 'black',
                       fontFamily: 'Arial, sans-serif',
-                      transform: 'rotate(-90deg)',
-                      transformOrigin: 'left top',
+                      transform: 'translateY(-50%) rotate(-90deg)',
+                      transformOrigin: 'left center',
                       pointerEvents: 'none',
                       zIndex: 9999
                     }}
@@ -733,8 +734,8 @@ export default function MarketTemplate({ marketId }) {
       <style jsx global>{`
         @media print {
           @page { 
-            size: 216mm 279mm;
-            margin: 3mm;  /* Add small margin to prevent cutoff */
+            size: 8.5in 11in;
+            margin: 0;
           }
           
           /* Hide everything by default */
@@ -748,61 +749,63 @@ export default function MarketTemplate({ marketId }) {
           #printArea .print-cell,
           #printArea .reactEasyCrop_Container,
           #printArea .reactEasyCrop_Image,
-          #printArea .cutting-guide,
           #printArea .print-overlay,
           #printArea .website-url,
-          #printArea .order-code {
+          #printArea .order-code,
+          #printArea .cutting-square {
             visibility: visible !important;
           }
 
-          /* Ensure cutting guides print clearly */
-          .cutting-guide {
-            border: 1px solid #aaaaaa !important;
-            visibility: visible !important;
-            display: block !important;
-            width: 70mm !important;
-            height: 70mm !important;
+          /* Add 72x72mm squares around photos */
+          .print-cell {
+            position: relative !important;
+            width: 2.835in !important; /* 72mm in inches */
+            height: 2.835in !important;
+          }
+
+          .print-cell::before {
+            content: '' !important;
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            box-sizing: border-box !important;
-            z-index: 1 !important;
+            width: 2.835in !important;
+            height: 2.835in !important;
+            border: 1px solid #dddddd !important;
+            visibility: visible !important;
+            z-index: 9999 !important;
+            pointer-events: none !important;
           }
 
-          /* Keep all other print styles unchanged */
+          /* Position print template */
+          .print-template {
+            width: 8.5in !important;
+            height: 8.5in !important;
+            display: grid !important;
+            grid-template-columns: repeat(3, 2.835in) !important;
+            gap: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: white !important;
+            position: relative !important;
+            justify-content: center !important;
+          }
+
           #printArea {
             position: fixed !important;
             left: 50% !important;
             top: 50% !important;
             transform: translate(-50%, -50%) !important;
-            width: 212mm !important;  /* Further reduced to account for margins */
-            height: 212mm !important; /* Further reduced to account for margins */
-            max-width: 212mm !important;
-            max-height: 212mm !important;
+            width: 8.5in !important;
+            height: 8.5in !important;
+            max-width: 8.5in !important;
+            max-height: 8.5in !important;
             overflow: visible !important;
           }
 
-          .print-template {
-            width: 212mm !important;  /* Further reduced to account for margins */
-            height: 212mm !important; /* Further reduced to account for margins */
-            display: grid !important;
-            grid-template-columns: repeat(3, 70mm) !important;
-            gap: 1mm !important;  /* Reduced gap to ensure fit */
-            margin: 0 !important;
-            padding: 0 !important;
-            background-color: white !important;
-            transform: scale(0.98) !important; /* Slightly scale down to ensure fit */
-          }
-
-          .print-cell {
-            width: 70mm !important;
-            height: 70mm !important;
-            position: relative !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 1px solid #aaaaaa !important;
-            background-color: white !important;
-            overflow: visible !important;
+          /* Hide the old cutting guides */
+          .cutting-guide,
+          .reactEasyCrop_Container::before {
+            display: none !important;
           }
         }
       `}</style>
