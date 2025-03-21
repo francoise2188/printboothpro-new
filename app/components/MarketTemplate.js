@@ -689,13 +689,14 @@ export default function MarketTemplate({ marketId }) {
                       position: 'absolute',
                       width: '50.8mm',
                       textAlign: 'center',
-                      bottom: '2mm',
+                      bottom: '5mm',  // Changed from 3mm to 5mm to move it closer to photo
                       left: '50%',
                       transform: 'translateX(-50%) rotate(180deg)',
                       fontSize: '8pt',
                       color: 'black',
                       fontFamily: 'Arial, sans-serif',
-                      pointerEvents: 'none'
+                      pointerEvents: 'none',
+                      zIndex: 10
                     }}
                   >
                     {websiteUrl}
@@ -754,6 +755,21 @@ export default function MarketTemplate({ marketId }) {
           #printArea .order-code,
           #printArea .cutting-square {
             visibility: visible !important;
+          }
+
+          /* Ensure website URL maintains its position */
+          .website-url {
+            position: absolute !important;
+            width: 50.8mm !important;
+            textAlign: center !important;
+            bottom: 5mm !important;  // Changed from 3mm to 5mm to move it closer to photo
+            left: 50% !important;
+            transform: translateX(-50%) rotate(180deg) !important;
+            fontSize: 8pt !important;
+            color: black !important;
+            fontFamily: Arial, sans-serif !important;
+            pointerEvents: none !important;
+            zIndex: 10 !important;
           }
 
           /* Add 72x72mm squares around photos */
