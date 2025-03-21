@@ -708,7 +708,7 @@ export default function MarketTemplate({ marketId }) {
                       width: 'auto',
                       textAlign: 'center',
                       top: '50%',
-                      left: '2mm',
+                      left: '7mm',
                       fontSize: '8pt',
                       color: 'black',
                       fontFamily: 'Arial, sans-serif',
