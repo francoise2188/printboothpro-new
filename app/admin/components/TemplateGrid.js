@@ -1405,7 +1405,9 @@ export default function TemplateGrid({ selectedEventId }) {
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 2.717in)',
               gap: '0px'
-            }}>
+            }}
+            className="preview-only"
+            >
               {template.map((photo, index) => (
                 <div 
                   key={index}
@@ -1444,7 +1446,7 @@ export default function TemplateGrid({ selectedEventId }) {
                         {websiteUrl}
                       </div>
                       <div 
-                        className="cutting-guide-octagon"
+                        className="cutting-guide-square"
                         style={{
                           position: 'absolute',
                           border: '3px solid #c0c0c0',
@@ -1460,8 +1462,6 @@ export default function TemplateGrid({ selectedEventId }) {
                           backgroundColor: 'transparent',
                           margin: '0',
                           padding: '0',
-                          clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
-                          WebkitClipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
                           color: '#c0c0c0'
                         }} 
                       />
@@ -1666,7 +1666,7 @@ export default function TemplateGrid({ selectedEventId }) {
                       {websiteUrl}
                     </div>
                     <div 
-                      className="cutting-guide-octagon"
+                      className="cutting-guide-square"
                       style={{
                         position: 'absolute',
                         border: '3px solid #c0c0c0',
@@ -1682,8 +1682,6 @@ export default function TemplateGrid({ selectedEventId }) {
                         backgroundColor: 'transparent',
                         margin: '0',
                         padding: '0',
-                        clipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
-                        WebkitClipPath: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
                         color: '#c0c0c0'
                       }} 
                     />
@@ -1792,61 +1790,68 @@ export default function TemplateGrid({ selectedEventId }) {
             visibility: hidden !important;
             display: none !important;
           }
+
+          /* Hide preview elements */
+          .preview-only {
+            display: none !important;
+            visibility: hidden !important;
+          }
           
           /* Then explicitly show only what we want to print */
           .print-template,
           .print-cell,
           .print-image,
-          .cutting-guide-octagon,
-          .print-only-url { 
+          .cutting-guide-square { 
             visibility: visible !important;
             display: block !important;
           }
 
-          .screen-url {
-            display: none !important;
-          }
-          
-          .print-only-url {
-            display: block !important;
-            visibility: visible !important;
-          }
-          
-          /* Hide UI elements */
-          nav, header, h1, h2, p, button, .preview-only { 
+          .screen-url,
+          .print-preview-grid { 
             display: none !important;
           }
           
           /* Template positioning */
           .print-template {
             position: fixed !important;
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 8.409in !important;
+            left: 0 !important;
+            top: calc(5.5in - 1.4015in) !important;
+            transform: none !important;
+            width: 8.5in !important;
             height: 8.409in !important;
             margin: 0 !important;
-            display: grid !important;
-            grid-template-columns: repeat(3, 2.803in) !important;
-            gap: 0.05in !important;
-            justify-content: center !important;
-            align-content: center !important;
+            padding: 0 !important;
+            display: block !important;
             box-sizing: border-box !important;
             background-color: white !important;
             border: none !important;
           }
-          
-          /* Cell styling */
+
+          /* Position the cells */
           .print-cell {
             width: 2.803in !important;
             height: 2.803in !important;
-            position: relative !important;
-            border: none !important;
-            overflow: visible !important;
-            background-color: white !important;
+            position: absolute !important;
+            top: 0 !important;
           }
-          
-          /* Image styling */
+
+          /* Position each cell at its center point */
+          .print-cell:nth-child(1) {
+            left: 0 !important;
+            margin-left: 1.4015in !important; /* Center of first cell (2.803/2) */
+          }
+
+          .print-cell:nth-child(2) {
+            left: 0 !important;
+            margin-left: 4.25in !important; /* Center of page (8.5/2) */
+          }
+
+          .print-cell:nth-child(3) {
+            left: 0 !important;
+            margin-left: 7.0985in !important; /* Center of last cell (8.5 - 2.803/2) */
+          }
+
+          /* Image positioning within cells */
           .print-image {
             width: 2in !important;
             height: 2in !important;
@@ -1854,45 +1859,30 @@ export default function TemplateGrid({ selectedEventId }) {
             top: 0.4015in !important;
             left: 0.4015in !important;
             object-fit: cover !important;
-            z-index: 1 !important;
           }
 
-          /* Cutting guide - made more prominent */
-          .cutting-guide-octagon {
+          /* Cutting guide - centered within cell */
+          .cutting-guide-square {
             border: 3px solid #c0c0c0 !important;
             width: 71.2mm !important;
             height: 71.2mm !important;
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
             box-sizing: border-box !important;
-            z-index: 9999 !important;
-            display: block !important;
-            visibility: visible !important;
-            pointer-events: none !important;
-            page-break-inside: avoid !important;
             background-color: transparent !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
-            -webkit-clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
-            color: #c0c0c0 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
           }
 
-          /* Ensure all borders are light grey in print */
-          * {
-            border-color: #c0c0c0 !important;
-            color: #c0c0c0 !important;
+          /* Center the cells themselves */
+          .print-cell {
+            transform: translateX(-50%) !important;
           }
+        }
 
-          /* Override any red borders specifically */
-          .cutting-guide-octagon[style*="red"] {
-            border-color: #c0c0c0 !important;
+        @media screen {
+          .preview-only {
+            display: block;
           }
         }
       `}</style>
