@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '../../../lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Image from 'next/image';
 
 export default function EventPage() {
@@ -10,9 +10,13 @@ export default function EventPage() {
   const [backgroundUrl, setBackgroundUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const params = useParams();
   
+  const supabase = createClientComponentClient();
+
   // Get the raw ID from the URL
   const eventId = params?.id || '';
 
@@ -85,9 +89,34 @@ export default function EventPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email) {
-      localStorage.setItem('userEmail', email);
-      router.push(`/camera/${eventId}`);
+    if (email && eventId && !isSubmitting) { 
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const { error: insertError } = await supabase
+          .from('emails') 
+          .insert({ 
+            email: email, 
+            event_id: eventId 
+          });
+
+        if (insertError) {
+          console.error('Error saving email to database:', insertError);
+          throw new Error('Failed to save email. Please check your connection and try again.');
+        }
+
+        localStorage.setItem('userEmail', email); 
+        router.push(`/camera/${eventId}`);
+
+      } catch (err) {
+        console.error('Email submission failed:', err);
+        setSubmitError(err.message || 'An unknown error occurred during submission.');
+        setIsSubmitting(false);
+      }
+    } else if (!email) {
+        setSubmitError("Please enter your email address.");
+    } else if (!eventId) {
+        setSubmitError("Event ID is missing. Cannot proceed.");
     }
   };
 
@@ -177,6 +206,11 @@ export default function EventPage() {
         zIndex: 2
       }}>
         <form onSubmit={handleSubmit}>
+          {submitError && (
+            <p style={{ color: 'red', marginBottom: '10px', textAlign: 'center', fontSize: '0.9em' }}>
+              {submitError}
+            </p>
+          )}
           <input
             type="email"
             placeholder="Enter your email"
@@ -190,6 +224,7 @@ export default function EventPage() {
               border: '1px solid #ccc',
               borderRadius: '5px'
             }}
+            disabled={isSubmitting}
           />
           <button
             type="submit"
@@ -200,10 +235,12 @@ export default function EventPage() {
               color: '#fff',
               border: 'none',
               borderRadius: '5px',
-              cursor: 'pointer'
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              opacity: isSubmitting ? 0.7 : 1
             }}
+            disabled={isSubmitting}
           >
-            Start Photo Booth
+            {isSubmitting ? 'Saving...' : 'Start Photo Booth'}
           </button>
         </form>
       </div>

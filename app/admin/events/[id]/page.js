@@ -457,31 +457,40 @@ const EventDetailsPage = ({ params }) => {
 
           if (!emails || emails.length === 0) {
             setError('No emails found for this event');
-            return;
+            return; // Return early if no emails found initially
           }
 
-          // Create email list content from actual data
-          const emailContent = [
-            `Email List for ${event.name || 'Event'}`,
-            '----------------------------------------',
-            ...emails.map(email => [
-              `Name: ${email.name || 'N/A'}`,
-              `Email: ${email.email}`,
-              `Photos Taken: ${email.photos_count || 0}`,
-              ''
-            ]).flat()
-          ].join('\n');
+          // Define the list of emails to exclude
+          const emailsToExclude = ['john@example.com', 'jane@example.com', 'bob@example.com'];
+          
+          // Filter out the example emails
+          const filteredEmails = emails.filter(email => !emailsToExclude.includes(email.email));
 
-          // Create and download text file
+          // Check if any emails remain after filtering
+          if (!filteredEmails || filteredEmails.length === 0) {
+            setError('No valid emails found for export after filtering example emails.');
+            // Set loading to false since we are stopping here
+            setLoading(false); 
+            return; // Return if only example emails were present
+          }
+
+          // Create email list content from the filtered data
+          const header = 'Email';
+          const emailRows = filteredEmails.map(email => email.email).join('\n');
+          const emailContent = `${header}\n${emailRows}`;
+
+          // Create and download CSV file
           const blob = new Blob([emailContent], { 
-            type: 'text/plain' 
+            type: 'text/csv' // Change type to CSV
           });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `${event.name || 'event'}-emails.txt`;
+          // Change download filename extension to .csv
+          a.download = `${event.name || 'event'}-emails.csv`; 
           document.body.appendChild(a);
           a.click();
+          document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
         } catch (error) {
           console.error('Error exporting emails:', error);
