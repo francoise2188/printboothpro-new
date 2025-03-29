@@ -418,55 +418,107 @@ export default function MarketTemplate({ marketId }) {
 
   // Update print handler to check for unsaved changes
   const handlePrint = async () => {
+    console.log('🖨️ [handlePrint] Starting print process...'); // Log: Start
     try {
       // Check for any unsaved changes
       const unsavedPhotos = Object.keys(editedPhotos);
       if (unsavedPhotos.length > 0) {
+        console.log('⚠️ [handlePrint] Unsaved changes detected:', unsavedPhotos); // Log: Unsaved changes
         const saveFirst = window.confirm('There are unsaved changes. Save before printing?');
         if (saveFirst) {
+          console.log('💾 [handlePrint] User chose to save first.'); // Log: Saving choice
           // Save all edited photos
           for (const photoId of unsavedPhotos) {
             const photo = template.find(p => p?.id === photoId);
             if (photo) {
+              console.log(`💾 [handlePrint] Saving changes for photo ${photoId}...`); // Log: Saving specific photo
               await handleSaveEdit(photo);
             }
           }
+          console.log('✅ [handlePrint] Finished saving changes.'); // Log: Saving complete
+        } else {
+           console.log('🚫 [handlePrint] User chose not to save before printing.'); // Log: Not saving
         }
       }
 
-      const photoIds = template
-        .filter(photo => photo !== null)
-        .map(photo => photo.id);
+      const photosToPrint = template.filter(photo => photo !== null);
+      const photoIds = photosToPrint.map(photo => photo.id);
+
+      console.log(`📄 [handlePrint] Photos identified for printing: ${photoIds.join(', ')}`); // Log: Photos identified
 
       if (photoIds.length === 0) {
+        console.log('❌ [handlePrint] No photos to print.'); // Log: No photos
         toast.error('No photos to print');
         return;
       }
 
+      // --- Crucial Part: Get Next Print Number ---
+      // We need a function to get the next available print number for this market.
+      // Let's assume we have a function called getNextPrintNumber(marketId)
+      // If it doesn't exist, we'll need to create it. For now, we'll placeholder it.
+
+      // Placeholder: We need the actual function call here.
+      // For now, let's just log that we would fetch it.
+      console.log(`🔢 [handlePrint] Would attempt to get next print number for market ${marketId}`); 
+      // const nextPrintNumber = await getNextPrintNumber(marketId); // Example future call
+      // console.log(`🔢 [handlePrint] Next available print number is: ${nextPrintNumber}`); // Example future log
+
+      // --- End Crucial Part ---
+
       // Show print dialog
+      console.log('🖥️ [handlePrint] Showing system print dialog...'); // Log: Show print dialog
       window.print();
 
       // After print dialog closes, ask for confirmation
+      console.log('❓ [handlePrint] Asking user for print confirmation...'); // Log: Ask confirmation
       const didPrint = window.confirm('Did you complete printing? Click OK if you printed, Cancel if you did not print.');
       
       if (didPrint) {
-        // Only update database if user confirms they printed
-        const { error: updateError } = await supabase
-          .from('market_photos')
-          .update({ 
+        console.log('👍 [handlePrint] User confirmed printing.'); // Log: User confirmed
+
+        // --- Database Update ---
+        // We need to update EACH photo with its assigned print number and status.
+        // This part needs modification to assign numbers sequentially.
+
+        console.log(`🔄 [handlePrint] Preparing to update database for photos: ${photoIds.join(', ')}`); // Log: DB update prep
+
+        // ******** IMPORTANT MODIFICATION NEEDED HERE ********
+        // The current update sets all photos to 'printed' at once.
+        // We need to loop through photosToPrint, call getNextPrintNumber for each,
+        // and update them individually or construct a more complex update.
+        // For now, we log the intent and the *current* behavior.
+        console.log('⚠️ [handlePrint] Current DB update does NOT assign print numbers. This needs fixing!');
+
+        const updatePayload = { 
             status: 'printed',
             printed_at: new Date().toISOString()
-          })
+            // print_number: /* Needs to be assigned per photo */ 
+        };
+        console.log('[handlePrint] Database update payload (without print_number):', updatePayload); // Log: Payload
+
+        const { error: updateError } = await supabase
+          .from('market_photos')
+          .update(updatePayload) // Update status and timestamp
           .in('id', photoIds);
 
-        if (updateError) throw updateError;
+        // ******** END IMPORTANT MODIFICATION NEEDED HERE ********
 
-        setTemplate(Array(9).fill(null));
+
+        if (updateError) {
+          console.error('❌ [handlePrint] Database update error:', updateError); // Log: DB Error
+          throw updateError;
+        }
+
+        console.log('✅ [handlePrint] Database updated successfully.'); // Log: DB Success
+        setTemplate(Array(9).fill(null)); // Clear template
+        console.log('🔄 [handlePrint] Template cleared.'); // Log: Template cleared
         toast.success('Print completed');
+      } else {
+        console.log('👎 [handlePrint] User cancelled printing.'); // Log: User cancelled
       }
     } catch (error) {
-      console.error('Error printing:', error);
-      toast.error('Print failed');
+      console.error('💥 [handlePrint] Error during print process:', error); // Log: General Error
+      toast.error('Print failed: ' + error.message);
     }
   };
 

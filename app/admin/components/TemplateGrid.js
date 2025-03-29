@@ -37,6 +37,8 @@ export default function TemplateGrid({ selectedEventId }) {
   const [isPrinting, setIsPrinting] = useState(false);
   const [loadedImages, setLoadedImages] = useState(new Set());
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [printNumberSearch, setPrintNumberSearch] = useState('');
+  const [filteredPrints, setFilteredPrints] = useState([]);
 
   // Keep track of the last processed photo ID
   const [lastProcessedPhotoId, setLastProcessedPhotoId] = useState(null);
@@ -251,6 +253,9 @@ export default function TemplateGrid({ selectedEventId }) {
             eventId: photoToMove.event_id
           });
 
+          const nextNum = await getNextPrintNumber(selectedEventId);
+          console.log(`Assigning print number ${nextNum} to photo ${photoToMove.id}`);
+
           // Verify event ID matches
           if (photoToMove.event_id !== selectedEventId) {
             console.error('Event ID mismatch:', {
@@ -265,7 +270,8 @@ export default function TemplateGrid({ selectedEventId }) {
             .from('photos')
             .update({
               status: 'in_template',
-              template_position: firstEmptySlot + 1
+              template_position: firstEmptySlot + 1,
+              print_number: nextNum
             })
             .eq('id', photoToMove.id)
             .eq('status', 'pending')
@@ -280,7 +286,8 @@ export default function TemplateGrid({ selectedEventId }) {
           newTemplate[firstEmptySlot] = {
             ...photoToMove,
             status: 'in_template',
-            template_position: firstEmptySlot + 1
+            template_position: firstEmptySlot + 1,
+            print_number: nextNum
           };
 
           console.log('Successfully added photo to template:', {
@@ -336,49 +343,76 @@ export default function TemplateGrid({ selectedEventId }) {
 
   const loadRecentPrints = async () => {
     try {
+      if (!selectedEventId) {
+        toast.error('Please select an event first');
+        return;
+      }
+
       console.log('Loading recent prints...', {
         userId: user?.id,
         eventId: selectedEventId
       });
       
-      // Get all recently printed photos
+      // Get all photos for this event that have been selected for printing
       const { data: recentPhotos, error } = await supabase
         .from('photos')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('print_status', 'printed')  // Look specifically for printed status
+        .eq('event_id', selectedEventId)
+        .or('status.eq.printed,status.eq.in_template,print_status.eq.printing,print_status.eq.printed')
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .order('updated_at', { ascending: false })
+        .limit(350);
 
       if (error) {
         console.error('Error loading recent prints:', error);
         throw error;
       }
 
-      console.log('Found recent prints:', {
+      console.log('Found photos for reprint:', {
         count: recentPhotos?.length,
         photos: recentPhotos?.map(p => ({
           id: p.id,
+          print_number: p.print_number,
           status: p.status,
-          print_status: p.print_status
+          print_status: p.print_status,
+          updated_at: p.updated_at,
+          url: p.url
         }))
       });
 
       if (!recentPhotos || recentPhotos.length === 0) {
         setRecentPrints([]);
-        toast.error('No recent prints found');
+        setFilteredPrints([]);
+        toast.error('No photos available for reprint');
       } else {
         setRecentPrints(recentPhotos);
+        setFilteredPrints(recentPhotos);
       }
 
       setIsReprintOpen(true);
       
     } catch (error) {
       console.error('Error loading recent prints:', error);
-      toast.error('Failed to load recent prints');
+      toast.error('Failed to load photos for reprint');
     }
   };
+
+  // Update filtered prints when search changes
+  useEffect(() => {
+    if (!printNumberSearch) {
+      setFilteredPrints(recentPrints);
+      return;
+    }
+
+    const searchNum = parseInt(printNumberSearch);
+    if (isNaN(searchNum)) {
+      setFilteredPrints(recentPrints);
+      return;
+    }
+
+    const filtered = recentPrints.filter(photo => photo.print_number === searchNum);
+    setFilteredPrints(filtered);
+  }, [printNumberSearch, recentPrints]);
 
   // Add a function to check print status
   const checkPrintStatus = async (photoIds) => {
@@ -603,17 +637,34 @@ export default function TemplateGrid({ selectedEventId }) {
         return;
       }
 
+      console.log('Starting print process with photos:', photosToUpdate);
+
       setIsPrinting(true);
       setPrintStatus('printing');
 
-      // Update print status before printing
-      const { error: statusError } = await supabase
+      // First, verify the photos exist and get their current status
+      const { data: currentPhotos, error: fetchError } = await supabase
+        .from('photos')
+        .select('*')
+        .in('id', photosToUpdate.map(p => p.id));
+
+      if (fetchError) {
+        console.error('Error fetching photos:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('Current photo status:', currentPhotos);
+
+      // Update print status and assign print number
+      const { data: updateData, error: statusError } = await supabase
         .from('photos')
         .update({
           print_status: 'printing',
-          status: 'printing'
+          status: 'printing',
+          updated_at: new Date().toISOString()
         })
-        .in('id', photosToUpdate.map(p => p.id));
+        .in('id', photosToUpdate.map(p => p.id))
+        .select();
 
       if (statusError) {
         console.error('Error updating print status:', statusError);
@@ -622,6 +673,10 @@ export default function TemplateGrid({ selectedEventId }) {
         setPrintStatus('idle');
         return;
       }
+
+      console.log('Updated photos with print number:', {
+        updatedPhotos: updateData
+      });
 
       // Create a canvas with precise measurements
       const canvas = document.createElement('canvas');
@@ -646,16 +701,18 @@ export default function TemplateGrid({ selectedEventId }) {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       try {
-        // Load and draw images
-        const loadImagePromises = photosToUpdate.map((photo, index) => {
+        // Load and draw images using currentPhotos (fetched from DB)
+        const loadImagePromises = currentPhotos.map((currentPhoto, index) => {
           return new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             img.onload = () => {
-              // Calculate position in grid
-              const row = Math.floor(index / GRID_SIZE);
-              const col = index % GRID_SIZE;
+              // Calculate position in grid (use the photo's template_position)
+              // Subtract 1 because position is 1-based, index is 0-based
+              const positionIndex = currentPhoto.template_position ? currentPhoto.template_position - 1 : index; 
+              const row = Math.floor(positionIndex / GRID_SIZE);
+              const col = positionIndex % GRID_SIZE;
               
               // Calculate exact position for this cell
               const cellX = col * (CELL_SIZE_PX + CELL_GAP_PX);
@@ -668,11 +725,27 @@ export default function TemplateGrid({ selectedEventId }) {
               // Draw photo at exact size
               ctx.drawImage(img, photoX, photoY, PHOTO_SIZE_PX, PHOTO_SIZE_PX);
               
+              // --- Add Print Number --- 
+              ctx.save();
+              ctx.font = `30px Arial`; // Slightly larger PX size
+              ctx.fillStyle = 'black';
+              // Position rotated text *above* the photo, horizontally centered
+              const printNumberX = photoX + PHOTO_SIZE_PX / 2;
+              const printNumberY = photoY - 30; // Increased offset again
+              // Log the specific photo's number being drawn
+              console.log(`🎨 Drawing print# ${currentPhoto.print_number} at X:${printNumberX.toFixed(0)}, Y:${printNumberY.toFixed(0)}`); 
+              ctx.translate(printNumberX, printNumberY); // Center X, Y above photo + offset
+              ctx.rotate(Math.PI); // Rotate 180 degrees (like URL)
+              ctx.textAlign = 'center'; // Set alignment after transform
+              ctx.fillText(`#${currentPhoto.print_number || '?'}`, 0, 0); // Use the photo's actual number
+              ctx.restore();
+              // --- End Print Number --- 
+
               // Add URL text directly to canvas
               ctx.save();
-              ctx.font = `${32}px Arial`;
+              ctx.font = `30px Arial`; // Slightly larger PX size
               ctx.fillStyle = 'black';
-              ctx.translate(photoX + PHOTO_SIZE_PX/2, photoY + PHOTO_SIZE_PX + 30);
+              ctx.translate(photoX + PHOTO_SIZE_PX / 2, photoY + PHOTO_SIZE_PX + 20); // Increased offset slightly
               ctx.rotate(Math.PI);  // Rotate 180 degrees
               ctx.textAlign = 'center';
               ctx.fillText(websiteUrl, 0, 0);
@@ -682,7 +755,7 @@ export default function TemplateGrid({ selectedEventId }) {
             };
             
             img.onerror = reject;
-            img.src = photo.url;
+            img.src = currentPhoto.url; // Use currentPhoto.url
           });
         });
 
@@ -786,16 +859,22 @@ export default function TemplateGrid({ selectedEventId }) {
         }
 
         // Update photos to printed status
-        const { error: finalUpdateError } = await supabase
+        console.log('Updating photos to printed status:', photosToUpdate.map(p => p.id));
+        const { data: finalData, error: finalUpdateError } = await supabase
           .from('photos')
           .update({
             print_status: 'printed',
-            status: 'printed'
+            status: 'printed',
+            updated_at: new Date().toISOString()
           })
-          .in('id', photosToUpdate.map(p => p.id));
+          .in('id', photosToUpdate.map(p => p.id))
+          .select();
 
         if (finalUpdateError) {
           console.error('Error updating final print status:', finalUpdateError);
+          toast.error('Failed to update print status');
+        } else {
+          console.log('Final photo status update:', finalData);
         }
 
         toast.success('Print job sent successfully!');
@@ -831,7 +910,7 @@ export default function TemplateGrid({ selectedEventId }) {
       setPrintStatus('idle');
       setCurrentPrintJob(null);
     }
-  }, [template, user?.id, selectedPrinter, websiteUrl, monitorPrintJob, isPrinting]);
+  }, [template, user?.id, selectedPrinter, websiteUrl, monitorPrintJob, isPrinting, selectedEventId]);
 
   const handleReprintSelect = (photo) => {
     setSelectedPrints(current => {
@@ -866,42 +945,34 @@ export default function TemplateGrid({ selectedEventId }) {
           const slotIndex = emptySlots[i];
           const templatePosition = slotIndex + 1;
 
-          console.log('Attempting to update photo:', {
+          console.log('Adding photo to template:', {
             photoId: photo.id,
-            position: templatePosition,
-            eventId: selectedEventId
+            position: templatePosition
           });
 
           // Update database first
-          const { data: updatedPhoto, error: updateError } = await supabase
+          const { error: updateError } = await supabase
             .from('photos')
             .update({
               status: 'in_template',
               template_position: templatePosition,
-              event_id: selectedEventId
+              print_status: 'pending'  // Reset print status for reprint
             })
-            .eq('id', photo.id)
-            .select()
-            .single();
+            .eq('id', photo.id);
 
           if (updateError) {
-            console.error('Error updating photo in database:', {
-              error: updateError,
-              photo: photo.id,
-              position: templatePosition
-            });
+            console.error('Error updating photo:', updateError);
             throw updateError;
           }
-
-          console.log('Successfully updated photo:', updatedPhoto);
 
           // Then update UI
           setTemplate(current => {
             const newTemplate = [...current];
             newTemplate[slotIndex] = {
-              ...updatedPhoto,
+              ...photo,
               status: 'in_template',
-              template_position: templatePosition
+              template_position: templatePosition,
+              print_status: 'pending'
             };
             return newTemplate;
           });
@@ -912,13 +983,8 @@ export default function TemplateGrid({ selectedEventId }) {
       setSelectedPrints([]);
       toast.success('Added selected photos to template');
     } catch (error) {
-      console.error('Error adding photos to template:', {
-        error: error,
-        code: error.code,
-        details: error.details,
-        message: error.message
-      });
-      toast.error(`Failed to add photos: ${error.message || 'Unknown error'}`);
+      console.error('Error adding photos to template:', error);
+      toast.error('Failed to add photos to template');
     }
   };
 
@@ -930,93 +996,56 @@ export default function TemplateGrid({ selectedEventId }) {
     return `${minutes}m ${seconds}s`;
   };
 
-  const handleMultiplePrints = async (photo, count) => {
-    if (!photo || count < 1) {
-      throw new Error('Invalid photo or count');
-    }
-
-    if (!selectedEventId) {
-      console.error('No event ID available');
-      toast.error('No event selected');
-      return null;
-    }
-
+  const handleMultiplePrints = async (photos) => {
     try {
-      console.log('Starting multiple prints:', {
-        originalPhoto: photo.id,
-        count,
-        eventId: selectedEventId
-      });
-
-      // Create new template array from current state
-      const newTemplate = [...template];
-      let added = 0;
+      console.log('Starting handleMultiplePrints with photos:', photos);
       
-      // Fill empty slots with copies
-      for (let i = 0; i < 9 && added < count; i++) {
-        if (newTemplate[i] === null) {
-          console.log('Creating copy for slot:', i + 1);
+      // Get the next print number
+      const nextPrintNumber = await getNextPrintNumber(selectedEventId);
+      console.log('Got next print number:', nextPrintNumber);
 
-          // Create a new photo entry in the database
-          const { data: newPhoto, error: insertError } = await supabase
+      // Create new photo entries in the database
+      const newPhotos = await Promise.all(
+        photos.map(async (photo) => {
+          console.log('Creating new photo entry for:', photo);
+          const { data, error } = await supabase
             .from('photos')
-            .insert({
-              event_id: selectedEventId,
-              url: photo.url,
-              status: 'in_template',
-              template_position: i + 1,
-              original_photo_id: photo.id,
-              user_id: photo.user_id || user.id,
-              frame_overlay: photo.frame_overlay,
-              created_at: new Date().toISOString(),
-              print_status: 'pending',
-              storage_status: 'uploaded',
-              source: photo.source || 'reprint'
-            })
+            .insert([
+              {
+                event_id: selectedEventId,
+                user_id: user.id,
+                photo_url: photo.photo_url,
+                status: 'in_template',
+                print_status: 'pending',
+                print_number: nextPrintNumber
+              }
+            ])
             .select()
             .single();
 
-          if (insertError) {
-            console.error('Error creating new photo copy:', {
-              error: insertError,
-              code: insertError.code,
-              details: insertError.details,
-              message: insertError.message,
-              originalPhoto: photo.id,
-              position: i + 1
-            });
-            throw insertError;
+          if (error) {
+            console.error('Error creating photo:', error);
+            throw error;
           }
 
-          console.log('Successfully created photo copy:', newPhoto);
+          console.log('Created new photo:', data);
+          return data;
+        })
+      );
 
-          // Then update UI with the new photo
-          newTemplate[i] = newPhoto;
-          added++;
-        }
-      }
-      
-      // Update template state
-      setTemplate(newTemplate);
-      
-      // Show success message
-      if (added === count) {
-        toast.success(`Added ${added} copies to template`);
-      } else {
-        toast.warning(`Added ${added} of ${count} copies. Template is full.`);
-      }
-      
-      return newTemplate;
-    } catch (error) {
-      console.error('Error adding multiple prints:', {
-        error: error,
-        code: error.code,
-        details: error.details,
-        message: error.message,
-        originalPhoto: photo.id
+      // Update the template with the new photos
+      const newTemplate = [...template];
+      newPhotos.forEach((photo, index) => {
+        newTemplate[index] = photo;
       });
-      toast.error(`Failed to add prints: ${error.message || 'Unknown error'}`);
-      return null;
+
+      console.log('Updating template with new photos:', newTemplate);
+      setTemplate(newTemplate);
+      setShowMultiplePrints(false);
+      setSelectedPhotos([]);
+    } catch (error) {
+      console.error('Error in handleMultiplePrints:', error);
+      toast.error('Failed to add photos to template');
     }
   };
 
@@ -1366,6 +1395,43 @@ export default function TemplateGrid({ selectedEventId }) {
     }
   };
 
+  // Function to get next print number for an event
+  const getNextPrintNumber = async (eventId) => {
+    try {
+      console.log('Getting next print number for event:', eventId);
+      
+      // Get the highest print number for this event
+      const { data, error } = await supabase
+        .from('photos')
+        .select('print_number')
+        .eq('event_id', eventId)
+        .not('print_number', 'is', null)
+        .order('print_number', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error getting next print number:', error);
+        throw error;
+      }
+
+      console.log('Current highest print number:', data);
+
+      // If no photos have been printed yet, start at 1
+      if (!data || data.length === 0) {
+        console.log('No print numbers found, starting at 1');
+        return 1;
+      }
+
+      // Return the next number
+      const nextNumber = data[0].print_number + 1;
+      console.log('Next print number will be:', nextNumber);
+      return nextNumber;
+    } catch (error) {
+      console.error('Error getting next print number:', error);
+      throw error;
+    }
+  };
+
   // Add Print Preview Modal
   if (showPrintPreview) {
     return (
@@ -1420,29 +1486,74 @@ export default function TemplateGrid({ selectedEventId }) {
                 >
                   {photo && (
                     <>
-                      <img 
-                        src={photo.url}
-                        alt={`Print Preview ${index + 1}`}
-                        style={{
-                          width: '2in',
-                          height: '2in',
+                      <div className={styles.photoContainer}>
+                        <div className={styles.printNumberBadge} style={{ 
                           position: 'absolute',
-                          top: '0.3585in',
-                          left: '0.3585in',
-                          objectFit: 'cover',
-                          zIndex: 0
+                          width: '2in',
+                          textAlign: 'center',
+                          fontSize: '8pt',
+                          color: 'black',
+                          transform: 'rotate(180deg)',
+                          left: '0.4015in',
+                          top: 'calc(0.4015in - 16pt)',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          padding: '0',
+                          pointerEvents: 'none'
+                        }}>
+                          #{photo.print_number || '?'}
+                        </div>
+                        <img 
+                          src={photo.url} 
+                          alt={`Photo ${index + 1}`}
+                          className="print-image"
+                          style={{
+                            width: '2in',
+                            height: '2in',
+                            position: 'absolute',
+                            top: '0.4015in',
+                            left: '0.4015in',
+                            objectFit: 'cover',
+                            opacity: loadedImages.has(photo.id) ? 1 : 0.5
+                          }}
+                          onLoad={() => handleImageLoad(photo.id)}
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/200';
+                            handleImageLoad(photo.id);
+                          }}
+                        />
+                        <div className={styles.cellControls}>
+                          <button
+                            onClick={() => handleDeletePhoto(photo, index)}
+                            className={styles.dangerButton}
+                          >
+                            ×
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedPhoto(photo);
+                              setPrintCount(1);
+                              openPrintPopup(photo);
+                            }}
+                            className={styles.primaryButton}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div 
+                        className="screen-url"
+                        style={{
+                          position: 'absolute',
+                          width: '2in',
+                          textAlign: 'center',
+                          top: 'calc(0.4015in + 2.05in)',
+                          left: '0.4015in',
+                          fontSize: '8pt',
+                          color: 'black',
+                          transform: 'rotate(180deg)'
                         }}
-                      />
-                      <div style={{
-                        position: 'absolute',
-                        width: '2in',
-                        textAlign: 'center',
-                        bottom: '0.15in',
-                        left: '0.3585in',
-                        fontSize: '8pt',
-                        color: 'black',
-                        transform: 'rotate(180deg)'
-                      }}>
+                      >
                         {websiteUrl}
                       </div>
                       <div 
@@ -1523,6 +1634,12 @@ export default function TemplateGrid({ selectedEventId }) {
             className={styles.secondaryButton}
           >
             Preview Print Layout
+          </button>
+          <button
+            onClick={loadRecentPrints}
+            className={styles.secondaryButton}
+          >
+            Reprint Photos
           </button>
           <button
             onClick={cleanupTemplateState}
@@ -1612,6 +1729,22 @@ export default function TemplateGrid({ selectedEventId }) {
                 {photo && (
                   <>
                     <div className={styles.photoContainer}>
+                      <div className={styles.printNumberBadge} style={{ 
+                        position: 'absolute',
+                        width: '2in',
+                        textAlign: 'center',
+                        fontSize: '8pt',
+                        color: 'black',
+                        transform: 'rotate(180deg)',
+                        left: '0.4015in',
+                        top: 'calc(0.4015in - 16pt)',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        padding: '0',
+                        pointerEvents: 'none'
+                      }}>
+                        #{photo.print_number || '?'}
+                      </div>
                       <img 
                         src={photo.url} 
                         alt={`Photo ${index + 1}`}
@@ -1729,13 +1862,24 @@ export default function TemplateGrid({ selectedEventId }) {
               </button>
             </div>
 
+            {/* Add search box */}
+            <div className={styles.searchBox}>
+              <input
+                type="number"
+                value={printNumberSearch}
+                onChange={(e) => setPrintNumberSearch(e.target.value)}
+                placeholder="Search by print number..."
+                className={styles.searchInput}
+              />
+            </div>
+
             <div className={styles.reprintGrid}>
-              {recentPrints.length === 0 ? (
+              {filteredPrints.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  No recent prints available
+                  {printNumberSearch ? 'No photos found with that print number' : 'No recent prints available'}
                 </div>
               ) : (
-                recentPrints.map((photo) => (
+                filteredPrints.map((photo) => (
                   <div 
                     key={photo.id}
                     className={`${styles.reprintItem} ${selectedPrints.includes(photo.id) ? styles.selected : ''}`}
@@ -1746,6 +1890,7 @@ export default function TemplateGrid({ selectedEventId }) {
                       alt="Recent print"
                       className={styles.reprintImage}
                     />
+                    <div className={styles.printNumber}>#{photo.print_number}</div>
                     {selectedPrints.includes(photo.id) && (
                       <div className={styles.checkmark}>✓</div>
                     )}
@@ -1801,7 +1946,8 @@ export default function TemplateGrid({ selectedEventId }) {
           .print-template,
           .print-cell,
           .print-image,
-          .cutting-guide-square { 
+          .cutting-guide-square,
+          .printNumberBadge { 
             visibility: visible !important;
             display: block !important;
           }
@@ -1859,6 +2005,25 @@ export default function TemplateGrid({ selectedEventId }) {
             top: 0.4015in !important;
             left: 0.4015in !important;
             object-fit: cover !important;
+          }
+
+          /* Print number badge positioning */
+          .printNumberBadge {
+            position: absolute !important;
+            top: 0.5rem !important;
+            left: 0.5rem !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            color: white !important;
+            padding: 0.25rem 0.5rem !important;
+            border-radius: 0.25rem !important;
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+            z-index: 100 !important;
+            display: block !important;
+            visibility: visible !important;
           }
 
           /* Cutting guide - centered within cell */
