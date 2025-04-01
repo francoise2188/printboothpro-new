@@ -681,15 +681,15 @@ export default function TemplateGrid({ selectedEventId }) {
       // Create a canvas with precise measurements
       const canvas = document.createElement('canvas');
       const DPI = 300;
-      const PHOTO_SIZE_INCHES = 2;
+      const PHOTO_SIZE_INCHES = 2; // Reverted back to 2 inches (600px @ 300 DPI)
       const CELL_SIZE_INCHES = 2.803;
       const GRID_SIZE = 3;
-      const CELL_GAP = 0.05; // Reduced from 0.1 to 0.05 inch gap between cells
+      const CELL_GAP = 0.05; // Restored constant
       
       // Calculate sizes in pixels
       const PHOTO_SIZE_PX = PHOTO_SIZE_INCHES * DPI;
       const CELL_SIZE_PX = CELL_SIZE_INCHES * DPI;
-      const CELL_GAP_PX = CELL_GAP * DPI;
+      const CELL_GAP_PX = CELL_GAP * DPI; // Use constant
       const TOTAL_WIDTH_PX = (CELL_SIZE_PX * GRID_SIZE) + (CELL_GAP_PX * (GRID_SIZE - 1));
       
       canvas.width = TOTAL_WIDTH_PX;
@@ -772,7 +772,7 @@ export default function TemplateGrid({ selectedEventId }) {
         // Calculate position to center grid on letter page
         const PAGE_WIDTH = 8.5;
         const PAGE_HEIGHT = 11;
-        // Calculate the total grid width including gaps
+        // Calculate the total grid width including gaps (use constant)
         const TOTAL_GRID_WIDTH = (CELL_SIZE_INCHES * GRID_SIZE) + (CELL_GAP * (GRID_SIZE - 1));
         const TOTAL_GRID_HEIGHT = (CELL_SIZE_INCHES * GRID_SIZE) + (CELL_GAP * (GRID_SIZE - 1));
         const X_OFFSET = (PAGE_WIDTH - TOTAL_GRID_WIDTH) / 2;
@@ -794,7 +794,8 @@ export default function TemplateGrid({ selectedEventId }) {
         // Draw cutting guides for each cell as octagon shapes
         for (let row = 0; row < 3; row++) {
           for (let col = 0; col < 3; col++) {
-            const centerX = X_OFFSET + (col * (CELL_SIZE_INCHES + CELL_GAP)) + (CELL_SIZE_INCHES / 2);
+            // Use constant for PDF positioning
+            const centerX = X_OFFSET + (col * (CELL_SIZE_INCHES + CELL_GAP)) + (CELL_SIZE_INCHES / 2); 
             const centerY = Y_OFFSET + (row * (CELL_SIZE_INCHES + CELL_GAP)) + (CELL_SIZE_INCHES / 2);
             
             // Calculate octagon points (30% inset on each side)
@@ -1990,79 +1991,89 @@ export default function TemplateGrid({ selectedEventId }) {
             display: none !important;
           }
           
-          /* Template positioning */
+          /* Template positioning - Reverted to centered layout */
           .print-template {
             position: fixed !important;
-            left: 0 !important;
-            top: calc(5.5in - 1.4015in) !important;
-            transform: none !important;
-            width: 8.5in !important;
-            height: 8.409in !important;
+            /* Calculate total grid width: (3 cells * cell_width) + (2 gaps * gap_width) */
+            width: calc(3 * 2.803in + 2 * 0.05in) !important;
+            /* Calculate total grid height */
+            height: calc(3 * 2.803in + 2 * 0.05in) !important; 
+            /* Center horizontally */
+            left: 50% !important;
+            /* Center vertically */
+            top: 50% !important;
+            /* Adjust position using transform */
+            transform: translate(-50%, -50%) !important;
             margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
+            padding: 0 !important; 
+            /* Make it a grid container */
+            display: grid !important;
+            grid-template-columns: repeat(3, 2.803in) !important;
+            /* Remove justify-content property */
+            /* justify-content: center !important; */
+            /* Restore fixed gap between columns */
+            gap: 0.05in !important; 
             box-sizing: border-box !important;
             background-color: white !important;
             border: none !important;
           }
 
-          /* Position the cells */
+          /* Position the cells - Remove absolute positioning */
           .print-cell {
             width: 2.803in !important;
             height: 2.803in !important;
-            position: absolute !important;
-            top: 0 !important;
+            position: relative !important; /* Use relative positioning */
+            /* Remove absolute positioning styles */
+            /* top: 0 !important; */
+            /* left: 0 !important; */
+            /* margin-left: ... !important; */
+            /* transform: ... !important; */
+            box-sizing: border-box !important;
           }
 
           /* Position each cell at its center point */
-          .print-cell:nth-child(1) {
-            left: 0 !important;
-            margin-left: 1.4015in !important; /* Center of first cell (2.803/2) */
-          }
+          /* Remove this rule as centering is handled by the grid container */
+          /* .print-cell:nth-child(1) { ... } */
+          /* .print-cell:nth-child(2) { ... } */
+          /* .print-cell:nth-child(3) { ... } */
 
-          .print-cell:nth-child(2) {
-            left: 0 !important;
-            margin-left: 4.25in !important; /* Center of page (8.5/2) */
-          }
-
-          .print-cell:nth-child(3) {
-            left: 0 !important;
-            margin-left: 7.0985in !important; /* Center of last cell (8.5 - 2.803/2) */
-          }
-
-          /* Image positioning within cells */
+          /* Image positioning within cells - Reverted to 2in */
           .print-image {
-            width: 2in !important;
-            height: 2in !important;
+            width: 2in !important; /* Reverted size */
+            height: 2in !important; /* Reverted size */
             position: absolute !important;
-            top: 0.4015in !important;
-            left: 0.4015in !important;
+            /* Center image within the cell */
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
             object-fit: cover !important;
           }
 
-          /* Print number badge positioning */
+          /* Print number badge positioning - Reverted for 2in photo */
           .printNumberBadge {
+            /* Positioning relative to the 2in photo */
             position: absolute !important;
-            top: 0.5rem !important;
-            left: 0.5rem !important;
-            background: rgba(0, 0, 0, 0.9) !important;
-            color: white !important;
-            padding: 0.25rem 0.5rem !important;
-            border-radius: 0.25rem !important;
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+            /* Center above the image */
+            width: 2in !important; /* Match image width */
+            text-align: center !important;
+            font-size: 8pt !important;
+            color: black !important;
+            transform: rotate(180deg) !important;
+            left: 50% !important;
+            margin-left: -1in !important; /* -(Width/2) */
+            top: calc(50% - 1in - 10pt) !important; /* -(Height/2) - offset */
+            /* Original styles (adjust as needed) */
+            background: transparent !important;
+            padding: 0 !important;
+            border: none !important;
+            /* visibility / display are handled above */
             z-index: 100 !important;
-            display: block !important;
-            visibility: visible !important;
           }
 
           /* Cutting guide - centered within cell */
           .cutting-guide-square {
             border: 3px solid #c0c0c0 !important;
-            width: 71.2mm !important;
+            width: 71.2mm !important; /* Approx 2.803 inches */
             height: 71.2mm !important;
             position: absolute !important;
             top: 50% !important;
@@ -2073,9 +2084,10 @@ export default function TemplateGrid({ selectedEventId }) {
           }
 
           /* Center the cells themselves */
-          .print-cell {
+          /* Remove this rule as centering is handled by the grid container */
+          /* .print-cell {
             transform: translateX(-50%) !important;
-          }
+          } */
         }
 
         @media screen {
@@ -2088,3 +2100,4 @@ export default function TemplateGrid({ selectedEventId }) {
     </div>
   );
 }
+            
