@@ -194,12 +194,14 @@
   max-width: 64rem;
   max-height: 90vh;
   overflow-y: auto;
+  position: relative;
 }
 
 .modalHeader {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: start;
+  gap: 1rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #e2e8f0;
@@ -221,6 +223,10 @@
   padding: 0.5rem;
   color: #64748b;
   transition: color 0.2s ease;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
 }
 
 .closeButton:hover {
@@ -391,4 +397,11 @@
 
 .reprintItem:hover {
   transform: scale(1.05);
+}
+
+.topAddButtonContainer {
+  position: absolute;
+  top: 3.5rem;
+  right: 1rem;
+  z-index: 10;
 } 

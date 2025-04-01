@@ -25,6 +25,11 @@ export default function AdminSettingsPage() {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // State for the new coupon input fields
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponType, setNewCouponType] = useState('percentage'); // 'percentage' or 'fixed'
+  const [newCouponValue, setNewCouponValue] = useState('');
+
   useEffect(() => {
     if (user) {
       fetchSettings();
@@ -41,7 +46,7 @@ export default function AdminSettingsPage() {
       console.log('🎯 Attempting to fetch settings for user:', user.id);
 
       // Get the most recent settings for this user
-      const { data: settings, error: fetchError } = await supabase
+      const { data: settingsData, error: fetchError } = await supabase
         .from('payment_settings')
         .select('*')
         .eq('user_id', user.id)
@@ -55,19 +60,19 @@ export default function AdminSettingsPage() {
       }
 
       // If we found settings, use them
-      if (settings) {
-        console.log('✅ Found existing settings:', settings);
+      if (settingsData) {
+        console.log('✅ Found existing settings:', settingsData);
         setSettings({
-          paypal_username: settings.paypal_username || '',
-          venmo_username: settings.venmo_username || '',
-          single_magnet_price: settings.single_magnet_price || '0',
-          three_magnets_price: settings.three_magnets_price || '0',
-          six_magnets_price: settings.six_magnets_price || '0',
-          nine_magnets_price: settings.nine_magnets_price || '0',
-          enable_tax: settings.enable_tax || false,
-          tax_rate: settings.tax_rate || '0',
-          coupons: settings.coupons || [],
-          square_location_id: settings.square_location_id || ''
+          paypal_username: settingsData.paypal_username || '',
+          venmo_username: settingsData.venmo_username || '',
+          single_magnet_price: settingsData.single_magnet_price || '0',
+          three_magnets_price: settingsData.three_magnets_price || '0',
+          six_magnets_price: settingsData.six_magnets_price || '0',
+          nine_magnets_price: settingsData.nine_magnets_price || '0',
+          enable_tax: settingsData.enable_tax || false,
+          tax_rate: settingsData.tax_rate || '0',
+          coupons: settingsData.coupons || [],
+          square_location_id: settingsData.square_location_id || ''
         });
         return;
       }
@@ -164,15 +169,15 @@ export default function AdminSettingsPage() {
         saveResult = await supabase
           .from('payment_settings')
           .insert([sanitizedSettings])
-          .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons, square_location_id')
+          .select('*')
           .single();
       } else {
         console.log('🔄 Updating existing settings with ID:', existingData.id);
         saveResult = await supabase
           .from('payment_settings')
           .update(sanitizedSettings)
-          .eq('id', existingData.id)  // Use the specific record ID
-          .select('id, user_id, paypal_username, venmo_username, single_magnet_price, three_magnets_price, six_magnets_price, nine_magnets_price, enable_tax, tax_rate, coupons, square_location_id')
+          .eq('id', existingData.id)
+          .select('*')
           .single();
       }
 
@@ -203,6 +208,52 @@ export default function AdminSettingsPage() {
       setSaving(false);
     }
   };
+
+  // --- Coupon Management Functions ---
+  const handleAddCoupon = () => {
+    const code = newCouponCode.trim().toUpperCase();
+    const value = parseFloat(newCouponValue);
+
+    if (!code) {
+      setMessage('Coupon code cannot be empty.');
+      return;
+    }
+    if (isNaN(value) || value <= 0) {
+      setMessage('Coupon value must be a positive number.');
+      return;
+    }
+    // Check if coupon code already exists
+    if (settings.coupons.some(coupon => coupon.code === code)) {
+      setMessage(`Coupon code '${code}' already exists.`);
+      return;
+    }
+
+    const newCoupon = {
+      code,
+      type: newCouponType,
+      value,
+    };
+
+    setSettings(prevSettings => ({
+      ...prevSettings,
+      coupons: [...prevSettings.coupons, newCoupon]
+    }));
+
+    // Clear input fields
+    setNewCouponCode('');
+    setNewCouponType('percentage');
+    setNewCouponValue('');
+    setMessage('Coupon added. Remember to save settings.'); // Inform user to save
+  };
+
+  const handleDeleteCoupon = (codeToDelete) => {
+    setSettings(prevSettings => ({
+      ...prevSettings,
+      coupons: prevSettings.coupons.filter(coupon => coupon.code !== codeToDelete)
+    }));
+    setMessage('Coupon removed. Remember to save settings.'); // Inform user to save
+  };
+  // --- End Coupon Management Functions ---
 
   return (
     <div className={styles.container}>
@@ -326,6 +377,90 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* --- Coupon Management Section --- */} 
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Manage Coupons</h2>
+          
+          {/* Form to add a new coupon */}
+          <div className={`${styles.grid} ${styles.addCouponForm}`}>
+            <div className={styles.formGroup}>
+              <label htmlFor="couponCode" className={styles.label}>Coupon Code</label>
+              <input
+                id="couponCode"
+                type="text"
+                value={newCouponCode}
+                onChange={(e) => setNewCouponCode(e.target.value)}
+                className={styles.input}
+                placeholder="e.g., SUMMER10"
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="couponType" className={styles.label}>Discount Type</label>
+              <select 
+                id="couponType"
+                value={newCouponType}
+                onChange={(e) => setNewCouponType(e.target.value)}
+                className={styles.input}
+              >
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed Amount ($)</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="couponValue" className={styles.label}>Value</label>
+              <input
+                id="couponValue"
+                type="number"
+                step={newCouponType === 'percentage' ? '1' : '0.01'} // Adjust step based on type
+                min="0"
+                value={newCouponValue}
+                onChange={(e) => setNewCouponValue(e.target.value)}
+                className={styles.input}
+                placeholder={newCouponType === 'percentage' ? 'e.g., 10' : 'e.g., 5.00'}
+              />
+            </div>
+            <div className={styles.formGroup} style={{ alignSelf: 'flex-end' }}>
+              <button 
+                type="button" // Prevent form submission
+                onClick={handleAddCoupon}
+                className={styles.buttonSecondary} // Use a secondary button style if available
+              >
+                Add Coupon
+              </button>
+            </div>
+          </div>
+
+          {/* List of existing coupons */}
+          <div className={styles.couponListContainer}>
+            <h3 className={styles.subSectionTitle}>Existing Coupons</h3>
+            {settings.coupons && settings.coupons.length > 0 ? (
+              <ul className={styles.couponList}>
+                {settings.coupons.map((coupon) => (
+                  <li key={coupon.code} className={styles.couponListItem}>
+                    <span>
+                      <strong>{coupon.code}</strong>: {
+                        coupon.type === 'percentage' 
+                          ? `${coupon.value}% off` 
+                          : `$${Number(coupon.value).toFixed(2)} off`
+                      }
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleDeleteCoupon(coupon.code)}
+                      className={styles.deleteButton} // Add specific styling for delete
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.noItems}>No coupons added yet.</p>
+            )}
+          </div>
+        </div>
+        {/* --- End Coupon Management Section --- */}
 
         {/* Tax Settings */}
         <div className={styles.section}>
