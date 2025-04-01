@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '../../../lib/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function InvitationCodesPage() {
+  const supabase = createClientComponentClient();
   const [codes, setCodes] = useState([]);
   const [newCode, setNewCode] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,8 +33,8 @@ export default function InvitationCodesPage() {
       if (error) throw error;
       setCodes(data);
     } catch (error) {
-      console.error('Error fetching codes:', error);
-      setError(error.message);
+      console.error('Full error fetching codes:', error);
+      setError(error.message || 'Failed to fetch codes. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -52,6 +53,9 @@ export default function InvitationCodesPage() {
   const createCode = async () => {
     if (!newCode) return;
 
+    // Log the user ID being used for the insert
+    console.log('Attempting to insert code with created_by:', user?.id);
+
     try {
       const { error } = await supabase
         .from('invitation_codes')
@@ -62,12 +66,17 @@ export default function InvitationCodesPage() {
       setNewCode('');
       fetchCodes();
     } catch (error) {
-      console.error('Error creating code:', error);
-      setError(error.message);
+      // Log the full error object for more details
+      console.error('Full error creating code:', error);
+      setError(error.message || 'Failed to create code. Check console for details.');
     }
   };
 
   const deleteCode = async (codeId) => {
+    // Log which code ID we are attempting to delete
+    console.log(`Attempting to delete code with ID: ${codeId}`);
+    setError(null); // Clear previous errors
+
     try {
       const { error } = await supabase
         .from('invitation_codes')
@@ -77,8 +86,9 @@ export default function InvitationCodesPage() {
       if (error) throw error;
       fetchCodes();
     } catch (error) {
-      console.error('Error deleting code:', error);
-      setError(error.message);
+      // Log the full error object for more details
+      console.error('Full error deleting code:', error);
+      setError(error.message || 'Failed to delete code. Check console for details.');
     }
   };
 
