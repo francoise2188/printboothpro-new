@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '../../../lib/AuthContext';
@@ -10,6 +10,7 @@ export default function EventQRCode({ eventId, eventName }) {
   const [isActive, setIsActive] = useState(true);
   const supabase = createClientComponentClient();
   const { user } = useAuth();
+  const qrCodeSvgRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -64,6 +65,60 @@ export default function EventQRCode({ eventId, eventName }) {
     }
   };
 
+  // Function to handle saving the QR code as PNG
+  const handleSaveQRCode = () => {
+    if (!qrCodeSvgRef.current) {
+      console.error("QR Code SVG element not found.");
+      return;
+    }
+
+    const svgElement = qrCodeSvgRef.current;
+    const svgXml = new XMLSerializer().serializeToString(svgElement);
+
+    // Create an image element to render the SVG
+    const img = new Image();
+    const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      // Create a canvas element
+      const canvas = document.createElement('canvas');
+      // Add some padding/margin like the original SVG might have had visually
+      const padding = 20; // Adjust padding as needed
+      canvas.width = svgElement.clientWidth + padding * 2;
+      canvas.height = svgElement.clientHeight + padding * 2;
+      const ctx = canvas.getContext('2d');
+
+      // Fill background with white
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the image onto the canvas with padding
+      ctx.drawImage(img, padding, padding, svgElement.clientWidth, svgElement.clientHeight);
+      URL.revokeObjectURL(url); // Clean up blob URL
+
+      // Convert canvas to PNG data URL
+      const pngUrl = canvas.toDataURL('image/png');
+
+      // Trigger download
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      // Sanitize eventName or provide a default for filename
+      const safeEventName = eventName ? eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'event';
+      downloadLink.download = `${safeEventName}_qr_code.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    };
+
+    img.onerror = (error) => {
+      console.error("Error loading SVG into image:", error);
+      URL.revokeObjectURL(url); // Clean up blob URL even on error
+    };
+
+    img.src = url;
+  };
+
   if (!mounted) return null;
 
   return (
@@ -85,6 +140,7 @@ export default function EventQRCode({ eventId, eventName }) {
       <div className="flex flex-col items-center">
         <div className="relative">
           <QRCodeSVG 
+            ref={qrCodeSvgRef}
             value={eventUrl}
             size={256}
             level="H"
@@ -170,6 +226,13 @@ export default function EventQRCode({ eventId, eventName }) {
             className="mt-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm transition-colors"
           >
             Print QR Code
+          </button>
+
+          <button
+            onClick={handleSaveQRCode}
+            className="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm transition-colors"
+          >
+            Save QR Code
           </button>
         </div>
       </div>

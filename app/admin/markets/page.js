@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
@@ -53,6 +53,7 @@ export default function MarketManager() {
     upcoming: true,
     past: false
   });
+  const qrCodeSvgRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -704,6 +705,63 @@ export default function MarketManager() {
     </div>
   );
 
+  // Function to handle saving the Market QR code as PNG
+  const handleSaveMarketQRCode = () => {
+    if (!qrCodeSvgRef.current) {
+      console.error("Market QR Code SVG element not found.");
+      return;
+    }
+    if (!selectedMarket || !selectedMarket.name) {
+        console.error("Selected market or market name is missing.");
+        return;
+    }
+
+    const svgElement = qrCodeSvgRef.current;
+    const svgXml = new XMLSerializer().serializeToString(svgElement);
+
+    // Create an image element to render the SVG
+    const img = new Image();
+    const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      // Create a canvas element
+      const canvas = document.createElement('canvas');
+      const padding = 20; // Adjust padding as needed
+      canvas.width = svgElement.clientWidth + padding * 2;
+      canvas.height = svgElement.clientHeight + padding * 2;
+      const ctx = canvas.getContext('2d');
+
+      // Fill background with white
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the image onto the canvas with padding
+      ctx.drawImage(img, padding, padding, svgElement.clientWidth, svgElement.clientHeight);
+      URL.revokeObjectURL(url); // Clean up blob URL
+
+      // Convert canvas to PNG data URL
+      const pngUrl = canvas.toDataURL('image/png');
+
+      // Trigger download
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      // Sanitize marketName or provide a default for filename
+      const safeMarketName = selectedMarket.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      downloadLink.download = `${safeMarketName}_qr_code.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    };
+
+    img.onerror = (error) => {
+      console.error("Error loading SVG into image:", error);
+      URL.revokeObjectURL(url); // Clean up blob URL even on error
+    };
+
+    img.src = url;
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -1161,81 +1219,55 @@ export default function MarketManager() {
         </div>
       )}
 
-      {!isNewMarket && selectedMarket && (
+      {selectedMarket && (
         <div className="mt-6 pt-6 border-t">
           <h3 className="text-lg font-semibold mb-4">Market QR Code</h3>
           <div className="flex flex-col items-center space-y-4">
-            <QRCodeSVG 
-              value={`${window.location.origin}/market/${selectedMarket.id}`}
-              size={150}
-              level="H"
+            <QRCodeSVG
+              ref={qrCodeSvgRef}
+              value={`${process.env.NEXT_PUBLIC_SITE_URL}/market/${selectedMarket.id}`}
+              size={200}
+              level={"H"}
               includeMargin={true}
+              className="mb-4"
             />
-            
-            <div className="flex flex-col items-center space-y-2 w-full max-w-md">
-              <input
-                type="text"
-                value={`${window.location.origin}/market/${selectedMarket.id}`}
-                readOnly
-                className="w-full px-3 py-2 border rounded text-sm bg-gray-50"
-              />
-              
-              <div className="flex space-x-2">
+            <p className="text-sm font-mono break-all bg-gray-200 px-2 py-1 rounded">
+              {`${process.env.NEXT_PUBLIC_SITE_URL}/market/${selectedMarket.id}`}
+            </p>
+            <div className="mt-4 flex space-x-2">
                 <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/market/${selectedMarket.id}`);
-                    setMessage('Link copied to clipboard!');
-                    setTimeout(() => setMessage(''), 3000);
-                  }}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Copy Market Link
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => {
                     const printWindow = window.open('', '_blank');
-                    printWindow.document.write(`
-                      <html>
-                        <head>
-                          <title>QR Code - ${selectedMarket.name}</title>
-                          <style>
-                            body {
-                              display: flex;
-                              flex-direction: column;
-                              align-items: center;
-                              justify-content: center;
-                              min-height: 100vh;
-                              margin: 0;
-                              padding: 20px;
-                            }
-                            h2 { 
-                              margin-bottom: 20px;
-                              font-size: 24px;
-                              font-weight: bold;
-                            }
-                            svg {
-                              width: 600px !important;
-                              height: 600px !important;
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <h2>${selectedMarket.name}</h2>
-                          ${document.querySelector('.flex.flex-col.items-center.space-y-4 svg').outerHTML}
-                        </body>
-                      </html>
-                    `);
-                    printWindow.document.close();
-                    printWindow.print();
+                    const qrSvgElement = qrCodeSvgRef.current;
+                    if (qrSvgElement) {
+                      const svgHtml = new XMLSerializer().serializeToString(qrSvgElement);
+                      printWindow.document.write(`
+                        <html>
+                          <head><title>QR Code - ${selectedMarket.name}</title></head>
+                          <body style="text-align:center; padding-top: 50px;">
+                            <h2>${selectedMarket.name}</h2>
+                            ${svgHtml}
+                            <p>${process.env.NEXT_PUBLIC_SITE_URL}/market/${selectedMarket.id}</p>
+                          </body>
+                        </html>`);
+                      printWindow.document.close();
+                      printWindow.print();
+                    } else {
+                       console.error("Could not find QR code element for printing.");
+                       printWindow.close();
+                    }
                   }}
-                  className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm transition-colors"
                 >
                   Print QR Code
                 </button>
-              </div>
+
+                <button
+                  onClick={handleSaveMarketQRCode}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm transition-colors"
+                >
+                  Save QR Code
+                </button>
             </div>
           </div>
         </div>
