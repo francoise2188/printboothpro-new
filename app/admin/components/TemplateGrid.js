@@ -996,53 +996,85 @@ export default function TemplateGrid({ selectedEventId }) {
     return `${minutes}m ${seconds}s`;
   };
 
-  const handleMultiplePrints = async (photos) => {
+  const handleMultiplePrints = async (photos, count) => {
     try {
-      console.log('Starting handleMultiplePrints with photos:', photos);
+      console.log(`Starting handleMultiplePrints with ${count} copies of photo:`, photos[0]); 
       
-      // Get the next print number
-      const nextPrintNumber = await getNextPrintNumber(selectedEventId);
-      console.log('Got next print number:', nextPrintNumber);
+      // Ensure photos is an array and has at least one item
+      if (!Array.isArray(photos) || photos.length === 0) {
+        throw new Error('Invalid input: photos must be a non-empty array.');
+      }
+      const originalPhoto = photos[0]; // Get the single photo to duplicate
 
-      // Create new photo entries in the database
-      const newPhotos = await Promise.all(
-        photos.map(async (photo) => {
-          console.log('Creating new photo entry for:', photo);
+      // Create an array representing the desired number of copies
+      const photosToCreate = Array(count).fill(originalPhoto);
+
+      // Find available slots *before* inserting
+      const availableSlots = template.reduce((slots, photo, index) => {
+        if (!photo) slots.push(index);
+        return slots;
+      }, []);
+
+      // Limit count to available slots
+      const actualCount = Math.min(count, availableSlots.length);
+      if (actualCount === 0) {
+        toast.error('No empty slots available in the template.');
+        return;
+      } 
+      if (actualCount < count) {
+          toast.info(`Only ${actualCount} slots available. Adding ${actualCount} copies.`);
+      }
+
+      const photosToInsert = Array(actualCount).fill(originalPhoto);
+
+      // Create new photo entries in the database for each copy
+      const newPhotosData = await Promise.all(
+        photosToInsert.map(async (photoToCopy, index) => { // Map over the copies array
+           // Determine the template position using the pre-calculated available slots
+          const slotIndex = availableSlots[index];
+          const templatePosition = slotIndex + 1;
+          console.log(`Creating copy #${index + 1} at position ${templatePosition}`);
+
+          const insertPayload = {
+            event_id: selectedEventId,
+            user_id: user.id, 
+            url: photoToCopy.url, 
+            status: 'in_template', 
+            print_status: 'pending', 
+            print_number: null, // SETTING PRINT NUMBER TO NULL
+            original_photo_id: photoToCopy.id,
+            template_position: templatePosition
+          };
+          
+          console.log(`Payload for copy #${index + 1}:`, JSON.stringify(insertPayload));
+
           const { data, error } = await supabase
             .from('photos')
-            .insert([
-              {
-                event_id: selectedEventId,
-                user_id: user.id,
-                photo_url: photo.photo_url,
-                status: 'in_template',
-                print_status: 'pending',
-                print_number: nextPrintNumber
-              }
-            ])
+            .insert([insertPayload])
             .select()
             .single();
 
           if (error) {
-            console.error('Error creating photo:', error);
+            console.error(`Error creating photo copy #${index + 1}:`, error);
             throw error;
           }
 
-          console.log('Created new photo:', data);
-          return data;
+          console.log(`Created new photo copy #${index + 1}:`, data);
+          return data; 
         })
       );
 
-      // Update the template with the new photos
-      const newTemplate = [...template];
-      newPhotos.forEach((photo, index) => {
-        newTemplate[index] = photo;
+      // Update the local template state immediately
+      const updatedTemplate = [...template];
+      newPhotosData.forEach((newPhoto) => {
+          if (newPhoto.template_position >= 1 && newPhoto.template_position <= updatedTemplate.length) {
+              updatedTemplate[newPhoto.template_position - 1] = newPhoto;
+          }
       });
 
-      console.log('Updating template with new photos:', newTemplate);
-      setTemplate(newTemplate);
-      setShowMultiplePrints(false);
-      setSelectedPhotos([]);
+      console.log('Updating local template state with new photos:', updatedTemplate);
+      setTemplate(updatedTemplate);
+
     } catch (error) {
       console.error('Error in handleMultiplePrints:', error);
       toast.error('Failed to add photos to template');
@@ -1153,7 +1185,8 @@ export default function TemplateGrid({ selectedEventId }) {
       }
 
       try {
-        await handleMultiplePrints(selectedPhoto, printCount);
+        // Wrap selectedPhoto in an array and pass printCount
+        await handleMultiplePrints([selectedPhoto], printCount); 
         
         // Close window after successful addition
         if (popupWindow && !popupWindow.closed) {
