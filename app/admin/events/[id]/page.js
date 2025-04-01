@@ -1049,21 +1049,6 @@ const EventDetailsPage = ({ params }) => {
               <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>Export Data</h2>
                 <div className={styles.exportSection}>
-                  <div className={styles.stats}>
-                    <div className={styles.statItem}>
-                      <span className={styles.statLabel}>Total Photos</span>
-                      <span className={styles.statValue}>
-                        {event.photo_count || 0}
-                      </span>
-                    </div>
-                    <div className={styles.statItem}>
-                      <span className={styles.statLabel}>Total Emails</span>
-                      <span className={styles.statValue}>
-                        {event.email_count || 0}
-                      </span>
-                    </div>
-                  </div>
-
                   <div className={styles.exportOptions}>
                     <label className={styles.checkboxLabel}>
                       <input

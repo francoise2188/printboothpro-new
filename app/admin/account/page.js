@@ -19,96 +19,64 @@ export default function AccountPage() {
     printnode_printer_id: ''
   });
 
-  // Fetch existing settings
+  // Fetch existing settings from database only
   useEffect(() => {
     const initializeSettings = async () => {
+      setLoading(true); // Indicate loading state
+      setMessage(''); // Clear previous messages
       try {
-        // First check if we have a user
         if (!user) {
-          console.log('DEBUG: No user found - not authenticated');
-          return;
+          console.log('DEBUG: No user found - cannot initialize settings');
+          return; // Exit if no user
         }
 
-        console.log('DEBUG: User authenticated with ID:', user.id);
+        console.log('DEBUG: Initializing settings for user:', user.id);
 
-        // Try to get existing settings from localStorage first
-        const localSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
-
-        // Try to get existing settings from database
-        const { data: existingData, error: fetchError } = await supabase
+        // Fetch settings directly from database based on user_id
+        const { data: dbSettings, error: fetchError } = await supabase
           .from('user_settings')
-          .select('*')
+          .select('printnode_api_key, printnode_printer_id')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle to handle no settings gracefully
 
-        console.log('DEBUG: Fetch attempt result:', { existingData, fetchError });
+        console.log('DEBUG: Database fetch result:', { dbSettings, fetchError });
 
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          console.log('DEBUG: Fetch error occurred:', fetchError);
+        if (fetchError) {
+          // Handle potential errors, but maybeSingle handles "no rows" gracefully
+          console.error('DEBUG: Error fetching settings:', fetchError);
           throw new Error(`Failed to fetch settings: ${fetchError.message}`);
         }
 
-        if (!existingData) {
-          console.log('DEBUG: No existing settings found, attempting to create new settings...');
-          
-          // Create new settings using upsert instead of insert
-          const { data: newData, error: upsertError } = await supabase
-            .from('user_settings')
-            .upsert({
-              user_id: user.id,
-              printnode_api_key: localSettings.printnode_api_key || '',
-              printnode_printer_id: localSettings.printnode_printer_id || ''
-            })
-            .select()
-            .single();
-
-          console.log('DEBUG: Upsert attempt result:', { newData, upsertError });
-
-          if (upsertError) {
-            console.error('DEBUG: Upsert error:', upsertError);
-            throw new Error(`Failed to create settings: ${upsertError.message}`);
-          }
-
-          console.log('DEBUG: New settings created successfully:', newData);
-          setSettings(newData);
-          
-          // Update localStorage with the new settings
-          localStorage.setItem('userSettings', JSON.stringify({
-            printnode_api_key: newData.printnode_api_key || '',
-            printnode_printer_id: newData.printnode_printer_id || ''
-          }));
-          
-          setMessage('Settings initialized successfully');
-          return;
+        // If settings exist in DB, use them. Otherwise, use initial empty state.
+        if (dbSettings) {
+          console.log('DEBUG: Found existing settings in DB:', dbSettings);
+          setSettings({
+            printnode_api_key: dbSettings.printnode_api_key || '',
+            printnode_printer_id: dbSettings.printnode_printer_id || ''
+          });
+        } else {
+          console.log('DEBUG: No existing settings found in DB for user. Using defaults.');
+          // Keep the initial empty settings state
+          setSettings({
+            printnode_api_key: '',
+            printnode_printer_id: ''
+          });
+          // Note: We no longer automatically create settings here. 
+          // The first save action will create them via upsert.
         }
 
-        console.log('DEBUG: Existing settings loaded:', existingData);
-        
-        // Merge database settings with localStorage settings
-        const mergedSettings = {
-          ...existingData,
-          printnode_api_key: localSettings.printnode_api_key || existingData.printnode_api_key || '',
-          printnode_printer_id: localSettings.printnode_printer_id || existingData.printnode_printer_id || ''
-        };
-        
-        setSettings(mergedSettings);
-        
-        // Update localStorage with the merged settings
-        localStorage.setItem('userSettings', JSON.stringify({
-          printnode_api_key: mergedSettings.printnode_api_key,
-          printnode_printer_id: mergedSettings.printnode_printer_id
-        }));
-        
-        setMessage('');
-
       } catch (error) {
-        console.error('DEBUG: Critical error in initializeSettings:', error);
-        setMessage(error.message);
+        console.error('DEBUG: Error in initializeSettings:', error);
+        setMessage(`Error loading settings: ${error.message}`);
+      } finally {
+        setLoading(false);
       }
     };
 
-    initializeSettings();
-  }, [user]);
+    if (user) { // Only run if user object is available
+      initializeSettings();
+    }
+  }, [user]); // Rerun when user object changes
 
   const testPrintNodeConnection = async () => {
     try {
@@ -154,34 +122,38 @@ export default function AccountPage() {
   };
 
   const handleSave = async () => {
+    setMessage(''); // Clear message on new save attempt
     try {
       if (!user || !user.id) {
         throw new Error('User not authenticated');
       }
 
+      console.log('DEBUG: Saving settings for user:', user.id, 'with data:', settings);
+
+      // Upsert directly to database
       const { error } = await supabase
         .from('user_settings')
         .upsert([{
           user_id: user.id,
-          printnode_api_key: settings.printnode_api_key || '',
-          printnode_printer_id: settings.printnode_printer_id || ''
+          printnode_api_key: settings.printnode_api_key || null, // Use null for empty strings
+          printnode_printer_id: settings.printnode_printer_id || null // Use null for empty strings
         }], {
-          onConflict: 'user_id'
+          onConflict: 'user_id' // Ensure it updates if exists, inserts if not
         });
 
       if (error) {
+        console.error('DEBUG: Error saving settings to DB:', error);
         throw new Error(`Failed to save settings: ${error.message}`);
       }
 
-      // Also save to localStorage for immediate access
-      localStorage.setItem('userSettings', JSON.stringify({
-        printnode_api_key: settings.printnode_api_key || '',
-        printnode_printer_id: settings.printnode_printer_id || ''
-      }));
+      // Remove localStorage saving
+      // localStorage.setItem('userSettings', JSON.stringify({...}));
 
+      console.log('DEBUG: Settings saved successfully to DB');
       setMessage('Settings saved successfully!');
+
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error('DEBUG: Error in handleSave:', error);
       setMessage(error.message || 'Error saving settings');
     }
   };
@@ -197,12 +169,12 @@ export default function AccountPage() {
     }
   };
 
-  // If no user is present, show loading state
-  if (!user) {
+  // Show loading state while fetching settings or if no user yet
+  if (loading || !user) { 
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Loading...</h1>
+          <h1 className={styles.title}>Loading Account...</h1>
         </div>
       </div>
     );
@@ -218,7 +190,7 @@ export default function AccountPage() {
       </div>
       
       {message && (
-        <div className={`${styles.message} ${message.includes('Error') ? styles.error : styles.success}`}>
+        <div className={`${styles.message} ${message.includes('Error') || message.includes('Failed') ? styles.error : styles.success}`}>
           {message}
         </div>
       )}
@@ -238,7 +210,7 @@ export default function AccountPage() {
           <label className={styles.label}>PrintNode API Key</label>
           <input
             type="password"
-            value={settings.printnode_api_key}
+            value={settings.printnode_api_key || ''} // Ensure value is controlled
             onChange={(e) => setSettings({...settings, printnode_api_key: e.target.value})}
             className={styles.input}
             placeholder="Enter PrintNode API Key"
@@ -257,7 +229,7 @@ export default function AccountPage() {
           <div className={styles.formGroup}>
             <label className={styles.label}>Default Printer</label>
             <select
-              value={settings.printnode_printer_id}
+              value={settings.printnode_printer_id || ''} // Ensure value is controlled
               onChange={(e) => setSettings({...settings, printnode_printer_id: e.target.value})}
               className={styles.input}
             >
