@@ -174,11 +174,11 @@ export default function CheckoutPage() {
         const coupon = settings.coupons.find(c => c.code === couponCode.toUpperCase());
         if (coupon) {
           if (coupon.type === 'percentage') {
-            discount = basePrice * (Number(coupon.amount) / 100);
-            console.log(`Applied ${coupon.amount}% discount:`, discount);
+            discount = basePrice * (Number(coupon.value) / 100);
+            console.log(`Applied ${coupon.value}% discount:`, discount);
           } else {
-            discount = Number(coupon.amount);
-            console.log(`Applied $${coupon.amount} discount:`, discount);
+            discount = Number(coupon.value);
+            console.log(`Applied $${coupon.value} discount:`, discount);
           }
         }
       }
@@ -244,8 +244,8 @@ export default function CheckoutPage() {
 
     if (coupon) {
       const discountText = coupon.type === 'percentage' 
-        ? `${coupon.amount}% off`
-        : `$${coupon.amount} off`;
+        ? `${coupon.value}% off`
+        : `$${Number(coupon.value).toFixed(2)} off`;
       setCouponMessage(`Coupon applied: ${discountText}`);
     } else {
       setCouponMessage('Invalid coupon code');
