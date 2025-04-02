@@ -1,0 +1,88 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.section {
+  margin-bottom: 3rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.section h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.5rem;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.step {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}
+
+.step h3 {
+  color: #007bff;
+  margin-bottom: 0.5rem;
+}
+
+.verificationList {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.verificationList li {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.verificationList li:before {
+  content: "✓";
+  color: #28a745;
+  position: absolute;
+  left: 0;
+}
+
+.troubleshooting ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.troubleshooting li {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-radius: 4px;
+  border-left: 4px solid #ffc107;
+}
+
+.troubleshooting strong {
+  color: #856404;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.section ul {
+  padding-left: 1.5rem;
+}
+
+.section a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.section a:hover {
+  text-decoration: underline;
+} 

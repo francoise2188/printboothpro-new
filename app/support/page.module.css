@@ -1,0 +1,72 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.section h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.supportOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.option {
+  background: #f5f5f5;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.option h3 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.button {
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-top: 1rem;
+  transition: background 0.3s ease;
+}
+
+.button:hover {
+  background: #0056b3;
+}
+
+.faq {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faq h3 {
+  color: #333;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.faq p {
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.faq a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.faq a:hover {
+  text-decoration: underline;
+} 
