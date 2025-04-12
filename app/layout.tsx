@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata = {
-  title: 'Photo Booth',
+  title: 'Printbooth Pro',
   description: 'Virtual Photo Booth Application',
 };
 
