@@ -41,6 +41,10 @@ export default function OrderTemplate({ params }) {
 
   // Add state for crop area
   const [crops, setCrops] = useState({});
+  const [isFilling, setIsFilling] = useState(false); // State for fill all loading
+
+  // Determine if the fill all button should be enabled
+  const canFillAll = template.some(p => p !== null) && template.some(p => p === null);
 
   useEffect(() => {
     if (orderId && user) {
@@ -591,6 +595,63 @@ export default function OrderTemplate({ params }) {
     }));
   };
 
+  // *** NEW FUNCTION: Handle Fill All Slots ***
+  const handleFillAllSlots = async () => {
+    const sourcePhoto = template.find(p => p !== null);
+    if (!sourcePhoto) {
+      alert('Please add at least one photo to the template first.');
+      return;
+    }
+
+    const emptySlotIndices = template
+      .map((slot, index) => (slot === null ? index : -1))
+      .filter(index => index !== -1);
+
+    if (emptySlotIndices.length === 0) {
+      alert('All slots are already filled.');
+      return;
+    }
+
+    setIsFilling(true);
+    console.log('Starting fill all slots...');
+    // TODO: Implement database insertion logic here
+    
+    try {
+      // Prepare the data for the new photos
+      const newPhotoData = emptySlotIndices.map(index => ({
+        order_id: orderId,
+        photo_url: sourcePhoto.photo_url,
+        position: index,
+        scale: sourcePhoto.scale || 1,
+        position_x: sourcePhoto.position_x || 0,
+        position_y: sourcePhoto.position_y || 0,
+        status: 'pending'
+      }));
+
+      console.log('Inserting new photos:', newPhotoData);
+
+      // Insert into database
+      const { error } = await supabase
+        .from('order_photos')
+        .insert(newPhotoData);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Successfully inserted copies. Reloading template...');
+      await loadTemplate(); // Reload to show the new photos
+      alert('Empty slots filled successfully!');
+
+    } catch (error) {
+      console.error('Error filling slots:', error);
+      alert('Failed to fill empty slots: ' + error.message);
+    } finally {
+        setIsFilling(false);
+        console.log('Finished fill all slots.');
+    }
+  };
+
   if (loading) {
     return <div className="p-6">Loading template...</div>;
   }
@@ -623,6 +684,14 @@ export default function OrderTemplate({ params }) {
           className={styles.primaryButton}
         >
           Print Photos
+        </button>
+        {/* *** NEW BUTTON: Fill All Slots *** */}
+        <button
+          onClick={handleFillAllSlots}
+          className={styles.secondaryButton} // Use secondary style for now
+          disabled={!canFillAll || isFilling} // Disable if cannot fill or already filling
+        >
+          {isFilling ? 'Filling...' : 'Fill Empty Slots'}
         </button>
         <button
           onClick={() => router.push('/admin/orders/management')}
