@@ -191,62 +191,116 @@ export default function MarketTemplate({ marketId }) {
   };
 
   // Handle add photo
-  const handleAddPhoto = async (index) => {
+  const handleAddPhoto = async (initialIndex) => {
     try {
-      const file = await new Promise((resolve) => {
+      // Modify promise to resolve with the full FileList
+      const files = await new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.onchange = (e) => resolve(e.target.files[0]);
+        input.multiple = true; // Allow multiple file selection
+        input.onchange = (e) => resolve(e.target.files); // Resolve with the FileList
         input.click();
       });
 
-      if (!file) return;
+      if (!files || files.length === 0) return; // Check if any files were selected
 
-      // Show loading toast
-      const loadingToast = toast.loading('Uploading photo...');
+      const filesArray = Array.from(files); // Convert FileList to Array
+      let currentPosition = initialIndex;
+      let filesUploadedCount = 0;
+      let slotsAvailable = template.filter((slot, index) => index >= initialIndex && slot === null).length;
+      const filesToUpload = filesArray.slice(0, slotsAvailable);
 
-      // Upload to Supabase Storage
-      const fileName = `${marketId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('market_photos')
-        .upload(fileName, file);
+      // Show loading toast for multiple files
+      const loadingToast = toast.loading(`Uploading ${filesToUpload.length} photo(s)...`);
 
-      if (uploadError) throw uploadError;
+      for (const file of filesToUpload) {
+        try {
+          // Find the next available slot starting from initialIndex
+          while (template[currentPosition] !== null && currentPosition < template.length) {
+            currentPosition++;
+          }
 
-      // Create database record
-      const { data: photo, error: dbError } = await supabase
-        .from('market_photos')
-        .insert([{
-          market_id: marketId,
-          photo_url: fileName,
-          status: 'in_template',
-          order_code: `MKT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
-        }])
-        .select()
-        .single();
+          if (currentPosition >= template.length) {
+            console.log('No more empty slots available.');
+            break; // Stop if no more slots
+          }
 
-      if (dbError) throw dbError;
+          // Upload to Supabase Storage
+          const fileName = `${marketId}/${Date.now()}-${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('market_photos')
+            .upload(fileName, file);
 
-      // Add to template
-      setTemplate(current => {
-        const newTemplate = [...current];
-        newTemplate[index] = photo;
-        return newTemplate;
-      });
+          if (uploadError) throw uploadError;
 
-      // Add to processed photos
-      setProcessedPhotoIds(current => {
-        const newSet = new Set(current);
-        newSet.add(photo.id);
-        return newSet;
-      });
+          // Create database record
+          const { data: photo, error: dbError } = await supabase
+            .from('market_photos')
+            .insert([{
+              market_id: marketId,
+              photo_url: fileName,
+              status: 'in_template',
+              order_code: `MKT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+              scale: 1 // Set initial scale to 1
+            }])
+            .select()
+            .single();
+
+          if (dbError) throw dbError;
+
+          // Add to template state immediately
+          setTemplate(current => {
+            const newTemplate = [...current];
+            newTemplate[currentPosition] = photo;
+            return newTemplate;
+          });
+
+          // Add to processed photos
+          setProcessedPhotoIds(current => {
+            const newSet = new Set(current);
+            newSet.add(photo.id);
+            return newSet;
+          });
+          
+          // Initialize crop state locally
+          setCrops(prev => ({
+             ...prev,
+             [photo.id]: {
+               x: 0, 
+               y: 0, 
+               zoom: 1
+             }
+           }));
+
+          filesUploadedCount++;
+          currentPosition++; // Move to next slot
+
+        } catch (singleFileError) {
+          // Log more detailed error information
+          console.error('Error uploading single photo:', file.name, singleFileError);
+          console.error('Full error object:', singleFileError);
+          if (singleFileError instanceof Error) {
+            console.error('Error message:', singleFileError.message);
+            console.error('Error stack:', singleFileError.stack);
+          }
+          toast.error(`Failed to upload ${file.name}. Check console for details.`);
+          // Optionally continue to the next file
+        }
+      }
 
       toast.dismiss(loadingToast);
-      toast.success('Photo uploaded successfully');
+      if (filesArray.length > filesUploadedCount) {
+        toast.error(`Uploaded ${filesUploadedCount} photos. ${filesArray.length - filesUploadedCount} could not be added (no empty slots).`);
+      } else {
+        toast.success(`${filesUploadedCount} photo(s) uploaded successfully`);
+      }
+
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
+      console.error('Error in handleAddPhoto:', error);
+      toast.error('Failed to initiate photo upload');
+      // Ensure any loading toast is dismissed on general failure
+      toast.dismiss(); 
     }
   };
 
