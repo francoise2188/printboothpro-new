@@ -144,7 +144,7 @@ export default function OrderTemplate({ params }) {
     }
   };
 
-  const handleFileChange = async (e, position) => {
+  const handleFileChange = async (e, initialPosition) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -162,46 +162,51 @@ export default function OrderTemplate({ params }) {
         throw new Error('Order not found or access denied');
       }
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
+      let currentPosition = initialPosition;
+      let filesUploadedCount = 0;
+      let slotsAvailable = template.filter((slot, index) => index >= initialPosition && slot === null).length;
+      
+      // Only process files up to the number of available slots from the initial position
+      const filesToUpload = files.slice(0, slotsAvailable);
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+
+        // Find the next available slot starting from initialPosition
+        while (template[currentPosition] !== null && currentPosition < template.length) {
+          currentPosition++;
+        }
+
+        // If no more slots are available, break the loop
+        if (currentPosition >= template.length) {
+          console.log('No more empty slots available.');
+          break;
+        }
+
         // Calculate initial scale and center position based on image dimensions
         const { initialScale, centerX, centerY } = await new Promise((resolve) => {
           const img = new Image();
           img.onload = () => {
-            // Target size is 50.8mm (2 inches)
-            // Convert to pixels (assuming 96 DPI)
-            const targetSize = 192; // 50.8mm at 96 DPI
-            const scale = targetSize / Math.max(img.width, img.height);
-            // Ensure scale is between 0.2 and 3
-            const finalScale = Math.min(Math.max(scale, 0.2), 3);
-            
-            // Calculate center position
-            // The photo container is positioned at 9.1mm from the top and left
-            // We want the photo to be centered within the 50.8mm x 50.8mm space
             resolve({
-              initialScale: finalScale,
-              centerX: -96, // Half of the target size (192/2) as a negative value to move left
-              centerY: -96  // Half of the target size (192/2) as a negative value to move up
+              initialScale: 1,
+              centerX: 0,
+              centerY: 0
             });
           };
           const reader = new FileReader();
           reader.onload = (e) => img.src = e.target.result;
           reader.readAsDataURL(file);
         });
-        
-        // Create a unique filename
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${orderId}/${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        // Upload to Supabase storage
+
         const { error: uploadError } = await supabase.storage
           .from('order-photos')
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
-        // Get the public URL
         const { data } = supabase.storage
           .from('order-photos')
           .getPublicUrl(fileName);
@@ -210,13 +215,12 @@ export default function OrderTemplate({ params }) {
           throw new Error('Failed to get public URL');
         }
 
-        // Save photo record with calculated initial scale and center position
         const { data: photoData, error: dbError } = await supabase
           .from('order_photos')
           .insert({
             order_id: orderId,
             photo_url: data.publicUrl,
-            position: position,
+            position: currentPosition, // Use the found available position
             scale: initialScale,
             position_x: centerX,
             position_y: centerY,
@@ -227,33 +231,37 @@ export default function OrderTemplate({ params }) {
 
         if (dbError) throw dbError;
 
-        // Update local state with centered position
-        setPhotoScales(prev => ({
-          ...prev,
-          [photoData.id]: initialScale
-        }));
+        // Update local state immediately for responsiveness
+        const newTemplate = [...template];
+        newTemplate[currentPosition] = photoData;
+        setTemplate(newTemplate); // Update the template grid immediately
 
-        setPositions(prev => ({
-          ...prev,
-          [photoData.id]: { x: centerX, y: centerY }
-        }));
-
-        // Set initial crop state
-        setCrops(prev => ({
+        setCrops(prev => ({ // Set the initial crop/position state locally
           ...prev,
           [photoData.id]: {
-            x: centerX,
-            y: centerY,
+            x: centerX, // Should be 0
+            y: centerY, // Should be 0
             zoom: initialScale
           }
         }));
+
+        // Comment out or remove unused local state updates if needed
+        // setPhotoScales(prev => ({ ... }));
+        // setPositions(prev => ({ ... }));
+
+        filesUploadedCount++;
+        currentPosition++; // Move to the next slot for the next potential photo
       }
 
-      // Reload template
-      await loadTemplate();
+      if (files.length > filesUploadedCount) {
+        alert(`Uploaded ${filesUploadedCount} photos. ${files.length - filesUploadedCount} photos could not be added because there were no more empty slots.`);
+      }
+
+      // Reload template to show all changes
+      // await loadTemplate();
     } catch (error) {
       console.error('Error uploading photos:', error);
-      alert('Failed to upload photo');
+      alert('Failed to upload photos: ' + (error.message || 'Unknown error'));
     } finally {
       setUploading(false);
       e.target.value = ''; // Reset file input
@@ -560,6 +568,7 @@ export default function OrderTemplate({ params }) {
         id={`fileInput${index}`}
         type="file"
         accept="image/*"
+        multiple
         onChange={(e) => handleFileChange(e, index)}
         className="hidden"
         style={{ display: 'none' }}
@@ -724,7 +733,7 @@ export default function OrderTemplate({ params }) {
                     onZoomChange={(zoom) => handleCropChange(photo.id)({ ...crops[photo.id], zoom })}
                     showGrid={false}
                     cropSize={{ width: 192, height: 192 }}
-                    objectFit="contain"
+                    objectFit="cover"
                     minZoom={0.2}
                     maxZoom={3}
                     zoomSpeed={0.1}
@@ -734,12 +743,6 @@ export default function OrderTemplate({ params }) {
                         width: '100%',
                         height: '100%',
                         backgroundColor: 'white'
-                      },
-                      mediaStyle: {
-                        width: 'auto',
-                        height: 'auto',
-                        maxHeight: '300%',
-                        maxWidth: '300%'
                       }
                     }}
                   />
