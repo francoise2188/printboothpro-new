@@ -78,6 +78,18 @@
   background-color: #8B5E3C;
 }
 
+/* *** NEW STYLE for Reprint button *** */
+.reprintButton {
+  composes: button;
+  background-color: #3b82f6; /* Blue background */
+  color: white;
+}
+
+.reprintButton:hover {
+  background-color: #2563eb; /* Darker blue on hover */
+}
+/* *** END NEW STYLE *** */
+
 .checkbox {
   display: flex;
   align-items: center;

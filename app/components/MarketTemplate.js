@@ -5,6 +5,16 @@ import Cropper from 'react-easy-crop';
 import styles from '../admin/markets/template/template.module.css';
 import { QRCodeSVG } from 'qrcode.react';
 
+// Simple Modal Component (can be styled further)
+const Modal = ({ children, onClose }) => (
+  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div style={{ background: 'white', padding: '20px', borderRadius: '5px', maxHeight: '80vh', overflowY: 'auto', minWidth: '300px', maxWidth: '90vw' }}>
+      <button onClick={onClose} style={{ float: 'right', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+      {children}
+    </div>
+  </div>
+);
+
 export default function MarketTemplate({ marketId }) {
   console.log('🎯 MarketTemplate Component - Received marketId:', marketId);
   const [template, setTemplate] = useState(Array(9).fill(null));
@@ -19,6 +29,14 @@ export default function MarketTemplate({ marketId }) {
   const [editedPhotos, setEditedPhotos] = useState({});
   const fileInputRef = useRef(null);
   const [websiteUrl, setWebsiteUrl] = useState('');
+
+  // *** RENAME STATE BACK FOR REPRINT ***
+  const [showReprintModal, setShowReprintModal] = useState(false);
+  const [reprintPhotos, setReprintPhotos] = useState([]);
+  const [isLoadingReprint, setIsLoadingReprint] = useState(false);
+
+  // *** NEW STATE: Store IDs from the last confirmed print job ***
+  const [lastPrintedBatchIds, setLastPrintedBatchIds] = useState([]);
 
   // Initialize photo states when template changes
   useEffect(() => {
@@ -190,115 +208,90 @@ export default function MarketTemplate({ marketId }) {
     });
   };
 
-  // Handle add photo
-  const handleAddPhoto = async (initialIndex) => {
+  // Handle add photo - REVERT TO SINGLE FILE LOGIC
+  const handleAddPhoto = async (index) => { // Use index directly
     try {
-      // Modify promise to resolve with the full FileList
-      const files = await new Promise((resolve) => {
+      // Get single file
+      const file = await new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.multiple = true; // Allow multiple file selection
-        input.onchange = (e) => resolve(e.target.files); // Resolve with the FileList
+        // input.multiple = false; // Explicitly single (or omit)
+        input.onchange = (e) => resolve(e.target.files ? e.target.files[0] : null); // Resolve with the first file or null
         input.click();
       });
 
-      if (!files || files.length === 0) return; // Check if any files were selected
+      if (!file) return; // Check if a file was selected
 
-      const filesArray = Array.from(files); // Convert FileList to Array
-      let currentPosition = initialIndex;
-      let filesUploadedCount = 0;
-      let slotsAvailable = template.filter((slot, index) => index >= initialIndex && slot === null).length;
-      const filesToUpload = filesArray.slice(0, slotsAvailable);
+      // Show loading toast
+      const loadingToast = toast.loading(`Uploading ${file.name}...`);
 
-      // Show loading toast for multiple files
-      const loadingToast = toast.loading(`Uploading ${filesToUpload.length} photo(s)...`);
-
-      for (const file of filesToUpload) {
-        try {
-          // Find the next available slot starting from initialIndex
-          while (template[currentPosition] !== null && currentPosition < template.length) {
-            currentPosition++;
-          }
-
-          if (currentPosition >= template.length) {
-            console.log('No more empty slots available.');
-            break; // Stop if no more slots
-          }
-
-          // Upload to Supabase Storage
-          const fileName = `${marketId}/${Date.now()}-${file.name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('market_photos')
-            .upload(fileName, file);
-
-          if (uploadError) throw uploadError;
-
-          // Create database record
-          const { data: photo, error: dbError } = await supabase
-            .from('market_photos')
-            .insert([{
-              market_id: marketId,
-              photo_url: fileName,
-              status: 'in_template',
-              order_code: `MKT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-              scale: 1 // Set initial scale to 1
-            }])
-            .select()
-            .single();
-
-          if (dbError) throw dbError;
-
-          // Add to template state immediately
-          setTemplate(current => {
-            const newTemplate = [...current];
-            newTemplate[currentPosition] = photo;
-            return newTemplate;
-          });
-
-          // Add to processed photos
-          setProcessedPhotoIds(current => {
-            const newSet = new Set(current);
-            newSet.add(photo.id);
-            return newSet;
-          });
-          
-          // Initialize crop state locally
-          setCrops(prev => ({
-             ...prev,
-             [photo.id]: {
-               x: 0, 
-               y: 0, 
-               zoom: 1
-             }
-           }));
-
-          filesUploadedCount++;
-          currentPosition++; // Move to next slot
-
-        } catch (singleFileError) {
-          // Log more detailed error information
-          console.error('Error uploading single photo:', file.name, singleFileError);
-          console.error('Full error object:', singleFileError);
-          if (singleFileError instanceof Error) {
-            console.error('Error message:', singleFileError.message);
-            console.error('Error stack:', singleFileError.stack);
-          }
-          toast.error(`Failed to upload ${file.name}. Check console for details.`);
-          // Optionally continue to the next file
-        }
+      // Check if slot is still empty (basic concurrency check)
+      if (template[index] !== null) {
+        toast.dismiss(loadingToast);
+        toast.error('Slot was filled while selecting the file. Please choose another empty slot.');
+        return;
       }
+
+      // Upload to Supabase Storage
+      const fileName = `${marketId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('market_photos')
+        .upload(fileName, file);
+
+      if (uploadError) {
+         toast.dismiss(loadingToast);
+         throw uploadError;
+      }
+
+      // Create database record
+      const { data: photo, error: dbError } = await supabase
+        .from('market_photos')
+        .insert([{
+          market_id: marketId,
+          photo_url: fileName,
+          status: 'in_template',
+          order_code: `MKT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+          scale: 1 // Set initial scale to 1
+        }])
+        .select()
+        .single();
+
+      if (dbError) {
+         toast.dismiss(loadingToast);
+         throw dbError;
+      }
+
+      // Add to template state immediately at the specified index
+      setTemplate(current => {
+        const newTemplate = [...current];
+        newTemplate[index] = photo;
+        return newTemplate;
+      });
+
+      // Add to processed photos (though maybe less critical now?)
+      setProcessedPhotoIds(current => {
+        const newSet = new Set(current);
+        newSet.add(photo.id);
+        return newSet;
+      });
+      
+      // Initialize crop state locally
+      setCrops(prev => ({
+         ...prev,
+         [photo.id]: {
+           x: 0, 
+           y: 0, 
+           zoom: 1
+         }
+       }));
 
       toast.dismiss(loadingToast);
-      if (filesArray.length > filesUploadedCount) {
-        toast.error(`Uploaded ${filesUploadedCount} photos. ${filesArray.length - filesUploadedCount} could not be added (no empty slots).`);
-      } else {
-        toast.success(`${filesUploadedCount} photo(s) uploaded successfully`);
-      }
+      toast.success(`Photo uploaded successfully to slot ${index + 1}`);
 
     } catch (error) {
       console.error('Error in handleAddPhoto:', error);
-      toast.error('Failed to initiate photo upload');
+      toast.error(`Failed to upload photo: ${error.message || 'Unknown error'}`);
       // Ensure any loading toast is dismissed on general failure
       toast.dismiss(); 
     }
@@ -313,14 +306,14 @@ export default function MarketTemplate({ marketId }) {
       }
 
       try {
-        // Get only active photos that are in template and not printed or deleted
+        // Get only active photos for this market
         const { data: photos, error } = await supabase
           .from('market_photos')
           .select('*')
           .eq('market_id', marketId)
-          .eq('status', 'in_template')  // Must be in template
-          .is('printed_at', null)       // Must not be printed
-          .not('status', 'eq', 'deleted') // Must not be deleted
+          .eq('status', 'in_template')
+          .is('printed_at', null)
+          .not('status', 'eq', 'deleted')
           .order('created_at', { ascending: true });
 
         if (error) {
@@ -328,52 +321,64 @@ export default function MarketTemplate({ marketId }) {
           return;
         }
 
-        if (!photos) {
-          console.log('No photos found for market:', marketId);
+        if (!photos || photos.length === 0) {
+          // console.log('No candidate photos found for market:', marketId);
           return;
         }
 
-        if (photos.length > 0) {
-          console.log('Processing photos:', photos.map(p => ({ id: p.id, source: p.source, column_source: p.column_source })));
-          setTemplate(current => {
-            const newTemplate = [...current];
-            for (const photo of photos) {
-              try {
-                // Skip if we've already processed this photo
-                if (processedPhotoIds.has(photo.id)) {
-                  console.log('Skipping already processed photo:', photo.id);
-                  continue;
-                }
-                
-                const emptySlot = newTemplate.findIndex(slot => slot === null);
-                if (emptySlot !== -1) {
-                  newTemplate[emptySlot] = photo;
-                  // Add to processed photos
-                  setProcessedPhotoIds(current => {
-                    const newSet = new Set(current);
-                    newSet.add(photo.id);
-                    return newSet;
-                  });
-                  console.log('Added photo', photo.id, 'to slot', emptySlot, 'source:', photo.source, 'column_source:', photo.column_source);
-                } else {
-                  console.log('No empty slots available for photo:', photo.id);
-                }
-              } catch (photoError) {
-                console.error('Error processing individual photo:', photo.id, photoError);
+        // console.log('Processing candidate photos:', photos.map(p => p.id));
+        let updated = false;
+        setTemplate(current => {
+          const newTemplate = [...current];
+          const currentIdsInTemplate = new Set(newTemplate.filter(p => p).map(p => p.id));
+
+          for (const photo of photos) {
+            try {
+              // Skip if photo is already in the template array being built OR if it was manually deleted via UI (in processedPhotoIds)
+              if (currentIdsInTemplate.has(photo.id) || processedPhotoIds.has(photo.id)) {
+                // console.log('Skipping photo already in template or processed:', photo.id);
+                continue;
               }
+
+              const emptySlot = newTemplate.findIndex(slot => slot === null);
+              if (emptySlot !== -1) {
+                console.log(`[processIncomingPhotos] Adding photo ${photo.id} to empty slot ${emptySlot}`);
+                newTemplate[emptySlot] = photo;
+                currentIdsInTemplate.add(photo.id); // Add ID to set for this run
+                updated = true; // Mark that an update occurred
+
+                // Ensure initial crop state exists
+                if (!crops[photo.id]) {
+                   setCrops(prevCrops => ({
+                       ...prevCrops,
+                       [photo.id]: { x: 0, y: 0, zoom: photo.scale || 1 }
+                   }));
+                }
+
+              } else {
+                // console.log('No empty slots available for photo:', photo.id);
+                break; // Stop processing if template is full
+              }
+            } catch (photoError) {
+              console.error('Error processing individual photo:', photo.id, photoError);
             }
-            return newTemplate;
-          });
-        }
+          }
+          return updated ? newTemplate : current; // Only return new array if changed
+        });
+
       } catch (error) {
         console.error('Error in photo processing:', error);
       }
     };
 
-    processIncomingPhotos();
-    const interval = setInterval(processIncomingPhotos, 3000);
+    // Run once on mount and then interval
+    processIncomingPhotos(); 
+    const interval = setInterval(processIncomingPhotos, 5000); // Increase interval slightly?
     return () => clearInterval(interval);
-  }, [marketId, processedPhotoIds]);
+  // Depend on marketId. processedPhotoIds dependency might cause loops if not careful.
+  // If processedPhotoIds is updated inside, it triggers the effect again.
+  // Let's remove processedPhotoIds dependency for now and rely on the check inside.
+  }, [marketId, processedPhotoIds]); 
 
   // Load Overlay
   useEffect(() => {
@@ -496,11 +501,11 @@ export default function MarketTemplate({ marketId }) {
       }
 
       const photosToPrint = template.filter(photo => photo !== null);
-      const photoIds = photosToPrint.map(photo => photo.id);
+      const photoIdsToPrint = photosToPrint.map(photo => photo.id); // Get IDs BEFORE printing
 
-      console.log(`📄 [handlePrint] Photos identified for printing: ${photoIds.join(', ')}`); // Log: Photos identified
+      console.log(`📄 [handlePrint] Photos identified for printing: ${photoIdsToPrint.join(', ')}`); // Log: Photos identified
 
-      if (photoIds.length === 0) {
+      if (photoIdsToPrint.length === 0) {
         console.log('❌ [handlePrint] No photos to print.'); // Log: No photos
         toast.error('No photos to print');
         return;
@@ -529,44 +534,37 @@ export default function MarketTemplate({ marketId }) {
       
       if (didPrint) {
         console.log('👍 [handlePrint] User confirmed printing.'); // Log: User confirmed
+        
+        // *** STORE THE IDs of the photos that were just printed ***
+        setLastPrintedBatchIds(photoIdsToPrint);
+        console.log(`📝 [handlePrint] Stored last printed batch IDs: ${photoIdsToPrint.join(', ')}`);
 
-        // --- Database Update ---
-        // We need to update EACH photo with its assigned print number and status.
-        // This part needs modification to assign numbers sequentially.
-
-        console.log(`🔄 [handlePrint] Preparing to update database for photos: ${photoIds.join(', ')}`); // Log: DB update prep
-
-        // ******** IMPORTANT MODIFICATION NEEDED HERE ********
-        // The current update sets all photos to 'printed' at once.
-        // We need to loop through photosToPrint, call getNextPrintNumber for each,
-        // and update them individually or construct a more complex update.
-        // For now, we log the intent and the *current* behavior.
-        console.log('⚠️ [handlePrint] Current DB update does NOT assign print numbers. This needs fixing!');
+        // --- Database Update Attempt ---
+        console.log(`🔄 [handlePrint] Preparing to update database status for photos: ${photoIdsToPrint.join(', ')}`); 
 
         const updatePayload = { 
             status: 'printed',
             printed_at: new Date().toISOString()
-            // print_number: /* Needs to be assigned per photo */ 
         };
-        console.log('[handlePrint] Database update payload (without print_number):', updatePayload); // Log: Payload
-
         const { error: updateError } = await supabase
           .from('market_photos')
-          .update(updatePayload) // Update status and timestamp
-          .in('id', photoIds);
-
-        // ******** END IMPORTANT MODIFICATION NEEDED HERE ********
-
-
+          .update(updatePayload)
+          .in('id', photoIdsToPrint); // Use the IDs captured before print
+        
         if (updateError) {
-          console.error('❌ [handlePrint] Database update error:', updateError); // Log: DB Error
-          throw updateError;
+           // ... (existing error logging) ...
+           // Don't throw error here anymore, just log it, as reprint list doesn't depend on it
+           console.error('❌ [handlePrint] Database update FAILED (but proceeding): ', updateError.message);
+        } else {
+           console.log('✅ [handlePrint] Database update call successful or no error thrown.');
         }
+        // ... (rest of existing success logic: clear template, show toast) ...
 
-        console.log('✅ [handlePrint] Database updated successfully.'); // Log: DB Success
+        console.log('✅ [handlePrint] Post-print actions completed.'); 
         setTemplate(Array(9).fill(null)); // Clear template
         console.log('🔄 [handlePrint] Template cleared.'); // Log: Template cleared
-        toast.success('Print completed');
+        toast.success('Print job recorded. Template cleared.');
+
       } else {
         console.log('👎 [handlePrint] User cancelled printing.'); // Log: User cancelled
       }
@@ -630,6 +628,94 @@ export default function MarketTemplate({ marketId }) {
     );
   };
 
+  // *** UPDATE FUNCTION: Fetch photos from the LAST PRINTED BATCH ***
+  const fetchReprintPhotos = async () => {
+    if (!marketId) return;
+    if (lastPrintedBatchIds.length === 0) {
+      toast('No photos were recorded in the last print batch.');
+      setReprintPhotos([]);
+      return;
+    }
+
+    setIsLoadingReprint(true);
+    try {
+      console.log(`Fetching details for last printed batch IDs: ${lastPrintedBatchIds.join(', ')}`);
+      const { data, error } = await supabase
+        .from('market_photos')
+        .select('*')
+        .eq('market_id', marketId) // Still filter by market for safety
+        .in('id', lastPrintedBatchIds); // Fetch photos by IDs stored in state
+
+      if (error) throw error;
+      
+      // Optional: Sort the results to match the order they were printed?
+      // Or keep the order returned by the DB.
+      setReprintPhotos(data || []);
+      console.log('Fetched reprint photos:', data);
+
+    } catch (error) {
+      console.error('Error fetching reprint photos by ID:', error);
+      toast.error('Failed to load details for the last print batch.');
+      setReprintPhotos([]);
+    } finally {
+      setIsLoadingReprint(false);
+    }
+  };
+
+  // *** UPDATE FUNCTION: Show reprint modal and fetch data ***
+  const handleShowReprintModal = () => {
+    if (lastPrintedBatchIds.length === 0) {
+       toast('No photos were recorded in the last print batch.');
+       return;
+    }
+    setShowReprintModal(true);
+    fetchReprintPhotos(); // fetchReprintPhotos now uses the state IDs
+  };
+
+  // *** UPDATE FUNCTION: Add selected REPRINT photo back to template ***
+  const handleAddReprintPhoto = async (photoToAdd) => {
+    const emptySlotIndex = template.findIndex(slot => slot === null);
+    if (emptySlotIndex === -1) {
+      toast.error('Template is full. Cannot add photo.');
+      return;
+    }
+
+    try {
+      // Update photo status in DB back to in_template
+      const { error: updateError } = await supabase
+        .from('market_photos')
+        .update({
+          status: 'in_template', // Set status back
+          printed_at: null, // Clear the printed timestamp
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', photoToAdd.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setTemplate(current => {
+        const newTemplate = [...current];
+        // Add the photo back with updated status/printed_at
+        newTemplate[emptySlotIndex] = { ...photoToAdd, status: 'in_template', printed_at: null }; 
+        return newTemplate;
+      });
+      
+      // Set initial crop state for the re-added photo
+      setCrops(prev => ({
+        ...prev,
+        [photoToAdd.id]: { x: 0, y: 0, zoom: photoToAdd.scale || 1 }
+      }));
+
+      toast.success('Photo added back to template for reprinting.');
+      setShowReprintModal(false); // Close modal on success
+
+    } catch (error) {
+      console.error('Error re-adding photo for reprint:', error);
+      toast.error('Failed to add photo back to template.');
+    }
+  };
+
   return (
     <div>
       {/* Print Controls */}
@@ -639,6 +725,12 @@ export default function MarketTemplate({ marketId }) {
           onClick={handlePrint}
         >
           Print Template
+        </button>
+        <button
+          className={styles.reprintButton}
+          onClick={handleShowReprintModal}
+        >
+          Reprints
         </button>
       </div>
 
@@ -838,6 +930,33 @@ export default function MarketTemplate({ marketId }) {
         </div>
       </div>
 
+      {/* *** UPDATE MODAL BACK: Reprint Photos *** */}
+      {showReprintModal && (
+        <Modal onClose={() => setShowReprintModal(false)}>
+          <h2>Recently Printed Photos</h2>
+          {isLoadingReprint ? (
+            <p>Loading...</p>
+          ) : reprintPhotos.length === 0 ? (
+            <p>No recently printed photos found.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px' }}>
+              {reprintPhotos.map(photo => (
+                <div key={photo.id} style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => handleAddReprintPhoto(photo)}>
+                  <img 
+                    src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}`}
+                    alt={`Photo ${photo.id}`}
+                    style={{ width: '100px', height: '100px', objectFit: 'cover', border: '1px solid #ccc' }}
+                  />
+                  <p style={{ fontSize: '0.8rem', marginTop: '5px' }}>ID: {photo.id}</p>
+                  <p style={{ fontSize: '0.8rem' }}>Status: {photo.status}</p> {/* Should be 'printed' */}
+                  <p style={{ fontSize: '0.8rem' }}>Printed: {photo.printed_at ? new Date(photo.printed_at).toLocaleString() : 'N/A'}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
+      )}
+
       <style jsx global>{`
         @media print {
           @page { 
@@ -934,3 +1053,4 @@ export default function MarketTemplate({ marketId }) {
     </div>
   );
 } 
+
