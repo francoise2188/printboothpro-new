@@ -262,7 +262,7 @@ export default function OrderTemplate({ params }) {
       }
 
       // Reload template to show all changes
-      // await loadTemplate();
+      await loadTemplate();
     } catch (error) {
       console.error('Error uploading photos:', error);
       alert('Failed to upload photos: ' + (error.message || 'Unknown error'));
@@ -909,37 +909,23 @@ export default function OrderTemplate({ params }) {
             position: relative !important;
             margin: 0 !important;
             padding: 0 !important;
-            border: 1px dashed #aaaaaa !important;  // Added light gray border for printed cells
+            border: 1px solid black !important;
             background-color: white !important;
             overflow: hidden !important;
           }
 
-          /* Style the cutting guide */
+          /* Style the cutting guide -- HIDE THIS ON PRINT */
           .cutting-guide {
-            visibility: visible !important;
-            display: block !important;
-            position: absolute !important;
-            border: 1px dashed #aaaaaa !important;  // Changed to match cell border
-            width: 50.8mm !important;
-            height: 50.8mm !important;
-            top: 9.1mm !important;
-            left: 9.1mm !important;
-            z-index: 10 !important;
+            visibility: hidden !important;
+            display: none !important;
           }
 
-          /* Style the larger print cutting guide */
+          /* Style the larger print cutting guide -- HIDE THIS TOO (redundant) */
           .print-cutting-guide {
-            visibility: visible !important;
-            display: block !important;
-            position: absolute !important;
-            border: 1px dashed #aaaaaa !important;  // Changed to match cell border
-            width: 69mm !important;
-            height: 69mm !important;
-            top: 0 !important;
-            left: 0 !important;
-            z-index: 11 !important;
+            visibility: hidden !important;
+            display: none !important;
           }
-
+          
           /* Style the order code */
           .order-code {
             visibility: visible !important;
