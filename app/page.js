@@ -19,7 +19,7 @@ function HomeContent() {
   useEffect(() => {
     // If there's no event ID, redirect to subscription page
     if (!eventId) {
-      router.push('/subscription');
+    //   router.push('/subscription'); // Temporarily disable redirect for testing/dev
       return;
     }
 

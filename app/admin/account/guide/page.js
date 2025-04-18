@@ -6,18 +6,6 @@ import styles from './guide.module.css';
 export default function AdminGuidePage() {
   const [activeSection, setActiveSection] = useState('getting-started');
   const [mounted, setMounted] = useState(false);
-  const [settings, setSettings] = useState({
-    paypal_username: '',
-    venmo_username: '',
-    square_location_id: '',
-    single_magnet_price: '0',
-    three_magnets_price: '0',
-    six_magnets_price: '0',
-    nine_magnets_price: '0',
-    enable_tax: false,
-    tax_rate: '0',
-    coupons: []
-  });
 
   useEffect(() => {
     setMounted(true);
@@ -28,7 +16,7 @@ export default function AdminGuidePage() {
     sections: [
       {
         title: 'Initial Setup',
-        content: 'The first step is setting up PrintNode for automatic printing. Create your free PrintNode account, get your API key, and enter it in Account Settings. This enables the auto-print feature for your events. The PrintNode client must be running on your computer during events for automatic printing to work.'
+        content: 'The first step is setting up the Print Booth Helper application for direct printing. Download the installer from Account Settings, install it on the computer connected to your printer, and keep it running during events. This enables the auto-print feature and manual printing from the Template page.'
       },
       {
         title: 'Event Management',
@@ -36,7 +24,7 @@ export default function AdminGuidePage() {
       },
       {
         title: 'Photo Template System',
-        content: 'The template manager allows you to select events and customize the photo layout. Add your website or email to be printed under each photo. Photos automatically enter the template when guests take them, and with auto-print enabled, full templates print automatically. A queue system manages incoming photos while printing is in progress, and you can reprint up to 150 past photos.'
+        content: 'The template manager allows you to select events and customize the photo layout. Add your website or email to be printed under each photo. Photos automatically enter the template when guests take them. With auto-print enabled and the Helper App connected, full templates print automatically using the printer selected in the Helper connection box. A queue system manages incoming photos while printing is in progress, and you can reprint up to 150 past photos.'
       },
       {
         title: 'Market Features',
@@ -48,21 +36,20 @@ export default function AdminGuidePage() {
       },
       {
         title: 'Settings & Configuration',
-        content: 'Configure payment settings (PayPal/Venmo), set pricing tiers for magnets (single, 3, 6, or 9), and manage tax rates. Account Settings houses your PrintNode API key and email information.'
+        content: 'Configure payment settings (PayPal/Venmo), set pricing tiers for magnets (single, 3, 6, or 9), and manage tax rates. Account Settings displays your email information and provides the download link for the Print Booth Helper application.'
       }
     ]
   };
 
   const gettingStartedSteps = [
     {
-      title: 'Create PrintNode Account',
-      description: 'Sign up for a free PrintNode account and download their client. The client must be running on your computer during events for automatic printing to work.',
-      link: 'https://app.printnode.com/account/download'
+      title: 'Download & Install Print Booth Helper',
+      description: 'Go to Account Settings and download the Print Booth Helper application installer. Install it on the Windows computer connected to your printer.',
+      link: '/admin/account'
     },
     {
-      title: 'Configure Account Settings',
-      description: 'Get your PrintNode API key and connect your printer. Keep the PrintNode client running in the background during events.',
-      link: '/admin/account'
+      title: 'Run the Print Booth Helper',
+      description: 'Launch the Print Booth Helper application after installation. Keep it running in the background during events to enable printing from the website.',
     },
     {
       title: 'Set Up Your First Event',
@@ -82,7 +69,7 @@ export default function AdminGuidePage() {
     },
     {
       title: 'Automated Workflow',
-      description: 'Photos automatically print during events, letting you focus on creating magnets and interacting with guests. The queue system ensures smooth processing.'
+      description: 'Photos automatically print during events when the Print Booth Helper app is running and connected, letting you focus on creating magnets and interacting with guests. The queue system ensures smooth processing.'
     },
     {
       title: 'Real-time Preview',
@@ -92,23 +79,20 @@ export default function AdminGuidePage() {
 
   const setupSteps = [
     {
-      title: '1. PrintNode Setup',
+      title: '1. Print Booth Helper Setup',
       steps: [
-        'Create a free PrintNode account at printnode.com',
-        'Download and install the PrintNode client on your computer',
-        'After installation, log into the PrintNode client',
-        'Go to your PrintNode dashboard at printnode.com',
-        'Click on your account name in the top right',
-        'Select "API Keys" from the dropdown menu',
-        'Click "Create API Key" and give it a name (e.g., "PrintBooth")',
-        'Copy the generated API key',
-        'Go to Account Settings in PrintBooth',
-        'Paste the API key in the "PrintNode API Key" field and click Save',
-        'Click "Test Connection" to verify everything works',
-        'Make sure your printer is connected and showing in PrintNode',
-        'IMPORTANT: Keep the PrintNode client running during events',
-        'Check that your printer is set to Letter size (8.5x11 inches)',
-        'Test print before each event'
+        'Go to Account Settings in PrintBooth Pro.',
+        'Download the Print Booth Helper application installer using the link provided.',
+        'Run the downloaded `.exe` file on the Windows computer connected to your event printer.',
+        'Follow the installation wizard steps (click "More info" -> "Run anyway" if Windows SmartScreen appears).',
+        'After installation, run "Print Booth Helper" from your Start Menu.',
+        'The helper application window will appear. Keep this application running during your events.',
+        'Go to the Template page in PrintBooth Pro.',
+        'The "Print Helper Connection" box should show "Connected" and load your printer list.',
+        'Select the desired printer from the dropdown in the connection box.',
+        'This selected printer will be used for both automatic and manual prints initiated from the Template page.',
+        'Check that your printer is set to Letter size (8.5x11 inches).',
+        'Test print before each event using the "Print Template Now" button.'
       ]
     },
     {
@@ -127,7 +111,7 @@ export default function AdminGuidePage() {
         '- Add camera overlay (50.8mm x 50.8mm)',
         'Generate and test the event QR code',
         'Preview the event link in your browser',
-        'Ensure PrintNode client is running'
+        'Ensure the Print Booth Helper application is running'
       ]
     },
     {
@@ -135,23 +119,23 @@ export default function AdminGuidePage() {
       steps: [
         'Select your event from the template dropdown',
         'Enter your website/email for photo watermarks',
-        'Choose your printer from the dropdown',
+        'Verify the Print Booth Helper connection status and selected printer.',
         'Toggle auto-print on/off as needed',
         'Monitor the photo queue at the bottom',
         'Use the reprint feature if needed (stores up to 150 photos)',
         'Manage photos in template:',
         '- Use X to delete photos',
         '- Use + to duplicate photos',
-        'Watch print status and queue progress'
+        'Watch the Helper Connection status box for print progress/errors.'
       ]
     },
     {
       title: '4. During the Event',
       steps: [
-        'Ensure PrintNode client is running',
-        'Monitor the print queue for any issues',
+        'Ensure the Print Booth Helper application is running',
+        'Monitor the Template page for connection status and print progress',
         'Keep track of paper and ink levels',
-        'Watch for any error messages',
+        'Watch for any error messages (check browser console and helper app if needed)',
         'Process photos in order as they come in',
         'Maintain organization of printed photos',
         'Monitor QR code access if time-limiting needed',
@@ -166,12 +150,12 @@ export default function AdminGuidePage() {
       answer: 'Photos are printed at 2x2 inches (50.8mm x 50.8mm) at 300 DPI for professional quality. They are arranged in a 3x3 grid on standard Letter size paper (8.5x11 inches). Landing page backgrounds should be 1080x1920 pixels, and camera overlays should match the photo size of 50.8mm x 50.8mm.'
     },
     {
-      question: 'How do I get my PrintNode API key?',
-      answer: 'After creating your PrintNode account and installing the client: 1) Log into printnode.com, 2) Click your account name in the top right, 3) Select "API Keys", 4) Click "Create API Key", 5) Copy the key and paste it into PrintBooth Account Settings. Remember to keep the PrintNode client running during events.'
+      question: 'How do I set up the Print Booth Helper?',
+      answer: 'Go to Account Settings, download the installer, and run it on the Windows computer connected to your printer. Launch the application after installation. It needs to remain running during events. The connection status and printer selection will appear on the Template page when the helper is running.'
     },
     {
       question: 'How does the automated printing work?',
-      answer: 'The PrintNode client must be running on your computer during events. When guests take photos, they automatically enter the print queue and fill the template grid. With auto-print enabled, full templates print automatically. The queue system manages additional incoming photos while printing is in progress.'
+      answer: 'The Print Booth Helper application must be running on your computer during events and connected via the Template page. When guests take photos, they automatically fill the template grid. With auto-print enabled, full templates print automatically using the printer selected in the connection box. The queue system manages additional incoming photos.'
     },
     {
       question: 'How do I manage event QR codes?',
@@ -179,7 +163,7 @@ export default function AdminGuidePage() {
     },
     {
       question: 'What should I prepare before an event?',
-      answer: 'Ensure PrintNode client is installed and running, test your printer connection, verify paper size is set to Letter (8.5x11"), prepare backup supplies, test the event QR code, check your landing page and overlays look correct, and verify your website/email watermark in the template.'
+      answer: 'Ensure the Print Booth Helper application is installed and running on the correct computer, test the printer connection via the Template page, verify paper size is set to Letter (8.5x11"), prepare backup supplies, test the event QR code, check your landing page and overlays look correct, and verify your website/email watermark in the template.'
     }
   ];
 
@@ -248,9 +232,7 @@ export default function AdminGuidePage() {
                   <h3>{step.title}</h3>
                   <p>{step.description}</p>
                   {step.link && (
-                    <a href={step.link} className={styles.link}>
-                      Go to {step.title} →
-                    </a>
+                    <a href={step.link} className={styles.linkButton}>Go to Page</a>
                   )}
                 </div>
               ))}
@@ -260,8 +242,8 @@ export default function AdminGuidePage() {
 
         {activeSection === 'features' && (
           <div className={styles.section}>
-            <h2>Feature Overview</h2>
-            <div className={styles.featureGrid}>
+            <h2>Key Features</h2>
+            <div className={styles.featuresGrid}>
               {features.map((feature, index) => (
                 <div key={index} className={styles.featureCard}>
                   <h3>{feature.title}</h3>
@@ -274,33 +256,29 @@ export default function AdminGuidePage() {
 
         {activeSection === 'setup' && (
           <div className={styles.section}>
-            <h2>Detailed Setup Guide</h2>
-            <div className={styles.setupGuide}>
-              {setupSteps.map((section, index) => (
-                <div key={index} className={styles.setupSection}>
-                  <h3>{section.title}</h3>
-                  <ol className={styles.stepsList}>
-                    {section.steps.map((step, stepIndex) => (
-                      <li key={stepIndex}>{step}</li>
-                    ))}
-                  </ol>
-                </div>
-              ))}
-            </div>
+            <h2>Setup Guide</h2>
+            {setupSteps.map((section, index) => (
+              <div key={index} className={styles.setupSection}>
+                <h3>{section.title}</h3>
+                <ol className={styles.stepsList}>
+                  {section.steps.map((step, stepIndex) => (
+                    <li key={stepIndex}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            ))}
           </div>
         )}
 
         {activeSection === 'faq' && (
           <div className={styles.section}>
             <h2>Frequently Asked Questions</h2>
-            <div className={styles.faqList}>
-              {faqs.map((faq, index) => (
-                <div key={index} className={styles.faqItem}>
-                  <h3>{faq.question}</h3>
-                  <p>{faq.answer}</p>
-                </div>
-              ))}
-            </div>
+            {faqs.map((faq, index) => (
+              <div key={index} className={styles.faqItem}>
+                <h3>{faq.question}</h3>
+                <p>{faq.answer}</p>
+              </div>
+            ))}
           </div>
         )}
       </div>
