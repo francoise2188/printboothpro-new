@@ -10,8 +10,111 @@ export default function AccountPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const supabase = createClientComponentClient();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [businessSettings, setBusinessSettings] = useState({
+    business_name: '',
+    business_address_line1: '',
+    business_address_line2: '',
+    business_phone: '',
+    business_email: '',
+    business_website: '',
+    tax_rate: ''
+  });
+
+  useEffect(() => {
+    const initializeSettings = async () => {
+      setMessage('');
+      setLoading(true); 
+      try {
+        if (!user) return;
+        
+        const { data: settingsData, error: fetchError } = await supabase
+          .from('user_settings')
+          .select('business_name, business_address_line1, business_address_line2, business_phone, business_email, business_website, tax_rate')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        if (settingsData) {
+          setBusinessSettings({
+            business_name: settingsData.business_name || '',
+            business_address_line1: settingsData.business_address_line1 || '',
+            business_address_line2: settingsData.business_address_line2 || '',
+            business_phone: settingsData.business_phone || '',
+            business_email: settingsData.business_email || '',
+            business_website: settingsData.business_website || '',
+            tax_rate: settingsData.tax_rate ? (parseFloat(settingsData.tax_rate) * 100).toString() : ''
+          });
+        } else {
+           setBusinessSettings({
+             business_name: '',
+             business_address_line1: '',
+             business_address_line2: '',
+             business_phone: '',
+             business_email: '',
+             business_website: '',
+             tax_rate: ''
+           });
+        }
+      } catch (error) {
+        console.error('Error loading business settings:', error);
+        setMessage('Error loading business settings.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      initializeSettings();
+    }
+  }, [user, supabase]);
+
+  const handleSettingChange = (e) => {
+    const { name, value } = e.target;
+    setBusinessSettings(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    setMessage(''); 
+    setSaving(true);
+    try {
+      if (!user || !user.id) throw new Error('User not authenticated');
+
+      const taxRateDecimal = businessSettings.tax_rate ? (parseFloat(businessSettings.tax_rate) / 100) : null;
+
+      console.log('Saving business settings for user:', user.id, 'with data:', businessSettings, 'Tax Rate Decimal:', taxRateDecimal);
+
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert([{
+          user_id: user.id,
+          business_name: businessSettings.business_name || null,
+          business_address_line1: businessSettings.business_address_line1 || null,
+          business_address_line2: businessSettings.business_address_line2 || null,
+          business_phone: businessSettings.business_phone || null,
+          business_email: businessSettings.business_email || null,
+          business_website: businessSettings.business_website || null,
+          tax_rate: taxRateDecimal
+        }], { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      console.log('Business settings saved successfully to DB');
+      setMessage('Business settings saved successfully!');
+
+    } catch (error) {
+      console.error('Error saving business settings:', error);
+      setMessage(error.message || 'Error saving business settings');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -24,7 +127,7 @@ export default function AccountPage() {
     }
   };
 
-  if (!user) { 
+  if (loading && !user) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -32,6 +135,10 @@ export default function AccountPage() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <div className={styles.container}><p>Please log in.</p></div>;
   }
 
   return (
@@ -56,6 +163,64 @@ export default function AccountPage() {
           <div className={styles.label}>Email</div>
           <div className={styles.value}>{user.email}</div>
         </div>
+      </div>
+
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Business Information (for Invoices)</h2>
+        <div className={styles.formGrid}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Business Name</label>
+            <input type="text" name="business_name" value={businessSettings.business_name} onChange={handleSettingChange} className={styles.input} />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Phone Number</label>
+            <input type="tel" name="business_phone" value={businessSettings.business_phone} onChange={handleSettingChange} className={styles.input} />
+          </div>
+          <div className={`${styles.formGroup} ${styles.fullWidth}`}> 
+            <label className={styles.label}>Address Line 1</label>
+            <input type="text" name="business_address_line1" value={businessSettings.business_address_line1} onChange={handleSettingChange} className={styles.input} />
+          </div>
+          <div className={`${styles.formGroup} ${styles.fullWidth}`}> 
+            <label className={styles.label}>Address Line 2 (City, State, Zip)</label>
+            <input type="text" name="business_address_line2" value={businessSettings.business_address_line2} onChange={handleSettingChange} className={styles.input} />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Contact/Billing Email</label>
+            <input type="email" name="business_email" value={businessSettings.business_email} onChange={handleSettingChange} className={styles.input} />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Website</label>
+            <input 
+              type="text" 
+              name="business_website" 
+              value={businessSettings.business_website} 
+              onChange={handleSettingChange} 
+              className={styles.input} 
+              placeholder="https://www.yourwebsite.com"
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Sales Tax Rate (%)</label>
+            <input 
+              type="number" 
+              name="tax_rate" 
+              value={businessSettings.tax_rate}
+              onChange={handleSettingChange} 
+              className={styles.input} 
+              placeholder="e.g., 8.25"
+              step="0.01"
+              min="0"
+            />
+          </div>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving || loading}
+          className={`${styles.button} ${styles.saveButton}`} 
+          style={{ marginTop: '15px' }}
+        >
+          {saving ? 'Saving...' : 'Save Business Info'}
+        </button>
       </div>
 
       <div className={styles.section}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '../../../../lib/AuthContext';
@@ -13,32 +13,80 @@ export default function OrderManagement() {
   const { user } = useAuth();
   const supabase = createClientComponentClient();
 
-  useEffect(() => {
-    if (user) {
-      loadOrders();
-    }
-  }, [user]);
+  // --- State for Filters ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchDate, setSearchDate] = useState(''); // Store as YYYY-MM-DD string
+  const [searchOrderNumber, setSearchOrderNumber] = useState('');
+  // ------------------------
 
-  const loadOrders = async () => {
+  // Memoize loadOrders to prevent unnecessary re-renders if passed as prop later
+  const loadOrders = useCallback(async (filters = {}) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
+
+      // Apply filters dynamically
+      if (filters.term) {
+        query = query.ilike('customer_name', `%${filters.term}%`);
+      }
+      if (filters.orderNum) {
+        query = query.ilike('external_reference', `%${filters.orderNum}%`);
+      }
+      if (filters.date) {
+        // Filter for the entire day
+        const startDate = new Date(filters.date);
+        startDate.setUTCHours(0, 0, 0, 0); // Start of the day UTC
+        const endDate = new Date(filters.date);
+        endDate.setUTCHours(23, 59, 59, 999); // End of the day UTC
+        query = query.gte('created_at', startDate.toISOString());
+        query = query.lte('created_at', endDate.toISOString());
+      }
+
+      // Always order by creation date
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Supabase error:', error.message, error.details);
         throw error;
       }
-      console.log('Loaded orders:', data);
+      console.log('Loaded orders with filters:', filters, data);
       setOrders(data || []);
     } catch (error) {
       console.error('Error loading orders:', error);
+      setOrders([]); // Clear orders on error
     } finally {
       setLoading(false);
     }
+  }, [supabase, user]); // Dependencies for useCallback
+
+  // Initial load
+  useEffect(() => {
+    if (user) {
+      loadOrders(); // Load all orders initially
+    }
+  }, [user, loadOrders]); // Include loadOrders in dependency array
+
+  // Handle search button click
+  const handleSearch = () => {
+    const filters = {
+        term: searchTerm,
+        date: searchDate,
+        orderNum: searchOrderNumber
+    };
+    loadOrders(filters);
+  };
+
+  // Handle clear button click
+  const handleClear = () => {
+    setSearchTerm('');
+    setSearchDate('');
+    setSearchOrderNumber('');
+    loadOrders(); // Load all orders
   };
 
   const handleDelete = async (orderId) => {
@@ -80,6 +128,33 @@ export default function OrderManagement() {
         </button>
       </div>
 
+      {/* --- Search/Filter Section --- */}
+      <div className={styles.filterSection}>
+        <input
+          type="text"
+          placeholder="Search by Customer Name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={styles.filterInput}
+        />
+        <input
+          type="date" // Use date input type
+          value={searchDate}
+          onChange={(e) => setSearchDate(e.target.value)}
+          className={styles.filterInput}
+        />
+        <input
+          type="text"
+          placeholder="Search by Order Number..."
+          value={searchOrderNumber}
+          onChange={(e) => setSearchOrderNumber(e.target.value)}
+          className={styles.filterInput}
+        />
+        <button onClick={handleSearch} className={styles.primaryButton} style={{ marginLeft: '8px' }}>Search</button>
+        <button onClick={handleClear} className={styles.secondaryButton} style={{ marginLeft: '8px' }}>Clear</button>
+      </div>
+      {/* --------------------------- */}
+
       {loading ? (
         <div className={styles.loading}>Loading orders...</div>
       ) : (
@@ -87,7 +162,7 @@ export default function OrderManagement() {
           <table className="w-full">
             <thead className={styles.tableHeader}>
               <tr>
-                <th className={styles.tableHeaderCell}>Order Reference</th>
+                <th className={styles.tableHeaderCell}>Order Number</th>
                 <th className={styles.tableHeaderCell}>Customer</th>
                 <th className={styles.tableHeaderCell}>Date</th>
                 <th className={styles.tableHeaderCell}>Status</th>
@@ -95,44 +170,50 @@ export default function OrderManagement() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} className={styles.tableRow}>
-                  <td className={styles.tableCell}>
-                    {order.external_reference || 'N/A'}
-                  </td>
-                  <td className={styles.tableCell}>
-                    {order.customer_name}
-                  </td>
-                  <td className={styles.tableCell}>
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </td>
-                  <td className={styles.tableCell}>
-                    <span className={`${styles.statusBadge} ${styles[order.status]}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className={styles.tableCell}>
-                    <button
-                      onClick={() => router.push(`/admin/orders/management/${order.id}`)}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => router.push(`/admin/orders/template/${order.id}`)}
-                      className={styles.templateButton}
-                    >
-                      Template
-                    </button>
-                    <button
-                      onClick={() => handleDelete(order.id)}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
-                  </td>
+              {orders.length > 0 ? (
+                orders.map((order) => (
+                  <tr key={order.id} className={styles.tableRow}>
+                    <td className={styles.tableCell}>
+                      {order.external_reference || 'N/A'}
+                    </td>
+                    <td className={styles.tableCell}>
+                      {order.customer_name}
+                    </td>
+                    <td className={styles.tableCell}>
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </td>
+                    <td className={styles.tableCell}>
+                      <span className={`${styles.statusBadge} ${styles[order.status]}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className={styles.tableCell}>
+                      <button
+                        onClick={() => router.push(`/admin/orders/management/${order.id}`)}
+                        className={styles.editButton}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => router.push(`/admin/orders/template/${order.id}`)}
+                        className={styles.templateButton}
+                      >
+                        Template
+                      </button>
+                      <button
+                        onClick={() => handleDelete(order.id)}
+                        className={styles.deleteButton}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className={styles.noResultsCell}>No orders found matching your criteria.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
