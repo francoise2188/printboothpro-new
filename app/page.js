@@ -43,35 +43,16 @@ export default function HomePage() { // Renamed function
 
           {/* Video Section */}
           <section className={styles.videoSection}>
-            <div className={styles.videoWrapper}>
-              <div style={{
-                position: 'relative',
-                width: '100%',
-                height: '0',
-                paddingTop: '56.25%',
-                overflow: 'hidden',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px 0 rgba(63,69,81,0.16)',
-                marginBottom: '1rem'
-              }}>
-                <iframe
-                  loading="lazy"
-                  style={{
-                    position: 'absolute',
-                    width: '100%',
-                    height: '100%',
-                    top: 0,
-                    left: 0,
-                    border: 'none',
-                    padding: 0,
-                    margin: 0
-                  }}
-                  src="https://www.canva.com/design/DAGhieH7L2E/S18rpbJtBThaKaBsacHGkw/watch?embed"
-                  allowFullScreen
-                  allow="fullscreen"
-                />
-              </div>
+            <div style={{position: 'relative', width: '100%', height: '0', paddingTop: '56.2500%',
+             paddingBottom: '0', boxShadow: '0 2px 8px 0 rgba(63,69,81,0.16)', marginTop: '1.6em', marginBottom: '0.9em', overflow: 'hidden',
+             borderRadius: '8px', willChange: 'transform'}}>
+              <iframe loading="lazy" style={{position: 'absolute', width: '100%', height: '100%', top: '0', left: '0', border: 'none', padding: '0',margin: '0'}}
+                src="https://www.canva.com/design/DAGhieH7L2E/S18rpbJtBThaKaBsacHGkw/watch?embed"
+                allowFullScreen
+                allow="fullscreen">
+              </iframe>
             </div>
+            <a href="https://www.canva.com/design/DAGhieH7L2E/S18rpbJtBThaKaBsacHGkw/watch?utm_content=DAGhieH7L2E&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">Design</a> by Francoise Toneto
           </section>
 
           <section className={styles.whySection}>
