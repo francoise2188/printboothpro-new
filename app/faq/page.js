@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Head from 'next/head';
-import styles from '../subscription/subscription.module.css';
+import styles from '../page.module.css';
 import faqStyles from './faq.module.css';
 
 export default function FAQPage() {

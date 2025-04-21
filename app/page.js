@@ -1,161 +1,27 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { supabase } from '../lib/supabase';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import styles from './page.module.css';
 import Head from 'next/head';
+import styles from './page.module.css'; // Corrected style import
+import {
+  SparklesIcon,
+  BoltIcon,
+  CheckBadgeIcon,
+  BriefcaseIcon,
+  ArrowPathIcon,
+  HeartIcon,
+  CpuChipIcon,
+  ChartBarIcon,
+  SwatchIcon
+} from '@heroicons/react/24/outline';
 
-function HomeContent() {
-  const [email, setEmail] = useState('');
-  const [backgroundUrl, setBackgroundUrl] = useState('');
+export default function HomePage() { // Renamed function
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const eventId = searchParams.get('event');
-  const error = searchParams.get('error');
 
-  useEffect(() => {
-    // If there's no event ID, redirect to subscription page
-    if (!eventId) {
-    //   router.push('/subscription'); // Temporarily disable redirect for testing/dev
-      return;
-    }
-
-    async function checkEventStatus() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*, design_settings(*)')
-        .eq('id', eventId)
-        .single();
-
-      if (error) {
-        console.error('Error checking event status:', error);
-        return;
-      }
-
-      // If event is not active, redirect to ended page
-      if (!data.is_active) {
-        router.push('/event-ended');
-        return;
-      }
-
-      // Set background URL from design settings
-      if (data.design_settings?.[0]?.landing_background) {
-        console.log('Setting background URL:', data.design_settings[0].landing_background);
-        setBackgroundUrl(data.design_settings[0].landing_background);
-      }
-    }
-
-    checkEventStatus();
-  }, [eventId, router]);
-
-  // If this is an event page, show the event-specific layout
-  if (eventId) {
-    return (
-      <div style={{ 
-        height: '100vh',
-        width: '100vw',
-        position: 'relative',
-        overflow: 'hidden',
-        backgroundColor: '#000',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-      }}>
-        {/* Background Image Container */}
-        {backgroundUrl && (
-          <div style={{
-            position: 'absolute',
-            height: '102vh',
-            width: '100vw',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            margin: 0,
-            padding: 0,
-          }}>
-            <Image
-              src={backgroundUrl}
-              alt="Event Background"
-              fill
-              style={{
-                objectFit: 'contain',
-                objectPosition: 'center'
-              }}
-              onError={(e) => {
-                console.error('Error loading background image:', e);
-                console.log('Attempted URL:', backgroundUrl);
-              }}
-              onLoad={() => {
-                console.log('Background image loaded successfully');
-              }}
-              priority
-              unoptimized
-            />
-          </div>
-        )}
-
-        {/* Email Form */}
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          padding: '15px',
-          borderRadius: '12px',
-          width: '80%',
-          maxWidth: '350px',
-          zIndex: 2
-        }}>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (email) {
-              localStorage.setItem('userEmail', email);
-              const targetUrl = `/camera/${eventId}`;
-              console.log('Redirecting to:', targetUrl);
-              router.push(targetUrl);
-            }
-          }}>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '8px',
-                marginBottom: '8px',
-                border: '1px solid #ccc',
-                borderRadius: '5px'
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                padding: '8px',
-                backgroundColor: '#007bff',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              Start Photo Booth
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // If no eventId, show the main homepage
   return (
-    <div className={styles.container}>
+    <>
       <Head>
         <title>PrintBooth Pro - The Tech Behind Tomorrow's Keepsakes</title>
         <meta name="description" content="PrintBooth Pro - The tech behind tomorrow's keepsakes. Transform your events with instant 2x2 photo magnets, perfect for creating lasting memories at events and markets." />
@@ -166,40 +32,173 @@ function HomeContent() {
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="PrintBooth Pro" />
       </Head>
-      <div className={styles.content}>
-        <h1 className={styles.title}>
-          PrintBooth Pro
-        </h1>
-        <p className={styles.description}>
-          Your All-in-One Photo Magnet Solution for Events & Markets
-        </p>
 
-        {error && (
-          <div className={styles.error}>
-            {error}
-          </div>
-        )}
+      <div className={styles.container}>
+        <div className={styles.content}>
+          {/* Re-added the main headline and subtitle */}
+          <h1 className={styles.title}>Transform Events with Instant Photo Magnets</h1>
+          <p className={styles.subtitle}>
+            A precision-focused solution built specifically for 2x2 square photo magnets, perfect for events, markets, and online orders.
+          </p>
 
-        <div className={styles.buttonContainer}>
-          <Link href="/subscription" className={styles.subscribeButton}>
-            Subscribe Now
-          </Link>
+          {/* Video Section */}
+          <section className={styles.videoSection}>
+            <div className={styles.videoWrapper}>
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                height: '0',
+                paddingTop: '56.25%',
+                overflow: 'hidden',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px 0 rgba(63,69,81,0.16)',
+                marginBottom: '1rem'
+              }}>
+                <iframe
+                  loading="lazy"
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    top: 0,
+                    left: 0,
+                    border: 'none',
+                    padding: 0,
+                    margin: 0
+                  }}
+                  src="https://www.canva.com/design/DAGhieH7L2E/S18rpbJtBThaKaBsacHGkw/watch?embed"
+                  allowFullScreen
+                  allow="fullscreen"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.whySection}>
+            <div className={styles.whyContent}>
+              <h2 className={styles.sectionTitle}>Why Choose PrintBooth Pro?</h2>
+              <div className={styles.whyGrid}>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <SparklesIcon />
+                  </div>
+                  <h3>Perfect Size</h3>
+                  <p>2x2 square magnets - the ideal format for memorable moments</p>
+                </div>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <BoltIcon />
+                  </div>
+                  <h3>Lightning Fast</h3>
+                  <p>Instant printing and processing for quick turnaround</p>
+                </div>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <CheckBadgeIcon />
+                  </div>
+                  <h3>Professional Quality</h3>
+                  <p>High-resolution output with perfect color accuracy</p>
+                </div>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <BriefcaseIcon />
+                  </div>
+                  <h3>Business Ready</h3>
+                  <p>Complete solution for events and market operations</p>
+                </div>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <ArrowPathIcon />
+                  </div>
+                  <h3>Easy Integration</h3>
+                  <p>Seamless setup with your existing equipment and workflow</p>
+                </div>
+                <div className={styles.whyCard}>
+                  <div className={styles.featureIcon}>
+                    <HeartIcon />
+                  </div>
+                  <h3>Customer Love</h3>
+                  <p>Create lasting memories that clients cherish forever</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.featuresShowcase}>
+            <h2 className={styles.sectionTitle}>Powerful Features</h2>
+            <div className={styles.featuresGrid}>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <CpuChipIcon />
+                </div>
+                <h3 className={styles.featureTitle}>Smart Automation</h3>
+                <ul className={styles.featureDetails}>
+                  <li>Automatic template filling</li>
+                  <li>Zero-touch printing process</li>
+                  <li>Streamlined workflow</li>
+                </ul>
+              </div>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <ChartBarIcon />
+                </div>
+                <h3 className={styles.featureTitle}>Business Tools</h3>
+                <ul className={styles.featureDetails}>
+                  <li>Event management dashboard</li>
+                  <li>Sales tracking & analytics</li>
+                  <li>Customer database</li>
+                </ul>
+              </div>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <SwatchIcon />
+                </div>
+                <h3 className={styles.featureTitle}>Design Freedom</h3>
+                <ul className={styles.featureDetails}>
+                  <li>Custom templates</li>
+                  <li>Brand integration</li>
+                  <li>Multiple layouts</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.pricingCard}>
+            <div className={styles.cardContent}>
+              <div className={styles.planHeader}>
+                <h3 className={styles.planName}>Launch Special</h3>
+                <div className={styles.priceContainer}>
+                  <span className={styles.price}>$59</span>
+                  <span className={styles.interval}>/month</span>
+                </div>
+              </div>
+
+              <ul className={styles.featureDetails}>
+                <li>✓ Unlimited 2x2 Magnet Templates</li>
+                <li>✓ Event and Market Support</li>
+                <li>✓ Online Order Management</li>
+                <li>✓ Business Analytics</li>
+                <li>✓ Priority Support</li>
+                <li>✓ Cancel Anytime</li>
+              </ul>
+
+              <button
+                disabled
+                className={`${styles.subscribeButton} ${styles.disabled}`}
+              >
+                Coming Soon
+              </button>
+
+              <div className={styles.loginSection}>
+                <p className={styles.loginText}>Already a beta tester?</p>
+                <Link href="/login" className={styles.loginButton}>
+                  Log In
+                </Link>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
-    </div>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold">Loading...</h2>
-        </div>
-      </div>
-    }>
-      <HomeContent />
-    </Suspense>
+    </>
   );
 }

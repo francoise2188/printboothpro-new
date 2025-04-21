@@ -1,68 +1,302 @@
 .container {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-  position: relative;
-  background-color: var(--background);
-  color: var(--text);
+  background: #ffffff;
+  padding: 0;
 }
 
-.titleContainer {
+.content {
+  max-width: 100%;
+  margin: 0;
+  position: relative;
+}
+
+.gradientBg {
+  background: #ffffff;
+  padding: 0;
+  box-shadow: none;
+}
+
+.header {
   text-align: center;
-  margin-bottom: 2rem;
-  z-index: 1;
+  margin-bottom: 0;
+  padding: 8rem 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: none;
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  color: var(--primary);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d4f3c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 .subtitle {
-  font-size: 1.2rem;
-  color: var(--text-muted);
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: #4b5563;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+  text-align: center;
 }
 
-.formContainer {
+.userBadge {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  background-color: #2d4f3c;
+  color: white;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.whySection {
+  padding: 6rem 2rem;
+  background: white;
+}
+
+.whyContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.whyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 1024px) {
+  .whyGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.whyCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  transition: transform 0.2s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.whyCard:hover {
+  transform: translateY(-5px);
+}
+
+.featuresShowcase {
+  padding: 6rem 2rem;
+  background: #f8fafc;
+  margin: 0;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 3rem auto 0;
+}
+
+.featureCard {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-5px);
+}
+
+.featureIcon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 1.25rem;
+  color: #2d4f3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(45, 79, 60, 0.08);
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.whyCard:hover .featureIcon,
+.featureCard:hover .featureIcon {
+  transform: scale(1.05);
+  background: rgba(45, 79, 60, 0.12);
+}
+
+.featureIcon svg {
   width: 100%;
+  height: 100%;
+  stroke-width: 1.75;
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+.featureDetails {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.featureDetails li {
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pricingCard {
   max-width: 400px;
+  margin: 6rem auto;
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.cardContent {
+  padding: 2.5rem;
+}
+
+.planHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.planName {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.price {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #2d4f3c;
+}
+
+.interval {
+  color: #6b7280;
+}
+
+.subscribeButton {
+  width: 100%;
+  padding: 1rem;
+  background: #2d4f3c;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.subscribeButton:hover:not(.disabled) {
+  background: #1a332a;
+}
+
+.disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.loginSection {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.loginText {
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.loginButton {
+  color: #2d4f3c;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.loginButton:hover {
+  text-decoration: underline;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 4rem 1rem;
+  }
+  .whySection,
+  .featuresShowcase {
+    padding: 4rem 1rem;
+  }
+  .whyGrid,
+  .featuresGrid {
+    gap: 1.5rem;
+  }
+  .pricingCard {
+    margin: 4rem auto;
+  }
+}
+
+.videoSection {
+  max-width: 900px;
+  margin: 4rem auto 6rem;
+  padding: 0 2rem;
+  position: relative;
   z-index: 1;
 }
 
-.input {
+.videoWrapper {
+  position: relative;
   width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: var(--background-alt);
-  color: var(--text);
-  transition: border-color 0.3s ease;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.button {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.button:hover {
-  background-color: var(--primary-dark);
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.04);
 } 

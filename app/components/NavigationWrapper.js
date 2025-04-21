@@ -6,6 +6,7 @@ import Navigation from './Navigation';
 function shouldShowNavigation(pathname) {
   // List of paths where navigation should appear
   const navigationPaths = [
+    '/',
     '/subscription',
     '/login',
     '/about',
