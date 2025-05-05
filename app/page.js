@@ -52,7 +52,6 @@ export default function HomePage() { // Renamed function
                 allow="fullscreen">
               </iframe>
             </div>
-            <a href="https://www.canva.com/design/DAGhieH7L2E/S18rpbJtBThaKaBsacHGkw/watch?utm_content=DAGhieH7L2E&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">Design</a> by Francoise Toneto
           </section>
 
           <section className={styles.whySection}>
