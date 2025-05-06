@@ -346,6 +346,7 @@ export default function EventBoothCameraV2({ eventId }) {
 
   const handleRetake = () => {
     setPhoto(null);
+    setupCamera();
   };
 
   const switchCamera = () => {
