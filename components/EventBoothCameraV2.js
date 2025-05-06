@@ -1,7 +1,7 @@
 'use client';
 
 // Version 3.0 - EventBoothCameraV2 - Complete rebuild
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'react-hot-toast';
@@ -82,61 +82,67 @@ export default function EventBoothCameraV2({ eventId }) {
     fetchFrame();
   }, [eventId, isFetching]);
 
-  // Initialize camera with improved mobile handling
-  useEffect(() => {
-    async function setupCamera() {
-      try {
-        // First check if we have camera permissions
-        const hasPermission = await navigator.permissions.query({ name: 'camera' });
-        if (hasPermission.state === 'denied') {
-          throw new Error('Camera permission denied');
-        }
-
-        if (videoRef.current?.srcObject) {
-          const tracks = videoRef.current.srcObject.getTracks();
-          tracks.forEach(track => track.stop());
-        }
-
-        // Add mobile-specific constraints
-        const constraints = {
-          video: {
-            facingMode,
-            width: { min: 1280, ideal: 1920, max: 2560 },
-            height: { min: 720, ideal: 1080, max: 1440 },
-            frameRate: { ideal: 30, min: 15 },
-            // Advanced constraints to prevent zoom
-            advanced: [{ zoom: 1, digitalZoom: 1 }]
-          },
-          audio: false
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          // Ensure we're properly connected to the stream
-          await new Promise((resolve) => {
-            videoRef.current.onloadedmetadata = () => {
-              videoRef.current.play().then(resolve);
-            };
-          });
-        }
-        setError(null);
-      } catch (err) {
-        console.error('Camera setup error:', err);
-        toast.error('Unable to access camera. Please check your permissions and try again.');
-        setError('Camera access failed');
+  // Define setupCamera in the component scope, wrapped in useCallback
+  const setupCamera = useCallback(async () => {
+    try {
+      const hasPermission = await navigator.permissions.query({ name: 'camera' });
+      if (hasPermission.state === 'denied') {
+        throw new Error('Camera permission denied');
       }
-    }
 
+      if (videoRef.current?.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+
+      const constraints = {
+        video: {
+          facingMode,
+          width: { min: 1280, ideal: 1920, max: 2560 },
+          height: { min: 720, ideal: 1080, max: 1440 },
+          frameRate: { ideal: 30, min: 15 },
+          advanced: [{ zoom: 1, digitalZoom: 1 }]
+        },
+        audio: false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await new Promise((resolve) => {
+          videoRef.current.onloadedmetadata = () => {
+            // Ensure play() is called and resolved before considering setup complete
+            videoRef.current.play().then(resolve).catch(playError => {
+              console.error("Error attempting to play video:", playError);
+              // Potentially set an error state here if play fails
+              setError('Failed to play camera stream.');
+              resolve(); // Still resolve to not hang the setup
+            });
+          };
+        });
+      }
+      setError(null); // Clear any previous errors
+    } catch (err) {
+      console.error('Camera setup error:', err);
+      toast.error('Unable to access camera. Please check permissions.');
+      setError('Camera access failed. Please check permissions and try again.');
+    }
+  }, [facingMode, setError, videoRef]); // videoRef is stable, setError is stable. facingMode is the key driver.
+
+  // Initialize camera and re-initialize if setupCamera changes (e.g., facingMode changes)
+  useEffect(() => {
     setupCamera();
 
+    // Cleanup function to stop camera tracks when component unmounts or setupCamera changes
     return () => {
       if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        videoRef.current.srcObject = null; // Clear the srcObject
       }
     };
-  }, [facingMode]);
+  }, [setupCamera]); // useEffect now depends on the memoized setupCamera
 
   const takePhoto = () => {
     if (!videoRef.current) return;
