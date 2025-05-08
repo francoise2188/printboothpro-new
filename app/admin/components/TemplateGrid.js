@@ -802,6 +802,70 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
     }
   };
 
+  const handleAddCopyToTemplate = async (photoToAdd) => {
+    if (!selectedEventId || !user) {
+      toast.error("Cannot add photo: Event or user not identified.");
+      return;
+    }
+
+    const emptySlotIndex = template.findIndex(slot => slot === null);
+
+    if (emptySlotIndex === -1) {
+      toast.error("Template is full. Cannot add another copy.");
+      return;
+    }
+
+    try {
+      const loadingToastId = toast.loading("Adding copy to template...");
+      const nextPrintNum = await getNextPrintNumber(selectedEventId);
+
+      const newPhotoCopy = {
+        event_id: selectedEventId,
+        user_id: user.id, // Assuming you want to associate with the current admin
+        url: photoToAdd.url,
+        status: 'in_template', // Or 'pending' if processTemplate strictly handles moving to in_template
+        template_position: emptySlotIndex + 1,
+        print_number: nextPrintNum,
+        original_photo_id: photoToAdd.id, // Link to the original photo
+        created_at: new Date().toISOString(),
+        source: photoToAdd.source || 'event_booth_admin_copy', // Identify source
+        // Copy other relevant fields if necessary, e.g., from photoToAdd
+        // Be cautious about copying fields like 'id' or mutable status fields directly
+      };
+
+      const { data, error } = await supabase
+        .from('photos')
+        .insert([newPhotoCopy])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error inserting photo copy:", error);
+        toast.error(`Failed to add copy: ${error.message}`);
+        throw error;
+      }
+
+      toast.success("Photo copy added to template!");
+      
+      // Optionally, to give faster UI feedback, update local template state here
+      // This is a bit redundant if processTemplate runs quickly and correctly,
+      // but can improve perceived responsiveness.
+      // setTemplate(currentTemplate => {
+      //   const updatedTemplate = [...currentTemplate];
+      //   updatedTemplate[emptySlotIndex] = data; // Use the data returned from insert
+      //   return updatedTemplate;
+      // });
+      // Or, more simply, rely on the processTemplate useEffect to refresh.
+      // If processTemplate doesn't run often enough, you might need to trigger it.
+
+      toast.dismiss(loadingToastId);
+    } catch (err) {
+      toast.dismiss(toast.loading()); // Dismiss any stray loading toasts
+      // Error already handled by toast in the try block for DB error
+      console.error("Error in handleAddCopyToTemplate:", err);
+    }
+  };
+
   // Add Print Preview Modal
   if (showPrintPreview) {
     return (
@@ -900,11 +964,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                             ×
                           </button>
                           <button
-                            onClick={() => {
-                              setSelectedPhoto(photo);
-                              setPrintCount(1);
-                              openPrintPopup(photo);
-                            }}
+                            onClick={() => handleAddCopyToTemplate(photo)}
                             className={styles.primaryButton}
                           >
                             +
@@ -1139,11 +1199,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                           ×
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedPhoto(photo);
-                            setPrintCount(1);
-                            openPrintPopup(photo);
-                          }}
+                          onClick={() => handleAddCopyToTemplate(photo)}
                           className={styles.primaryButton}
                         >
                           +
