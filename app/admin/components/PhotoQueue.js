@@ -41,6 +41,7 @@ export default function PhotoQueue({ selectedEventId }) {
           .eq('event_id', selectedEventId)
           .eq('status', 'pending')
           .is('deleted_at', null)
+          .order('queue_order', { ascending: true, nullsLast: true })
           .order('created_at', { ascending: true })
           .limit(9);
 
@@ -109,14 +110,18 @@ export default function PhotoQueue({ selectedEventId }) {
       // Update the order in the database
       const updates = newPhotos.map((photo, index) => ({
         id: photo.id,
-        queue_order: index
+        queue_order: index + 1 // Start from 1 to avoid 0
       }));
 
-      const { error } = await supabase
-        .from('photos')
-        .upsert(updates);
+      // Update each photo's queue_order individually to avoid conflicts
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('photos')
+          .update({ queue_order: update.queue_order })
+          .eq('id', update.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       // Update local state
       setPhotos(newPhotos);
