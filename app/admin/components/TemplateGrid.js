@@ -173,7 +173,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
           .from('photos')
           .select('*')
           .eq('event_id', selectedEventId)
-          .or('status.eq.in_template,status.eq.pending')
+          .or('status.eq.in_template,status.eq.pending')  // Get both in_template and pending photos
           .is('deleted_at', null)
           .order('created_at', { ascending: true });
 
@@ -182,47 +182,42 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
           return;
         }
 
+        // Filter out photos that are already processed
+        const unprocessedPhotos = allPhotos?.filter(photo => 
+          !processedPhotoIds.has(photo.id)
+        ) || [];
+        
         // Log all pending photos for debugging
-        const pendingPhotos = allPhotos?.filter(p => p.status === 'pending') || [];
+        const pendingPhotos = unprocessedPhotos.filter(p => p.status === 'pending');
         console.log('All pending photos:', pendingPhotos.map(p => ({
           id: p.id,
           created_at: p.created_at,
-          event_id: p.event_id
+          event_id: p.event_id,
+          status: p.status
         })));
 
         console.log('Fetched photos:', {
           total: allPhotos?.length,
           pending: pendingPhotos.length,
-          inTemplate: allPhotos?.filter(p => p.status === 'in_template').length,
+          inTemplate: unprocessedPhotos.filter(p => p.status === 'in_template').length,
           eventId: selectedEventId
         });
 
         // Initialize empty template
         const newTemplate = Array(9).fill(null);
-        let needsCleanup = false;
 
         // First, place all in_template photos in their correct positions
-        const inTemplatePhotos = allPhotos.filter(p => p.status === 'in_template');
+        const inTemplatePhotos = unprocessedPhotos.filter(p => p.status === 'in_template');
         
-        // Check for position conflicts
-        const positionMap = new Map();
+        // Place photos in their positions
         inTemplatePhotos.forEach(photo => {
           if (photo.template_position && photo.template_position <= 9) {
-            if (positionMap.has(photo.template_position)) {
-              needsCleanup = true;
-            } else {
-              positionMap.set(photo.template_position, photo);
+            // Only place the photo if the position is empty
+            if (!newTemplate[photo.template_position - 1]) {
               newTemplate[photo.template_position - 1] = photo;
             }
           }
         });
-
-        // If we detected conflicts, trigger cleanup
-        if (needsCleanup) {
-          console.log('Position conflicts detected, triggering cleanup...');
-          await cleanupTemplateState();
-          return;
-        }
 
         // Find first empty slot
         const firstEmptySlot = newTemplate.findIndex(slot => slot === null);
@@ -315,7 +310,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
     processTemplate();
     const interval = setInterval(processTemplate, 3000);
     return () => clearInterval(interval);
-  }, [selectedEventId, user?.id]);
+  }, [selectedEventId, user?.id, processedPhotoIds]);
 
   useEffect(() => {
     const calculateTime = () => {
@@ -461,54 +456,95 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
       return slots;
     }, []);
 
+    if (emptySlots.length < selectedPhotos.length) {
+      toast.error(`Only ${emptySlots.length} empty slots available. Please remove some photos first.`);
+      return;
+    }
+
+    const loadingToast = toast.loading('Adding reprints to template...');
+
     try {
       // Add selected photos to empty slots
       for (let i = 0; i < selectedPhotos.length; i++) {
         if (emptySlots[i] !== undefined) {
-          const photo = selectedPhotos[i];
+          const originalPhoto = selectedPhotos[i];
           const slotIndex = emptySlots[i];
           const templatePosition = slotIndex + 1;
 
-          console.log('Adding photo to template:', {
-            photoId: photo.id,
+          // Check if this photo is already in the template
+          const isAlreadyInTemplate = template.some(photo => 
+            photo && photo.original_photo_id === originalPhoto.id
+          );
+
+          if (isAlreadyInTemplate) {
+            console.log('Skipping duplicate reprint:', originalPhoto.id);
+            continue;
+          }
+
+          console.log('Creating reprint for template:', {
+            originalPhotoId: originalPhoto.id,
+            printNumber: originalPhoto.print_number,
             position: templatePosition
           });
 
-          // Update database first
-          const { error: updateError } = await supabase
+          // Create a new photo record as a reprint
+          const { data: newPhoto, error: insertError } = await supabase
             .from('photos')
-            .update({
+            .insert({
+              event_id: selectedEventId,
+              user_id: user.id,
+              url: originalPhoto.url,
               status: 'in_template',
               template_position: templatePosition,
-              print_status: 'pending'  // Reset print status for reprint
+              print_status: 'pending',
+              print_number: originalPhoto.print_number, // Keep original print number
+              original_photo_id: originalPhoto.id,
+              created_at: new Date().toISOString(),
+              source: 'reprint'
             })
-            .eq('id', photo.id);
+            .select()
+            .single();
 
-          if (updateError) {
-            console.error('Error updating photo:', updateError);
-            throw updateError;
+          if (insertError) {
+            console.error('Error creating reprint:', {
+              error: insertError,
+              details: {
+                event_id: selectedEventId,
+                user_id: user.id,
+                template_position: templatePosition,
+                print_number: originalPhoto.print_number,
+                original_photo_id: originalPhoto.id
+              }
+            });
+            throw new Error(`Failed to create reprint: ${insertError.message}`);
           }
 
-          // Then update UI
+          console.log('Successfully created reprint:', {
+            newPhotoId: newPhoto.id,
+            originalPrintNumber: originalPhoto.print_number,
+            position: templatePosition
+          });
+
+          // Update UI with the new photo
           setTemplate(current => {
             const newTemplate = [...current];
-            newTemplate[slotIndex] = {
-              ...photo,
-              status: 'in_template',
-              template_position: templatePosition,
-              print_status: 'pending'
-            };
+            newTemplate[slotIndex] = newPhoto;
             return newTemplate;
           });
+
+          // Add to processed photos to prevent auto-reprint
+          setProcessedPhotoIds(prev => new Set([...prev, newPhoto.id]));
         }
       }
 
+      toast.dismiss(loadingToast);
       setIsReprintOpen(false);
       setSelectedPrints([]);
-      toast.success('Added selected photos to template');
+      toast.success('Added reprints to template');
     } catch (error) {
-      console.error('Error adding photos to template:', error);
-      toast.error('Failed to add photos to template');
+      console.error('Error adding reprints to template:', error);
+      toast.dismiss(loadingToast);
+      toast.error('Failed to add reprints: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -701,7 +737,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
     const allImagesLoaded = nonEmptyPhotos.every(photo => loadedImages.has(photo.id));
 
     if (!templateIsFull || !allImagesLoaded) {
-         autoPrintTriggeredRef.current = false;
+      autoPrintTriggeredRef.current = false;
     }
 
     if (
@@ -713,9 +749,45 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
     ) {
       console.log("Auto-print conditions met! Triggering print via helper after 1s delay...");
       autoPrintTriggeredRef.current = true;
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
           console.log("Executing delayed auto-print trigger.");
-          onAutoPrintTrigger();
+          try {
+            // Get all photos in the template before clearing
+            const photosToPrint = template.filter(p => p !== null);
+            
+            // Update photo status in database first
+            const { error: updateError } = await supabase
+              .from('photos')
+              .update({
+                status: 'printed',
+                print_status: 'printed'
+              })
+              .in('id', photosToPrint.map(p => p.id));
+
+            if (updateError) {
+              throw updateError;
+            }
+
+            // Trigger the print
+            await onAutoPrintTrigger();
+            
+            // Clear the template and update UI
+            console.log('Clearing template after successful auto-print');
+            setTemplate(Array(9).fill(null));
+            setLoadedImages(new Set());
+            
+            // Add printed photos to processed list to prevent reprinting
+            const printedPhotoIds = photosToPrint.map(p => p.id);
+            console.log('Adding printed photos to processed list:', printedPhotoIds);
+            setProcessedPhotoIds(prev => new Set([...prev, ...printedPhotoIds]));
+            
+            // Reset the auto print trigger flag
+            autoPrintTriggeredRef.current = false;
+          } catch (error) {
+            console.error("Error during auto-print:", error);
+            // Reset the flag even if there's an error
+            autoPrintTriggeredRef.current = false;
+          }
       }, 1000);
       return () => {
           console.log("Cleaning up auto-print timer (conditions changed or unmount)");
@@ -1088,12 +1160,61 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
           </label>
           <button 
             className={styles.primaryButton}
-            onClick={() => {
+            onClick={async () => {
                 console.log("Manual Print button clicked, triggering helper...");
                 if (isPrintConnectorReady) {
                     // Check if template has photos before printing
                     if (template.some(p => p !== null)) {
-                        onAutoPrintTrigger(); // Call the function passed from parent
+                        try {
+                            // Get all photos in the template
+                            const photosToPrint = template.filter(p => p !== null);
+                            console.log('Photos to print:', photosToPrint.map(p => ({
+                                id: p.id,
+                                status: p.status,
+                                print_number: p.print_number
+                            })));
+                            
+                            // Update photo status in database first
+                            const { data: updateData, error: updateError } = await supabase
+                                .from('photos')
+                                .update({
+                                    status: 'printed',
+                                    print_status: 'printed'
+                                })
+                                .in('id', photosToPrint.map(p => p.id))
+                                .select();
+
+                            if (updateError) {
+                                console.error('Database update error:', updateError);
+                                throw new Error(`Failed to update photo status: ${updateError.message}`);
+                            }
+
+                            console.log('Database update successful:', updateData);
+
+                            // Trigger the print
+                            console.log('Triggering print helper...');
+                            await onAutoPrintTrigger();
+                            console.log('Print helper completed');
+                            
+                            // Clear the template and update UI
+                            console.log('Clearing template after successful print');
+                            setTemplate(Array(9).fill(null));
+                            setLoadedImages(new Set());
+                            
+                            // Add printed photos to processed list to prevent reprinting
+                            const printedPhotoIds = photosToPrint.map(p => p.id);
+                            console.log('Adding printed photos to processed list:', printedPhotoIds);
+                            setProcessedPhotoIds(prev => new Set([...prev, ...printedPhotoIds]));
+                            
+                            toast.success('Template printed successfully');
+                        } catch (error) {
+                            console.error("Error during manual print:", {
+                                message: error.message,
+                                stack: error.stack,
+                                error: error
+                            });
+                            toast.error(`Failed to print template: ${error.message || 'Unknown error'}`);
+                        }
                     } else {
                         toast.error("Template is empty. Add photos before printing.");
                     }
