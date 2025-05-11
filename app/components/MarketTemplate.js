@@ -16,13 +16,13 @@ const Modal = ({ children, onClose }) => (
 );
 
 export default function MarketTemplate({ marketId }) {
+  console.log('--- MarketTemplate FUNCTION BODY ENTERED --- Top of component. marketId prop:', marketId); // NEW TOPMOST LOG
   console.log('🎯 MarketTemplate Component - Received marketId:', marketId);
   const [template, setTemplate] = useState(Array(9).fill(null));
   const [overlayUrl, setOverlayUrl] = useState(null);
-  const [photoStates, setPhotoStates] = useState({});
   const [processedPhotoIds, setProcessedPhotoIds] = useState(() => {
-    // Initialize from localStorage if available
     const saved = localStorage.getItem(`processed_photos_${marketId}`);
+    console.log(`[useState processedPhotoIds] Initializing. marketId: ${marketId}. Found in localStorage: ${!!saved}`); // New log for this part
     return new Set(saved ? JSON.parse(saved) : []);
   });
   const [crops, setCrops] = useState({});
@@ -30,29 +30,328 @@ export default function MarketTemplate({ marketId }) {
   const fileInputRef = useRef(null);
   const [websiteUrl, setWebsiteUrl] = useState('');
 
-  // *** RENAME STATE BACK FOR REPRINT ***
   const [showReprintModal, setShowReprintModal] = useState(false);
   const [reprintPhotos, setReprintPhotos] = useState([]);
   const [isLoadingReprint, setIsLoadingReprint] = useState(false);
-
-  // *** NEW STATE: Store IDs from the last confirmed print job ***
   const [lastPrintedBatchIds, setLastPrintedBatchIds] = useState([]);
 
-  // Initialize photo states when template changes
+  // New state for order-by-order processing
+  const [currentOrderCode, setCurrentOrderCode] = useState(null);
+  const [currentOrderPhotos, setCurrentOrderPhotos] = useState([]);
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+  const [photoStates, setPhotoStates] = useState({});
+  const [initialOrderLoaded, setInitialOrderLoaded] = useState(false);
+  const [lastSuccessfulLoadTimestamp, setLastSuccessfulLoadTimestamp] = useState(null); // New state for polling
+
+  // Moved function definitions up
+  const synchronizeState = async () => {
+    console.log('=== SYNCHRONIZING STATE ===');
+    try {
+      const { data: marketPhotos, error } = await supabase
+        .from('market_photos')
+        .select('id, status')
+        .eq('market_id', marketId);
+
+      if (error) throw error;
+
+      // Update processedPhotoIds based on actual database state
+      const deletedPhotoIds = new Set(
+        marketPhotos
+          .filter(p => p.status === 'deleted' || p.status === 'printed')
+          .map(p => p.id)
+      );
+
+      setProcessedPhotoIds(deletedPhotoIds);
+      console.log('State synchronized:', {
+        totalPhotos: marketPhotos.length,
+        deletedPhotos: deletedPhotoIds.size
+      });
+    } catch (error) {
+      console.error('Error synchronizing state:', error);
+    }
+  };
+
+  const loadNextOrder = async () => {
+    console.log('=== LOAD NEXT ORDER START ===');
+    
+    // Synchronize state before loading next order
+    await synchronizeState();
+    
+    console.log('Current state:', {
+      marketId,
+      isLoadingOrder,
+      processedPhotoIds: Array.from(processedPhotoIds),
+      currentOrderCode,
+      template: template.map(t => t?.id || null)
+    });
+
+    if (!marketId) {
+      console.log('No marketId provided, clearing template');
+      setTemplate(Array(9).fill(null));
+      setCurrentOrderCode(null);
+      setCurrentOrderPhotos([]);
+      setIsLoadingOrder(false);
+      setInitialOrderLoaded(true);
+      setLastSuccessfulLoadTimestamp(Date.now());
+      return;
+    }
+
+    console.log('Setting loading state to true');
+    setIsLoadingOrder(true);
+    setTemplate(Array(9).fill(null));
+
+    try {
+      // First, let's verify what photos exist for this market
+      console.log('Verifying market photos...');
+      const { data: marketPhotos, error: marketError } = await supabase
+        .from('market_photos')
+        .select('id, status, order_code')
+        .eq('market_id', marketId);
+
+      if (marketError) {
+        console.error('Error fetching market photos:', marketError);
+        throw marketError;
+      }
+
+      console.log('All photos in market:', {
+        total: marketPhotos?.length,
+        byStatus: marketPhotos?.reduce((acc, p) => {
+          acc[p.status] = (acc[p.status] || 0) + 1;
+          return acc;
+        }, {}),
+        byOrder: marketPhotos?.reduce((acc, p) => {
+          acc[p.order_code] = (acc[p.order_code] || 0) + 1;
+          return acc;
+        }, {})
+      });
+
+      // Now find pending orders
+      console.log('Fetching pending orders for market:', marketId);
+      const { data: pendingOrderCodes, error: orderCodeError } = await supabase
+        .from('market_photos')
+        .select('order_code, created_at')
+        .eq('market_id', marketId)
+        .eq('status', 'in_template')
+        .order('created_at', { ascending: true });
+
+      if (orderCodeError) {
+        console.error('Error fetching pending orders:', orderCodeError);
+        throw orderCodeError;
+      }
+
+      console.log('Found pending orders:', pendingOrderCodes);
+
+      let nextOrderCode = null;
+      if (pendingOrderCodes && pendingOrderCodes.length > 0) {
+        for (const potentialOrder of pendingOrderCodes) {
+          console.log('Checking order:', potentialOrder.order_code);
+          
+          // Get all photos for this order
+          const { data: photosInOrder, error: photosInOrderError } = await supabase
+            .from('market_photos')
+            .select('id, status')
+            .eq('market_id', marketId)
+            .eq('order_code', potentialOrder.order_code);
+
+          if (photosInOrderError) {
+            console.error('Error fetching photos for order:', potentialOrder.order_code, photosInOrderError);
+            continue;
+          }
+
+          console.log('Photos in order:', {
+            orderCode: potentialOrder.order_code,
+            totalPhotos: photosInOrder?.length,
+            statuses: photosInOrder?.map(p => p.status),
+            processedIds: Array.from(processedPhotoIds)
+          });
+
+          // Check if any photos in this order are still in_template and not processed
+          const hasActivePhotos = photosInOrder?.some(p => 
+            p.status === 'in_template' && !processedPhotoIds.has(p.id)
+          );
+
+          if (hasActivePhotos) {
+            nextOrderCode = potentialOrder.order_code;
+            console.log('Found valid next order:', nextOrderCode);
+            break;
+          } else {
+            console.log('Order fully processed, skipping:', potentialOrder.order_code);
+          }
+        }
+      }
+
+      if (nextOrderCode) {
+        console.log('Loading photos for order:', nextOrderCode);
+        const { data: photos, error: photosError } = await supabase
+          .from('market_photos')
+          .select('*')
+          .eq('market_id', marketId)
+          .eq('order_code', nextOrderCode)
+          .order('created_at', { ascending: true });
+
+        if (photosError) {
+          console.error('Error fetching photos:', photosError);
+          throw photosError;
+        }
+
+        console.log('Fetched photos:', {
+          total: photos?.length,
+          photos: photos?.map(p => ({ id: p.id, status: p.status }))
+        });
+
+        // Filter out processed, deleted, and printed photos
+        const activePhotosInOrder = photos.filter(p => 
+          !processedPhotoIds.has(p.id) && 
+          p.status !== 'deleted' && 
+          p.status !== 'printed'
+        );
+
+        console.log('Active photos after filtering:', {
+          total: activePhotosInOrder.length,
+          photos: activePhotosInOrder.map(p => ({ id: p.id, status: p.status }))
+        });
+
+        setCurrentOrderCode(nextOrderCode);
+        setCurrentOrderPhotos(activePhotosInOrder);
+
+        const templatePhotos = activePhotosInOrder.slice(0, 9).map(photo => ({
+          ...photo,
+          scale: 1,
+          crop: { x: 0, y: 0 },
+          zoom: 1,
+        }));
+
+        const newTemplate = Array(9).fill(null);
+        templatePhotos.forEach((photo, i) => {
+          newTemplate[i] = photo;
+        });
+
+        console.log('Setting new template:', {
+          totalSlots: newTemplate.length,
+          filledSlots: newTemplate.filter(t => t !== null).length
+        });
+
+        setTemplate(newTemplate);
+        setCrops({});
+        setEditedPhotos({});
+
+      } else {
+        console.log('No new pending orders found');
+        setCurrentOrderCode(null);
+        setCurrentOrderPhotos([]);
+        setTemplate(Array(9).fill(null));
+        toast.success('All orders processed for this market!');
+      }
+    } catch (error) {
+      console.error('Error in loadNextOrder:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      toast.error('Failed to load next order: ' + (error.message || 'Unknown error'));
+      setTemplate(Array(9).fill(null));
+      setCurrentOrderCode(null);
+      setCurrentOrderPhotos([]);
+      setIsLoadingOrder(false);
+      setInitialOrderLoaded(true);
+    } finally {
+      console.log('=== LOAD NEXT ORDER END ===');
+      setIsLoadingOrder(false);
+      if (!initialOrderLoaded) {
+        setInitialOrderLoaded(true);
+      }
+      setLastSuccessfulLoadTimestamp(Date.now());
+    }
+  };
+
+  // Polling for new orders
+  useEffect(() => {
+    console.log('[Polling useEffect] Evaluating. marketId:', marketId, 'initialOrderLoaded:', initialOrderLoaded);
+    if (!marketId || !initialOrderLoaded) {
+      console.log('[Polling useEffect] Conditions not met (no marketId or initialOrderLoaded is false). Polling will not start/restart yet.');
+      return;
+    }
+
+    // Only poll if there's no current order
+    if (currentOrderCode) {
+      console.log('[Polling useEffect] Current order in progress, skipping poll');
+      return;
+    }
+
+    console.log('[Polling useEffect] Conditions MET. Initializing polling for new orders.');
+    const pollInterval = setInterval(() => {
+      pollForNewOrders();
+    }, 30000); // Increased to 30 seconds
+
+    return () => {
+      console.log('[Polling] Clearing polling interval.');
+      clearInterval(pollInterval);
+    };
+  }, [marketId, initialOrderLoaded, currentOrderCode]); // Added currentOrderCode dependency
+
+  const pollForNewOrders = async () => {
+    if (!marketId || isLoadingOrder || currentOrderCode) {
+      return;
+    }
+
+    try {
+      let query = supabase
+        .from('market_photos')
+        .select('id, created_at', { count: 'exact', head: true })
+        .eq('market_id', marketId)
+        .eq('status', 'in_template');
+
+      if (lastSuccessfulLoadTimestamp) {
+        query = query.gt('created_at', new Date(lastSuccessfulLoadTimestamp).toISOString());
+      }
+
+      const { count, error } = await query;
+
+      if (error) {
+        console.error('[Polling] Error checking for new photos:', error);
+        return;
+      }
+
+      if (count && count > 0) {
+        console.log(`[Polling] Found ${count} new or updated photo(s) pending.`);
+        // Check if the current template is empty
+        const isTemplateEmpty = template.every(slot => slot === null) && !currentOrderCode;
+        console.log('[Polling] Template state:', { 
+          isTemplateEmpty, 
+          hasCurrentOrder: !!currentOrderCode,
+          templateSlots: template.map(t => t?.id || null)
+        });
+
+        if (isTemplateEmpty) {
+          console.log('[Polling] Template is empty. Triggering loadNextOrder.');
+          loadNextOrder();
+        } else {
+          console.log('[Polling] Template is NOT empty. Notifying user instead of auto-loading.');
+          toast.success(`(${count}) New photos available. Finish current order to load.`, { duration: 5000 });
+        }
+      }
+    } catch (error) {
+      console.error('[Polling] Exception during poll:', error);
+    }
+  };
+
+  // Initialize photo states when currentOrderPhotos changes (or template for display)
   useEffect(() => {
     const newPhotoStates = {};
     template.forEach(photo => {
       if (photo) {
         newPhotoStates[photo.id] = {
           zoom: photo.scale || 1,
-          isEdited: false
+          isEdited: !!editedPhotos[photo.id], // Keep existing edit state
+          crop: crops[photo.id] || { x: 0, y: 0 } // Keep existing crop state
         };
       }
     });
     setPhotoStates(newPhotoStates);
-  }, [template]);
+  }, [template, crops, editedPhotos]);
 
-  // Save processed photos to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(
       `processed_photos_${marketId}`,
@@ -60,11 +359,32 @@ export default function MarketTemplate({ marketId }) {
     );
   }, [processedPhotoIds, marketId]);
 
-  // Cleanup effect
+  // Load initial order when marketId changes
+  useEffect(() => {
+    console.log('[Effect marketId] Hook evaluated. marketId:', marketId); // We'll keep this top log
+    if (marketId) {
+      console.log('[Effect marketId] marketId is present. Preparing to call loadNextOrder. Current initialOrderLoaded:', initialOrderLoaded);
+      setInitialOrderLoaded(false); // Reset before loading new market
+      setProcessedPhotoIds(new Set()); // Clear processedPhotoIds when market is selected
+      console.log('[Effect marketId] About to call loadNextOrder().');
+      loadNextOrder();
+      console.log('[Effect marketId] Called loadNextOrder().');
+    } else {
+      console.log('[Effect marketId] marketId is null or undefined. Clearing order and setting initialOrderLoaded to false.');
+      setTemplate(Array(9).fill(null));
+      setCurrentOrderCode(null);
+      setCurrentOrderPhotos([]);
+      setInitialOrderLoaded(false); // Ensure it's false if no marketId
+    }
+    // Realtime subscription setup will be in its own useEffect
+  }, [marketId]); // Keep loadNextOrder dependency on marketId for initial load
+
+  // Cleanup effect (remains similar, might not need to clear template here if loadNextOrder handles it)
   useEffect(() => {
     return () => {
-      // Don't clear localStorage on unmount anymore
-      setTemplate(Array(9).fill(null));
+      setTemplate(Array(9).fill(null)); // Clear visual template on unmount
+      console.log('[MarketTemplate Unmount] Component unmounting. Cleared template.');
+      // Don't clear localStorage on unmount
     };
   }, []);
 
@@ -141,59 +461,214 @@ export default function MarketTemplate({ marketId }) {
     zIndex: 20
   };
 
-  // Handle delete photo
   const handleDeletePhoto = async (photo, index) => {
-    try {
-      console.log('🗑️ Attempting to delete photo:', photo.id);
-      
-      // First remove from template immediately to prevent flicker
-      setTemplate(current => {
-        const newTemplate = [...current];
-        newTemplate[index] = null;
-        return newTemplate;
-      });
+    console.log('=== DELETE PHOTO START ===');
+    console.log('Deleting photo:', {
+      id: photo.id,
+      orderCode: photo.order_code,
+      index,
+      currentTemplate: template.map(t => t?.id || null)
+    });
 
-      // Add to processed photos to prevent re-adding
+    // Prevent multiple deletions of the same photo
+    if (processedPhotoIds.has(photo.id)) {
+      console.log('Photo already processed, skipping deletion');
+      return;
+    }
+
+    const originalPhoto = template[index];
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const updatePhotoStatus = async () => {
+      console.log(`Attempting to update photo status (attempt ${retryCount + 1}/${maxRetries})`);
+      
+      // First, let's try a direct update without select
+      const { error: updateError } = await supabase
+        .from('market_photos')
+        .update({ 
+          status: 'deleted',
+          updated_at: new Date().toISOString(),
+          // Add these fields to ensure the trigger doesn't interfere
+          is_uploaded: true,
+          has_overlay: false
+        })
+        .eq('id', photo.id);
+
+      if (updateError) {
+        console.error('Error updating photo status:', updateError);
+        throw updateError;
+      }
+
+      // Wait a moment to ensure the update is processed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Now verify the update
+      const { data: verifyUpdate, error: verifyUpdateError } = await supabase
+        .from('market_photos')
+        .select('id, status, updated_at, is_uploaded, has_overlay')
+        .eq('id', photo.id)
+        .single();
+
+      if (verifyUpdateError) {
+        console.error('Error verifying update:', verifyUpdateError);
+        throw verifyUpdateError;
+      }
+
+      console.log('Verified photo status after update:', verifyUpdate);
+
+      if (verifyUpdate.status !== 'deleted') {
+        // Try one more time with a different approach
+        console.log('First update attempt failed, trying alternative approach...');
+        
+        // Try updating with a different method
+        const { error: secondUpdateError } = await supabase
+          .rpc('update_photo_status', {
+            photo_id: photo.id,
+            new_status: 'deleted'
+          });
+
+        if (secondUpdateError) {
+          console.error('Error in second update attempt:', secondUpdateError);
+          throw secondUpdateError;
+        }
+
+        // Wait again
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Verify one more time
+        const { data: finalVerify, error: finalVerifyError } = await supabase
+          .from('market_photos')
+          .select('id, status, updated_at, is_uploaded, has_overlay')
+          .eq('id', photo.id)
+          .single();
+
+        if (finalVerifyError) {
+          console.error('Error in final verification:', finalVerifyError);
+          throw finalVerifyError;
+        }
+
+        console.log('Final verification after second attempt:', finalVerify);
+
+        if (finalVerify.status !== 'deleted') {
+          throw new Error(`Photo status was not updated to deleted. Current status: ${finalVerify.status}. Please check Supabase permissions and database triggers.`);
+        }
+
+        return finalVerify;
+      }
+
+      return verifyUpdate;
+    };
+
+    try {
+      // First, verify the current status of the photo
+      console.log('Verifying current photo status...');
+      const { data: currentPhoto, error: verifyError } = await supabase
+        .from('market_photos')
+        .select('id, status')
+        .eq('id', photo.id)
+        .single();
+
+      if (verifyError) {
+        console.error('Error verifying photo status:', verifyError);
+        throw verifyError;
+      }
+
+      if (currentPhoto.status === 'deleted') {
+        console.log('Photo already deleted, updating local state only');
+        // Update local state only
+        setTemplate(current => {
+          const newTemplate = [...current];
+          newTemplate[index] = null;
+          return newTemplate;
+        });
+        setProcessedPhotoIds(current => {
+          const newSet = new Set(current);
+          newSet.add(photo.id);
+          return newSet;
+        });
+        return;
+      }
+
+      console.log('Current photo status:', currentPhoto);
+
+      // Add to processedPhotoIds immediately to prevent race conditions
       setProcessedPhotoIds(current => {
         const newSet = new Set(current);
         newSet.add(photo.id);
         return newSet;
       });
 
-      // Update the database - Change status to deleted
-      const { error } = await supabase
-        .from('market_photos')
-        .update({ 
-          status: 'deleted',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', photo.id);
-
-      if (error) throw error;
-
-      console.log('✅ Photo successfully deleted:', photo.id);
-      toast.success('Photo removed from template');
-    } catch (error) {
-      console.error('Error removing photo:', error);
-      toast.error('Failed to remove photo');
-      
-      // Revert template change if database update failed
+      // Optimistically update UI
       setTemplate(current => {
         const newTemplate = [...current];
-        newTemplate[index] = photo;
+        newTemplate[index] = null;
         return newTemplate;
       });
       
-      // Remove from processed photos if failed
+      // Update currentOrderPhotos state
+      const updatedOrderPhotos = currentOrderPhotos.filter(p => p.id !== photo.id);
+      setCurrentOrderPhotos(updatedOrderPhotos);
+
+      // Try to update the photo status with retries
+      let success = false;
+      while (retryCount < maxRetries && !success) {
+        try {
+          await updatePhotoStatus();
+          success = true;
+        } catch (error) {
+          retryCount++;
+          if (retryCount === maxRetries) {
+            throw error;
+          }
+          console.log(`Retry ${retryCount} after error:`, error);
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      toast.success('Photo removed from template');
+
+      // Check if the current order is now empty
+      if (updatedOrderPhotos.length === 0 && currentOrderCode) {
+        console.log('Order is now empty, clearing template and loading next order');
+        setTemplate(Array(9).fill(null)); // Clear the template
+        setCurrentOrderCode(null);
+        setCurrentOrderPhotos([]);
+        // Add a small delay to ensure state updates are processed
+        setTimeout(() => {
+          loadNextOrder();
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error in handleDeletePhoto:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      });
+      
+      // Remove from processedPhotoIds if the operation failed
       setProcessedPhotoIds(current => {
         const newSet = new Set(current);
         newSet.delete(photo.id);
         return newSet;
       });
+      
+      toast.error('Failed to remove photo: ' + error.message);
+      
+      // Revert optimistic UI updates
+      setTemplate(current => {
+        const newTemplate = [...current];
+        if (originalPhoto) newTemplate[index] = originalPhoto;
+        return newTemplate;
+      });
     }
+    console.log('=== DELETE PHOTO END ===');
   };
 
-  // Handle duplicate photo
   const handleDuplicatePhoto = async (photo) => {
     const emptySlot = template.findIndex(slot => slot === null);
     if (emptySlot === -1) {
@@ -208,32 +683,26 @@ export default function MarketTemplate({ marketId }) {
     });
   };
 
-  // Handle add photo - REVERT TO SINGLE FILE LOGIC
-  const handleAddPhoto = async (index) => { // Use index directly
+  const handleAddPhoto = async (index) => {
     try {
-      // Get single file
       const file = await new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        // input.multiple = false; // Explicitly single (or omit)
-        input.onchange = (e) => resolve(e.target.files ? e.target.files[0] : null); // Resolve with the first file or null
+        input.onchange = (e) => resolve(e.target.files ? e.target.files[0] : null);
         input.click();
       });
 
-      if (!file) return; // Check if a file was selected
+      if (!file) return;
 
-      // Show loading toast
       const loadingToast = toast.loading(`Uploading ${file.name}...`);
 
-      // Check if slot is still empty (basic concurrency check)
       if (template[index] !== null) {
         toast.dismiss(loadingToast);
         toast.error('Slot was filled while selecting the file. Please choose another empty slot.');
         return;
       }
 
-      // Upload to Supabase Storage
       const fileName = `${marketId}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('market_photos')
@@ -244,15 +713,23 @@ export default function MarketTemplate({ marketId }) {
          throw uploadError;
       }
 
-      // Create database record
-      const { data: photo, error: dbError } = await supabase
+      const activeOrderCode = currentOrderCode || `MKT-ADMIN-${Date.now().toString().slice(-6)}`;
+      if (!currentOrderCode) {
+        console.log("[handleAddPhoto] No active customer order, creating admin order code:", activeOrderCode);
+      }
+
+      // Get the current user session
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const { data: photoData, error: dbError } = await supabase
         .from('market_photos')
         .insert([{
           market_id: marketId,
           photo_url: fileName,
           status: 'in_template',
-          order_code: `MKT-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-          scale: 1 // Set initial scale to 1
+          column_source: 'admin_upload',
+          order_code: activeOrderCode, 
+          user_id: session?.user?.id || null, // Updated to use current session
         }])
         .select()
         .single();
@@ -262,172 +739,30 @@ export default function MarketTemplate({ marketId }) {
          throw dbError;
       }
 
-      // Add to template state immediately at the specified index
+      toast.dismiss(loadingToast);
+      toast.success(`${file.name} uploaded and added.`);
+
+      // Update UI
       setTemplate(current => {
         const newTemplate = [...current];
-        newTemplate[index] = photo;
+        newTemplate[index] = photoData;
         return newTemplate;
       });
 
-      // Add to processed photos (though maybe less critical now?)
-      setProcessedPhotoIds(current => {
-        const newSet = new Set(current);
-        newSet.add(photo.id);
-        return newSet;
-      });
-      
-      // Initialize crop state locally
-      setCrops(prev => ({
-         ...prev,
-         [photo.id]: {
-           x: 0, 
-           y: 0, 
-           zoom: 1
-         }
-       }));
-
-      toast.dismiss(loadingToast);
-      toast.success(`Photo uploaded successfully to slot ${index + 1}`);
+      // Add to currentOrderPhotos if it's part of the loaded order or a new admin order
+      if (activeOrderCode === currentOrderCode) {
+          setCurrentOrderPhotos(prev => [...prev, photoData].sort((a,b) => new Date(a.created_at) - new Date(b.created_at)));
+      } else if (!currentOrderCode && activeOrderCode.startsWith('MKT-ADMIN')) {
+          // This was a new admin-initiated order
+          setCurrentOrderCode(activeOrderCode);
+          setCurrentOrderPhotos([photoData]);
+      }
 
     } catch (error) {
-      console.error('Error in handleAddPhoto:', error);
-      toast.error(`Failed to upload photo: ${error.message || 'Unknown error'}`);
-      // Ensure any loading toast is dismissed on general failure
-      toast.dismiss(); 
+      console.error('Error adding photo:', error);
+      toast.error('Failed to add photo: ' + (error.message || error));
     }
   };
-
-  // Process Photos
-  useEffect(() => {
-    const processIncomingPhotos = async () => {
-      if (!marketId) {
-        console.log('Skipping photo processing - no market ID');
-        return;
-      }
-
-      try {
-        // Get only active photos for this market
-        const { data: photos, error } = await supabase
-          .from('market_photos')
-          .select('*')
-          .eq('market_id', marketId)
-          .eq('status', 'in_template')
-          .is('printed_at', null)
-          .not('status', 'eq', 'deleted')
-          .order('created_at', { ascending: true });
-
-        if (error) {
-          console.error('Supabase error while fetching photos:', error.message);
-          return;
-        }
-
-        if (!photos || photos.length === 0) {
-          // console.log('No candidate photos found for market:', marketId);
-          return;
-        }
-
-        // console.log('Processing candidate photos:', photos.map(p => p.id));
-        let updated = false;
-        setTemplate(current => {
-          const newTemplate = [...current];
-          const currentIdsInTemplate = new Set(newTemplate.filter(p => p).map(p => p.id));
-
-          for (const photo of photos) {
-            try {
-              // Skip if photo is already in the template array being built OR if it was manually deleted via UI (in processedPhotoIds)
-              if (currentIdsInTemplate.has(photo.id) || processedPhotoIds.has(photo.id)) {
-                // console.log('Skipping photo already in template or processed:', photo.id);
-                continue;
-              }
-
-              const emptySlot = newTemplate.findIndex(slot => slot === null);
-              if (emptySlot !== -1) {
-                console.log(`[processIncomingPhotos] Adding photo ${photo.id} to empty slot ${emptySlot}`);
-                newTemplate[emptySlot] = photo;
-                currentIdsInTemplate.add(photo.id); // Add ID to set for this run
-                updated = true; // Mark that an update occurred
-
-                // Ensure initial crop state exists
-                if (!crops[photo.id]) {
-                   setCrops(prevCrops => ({
-                       ...prevCrops,
-                       [photo.id]: { x: 0, y: 0, zoom: photo.scale || 1 }
-                   }));
-                }
-
-              } else {
-                // console.log('No empty slots available for photo:', photo.id);
-                break; // Stop processing if template is full
-              }
-            } catch (photoError) {
-              console.error('Error processing individual photo:', photo.id, photoError);
-            }
-          }
-          return updated ? newTemplate : current; // Only return new array if changed
-        });
-
-      } catch (error) {
-        console.error('Error in photo processing:', error);
-      }
-    };
-
-    // Run once on mount and then interval
-    processIncomingPhotos(); 
-    const interval = setInterval(processIncomingPhotos, 5000); // Increase interval slightly?
-    return () => clearInterval(interval);
-  // Depend on marketId. processedPhotoIds dependency might cause loops if not careful.
-  // If processedPhotoIds is updated inside, it triggers the effect again.
-  // Let's remove processedPhotoIds dependency for now and rely on the check inside.
-  }, [marketId, processedPhotoIds]); 
-
-  // Load Overlay
-  useEffect(() => {
-    async function fetchOverlay() {
-      console.log('🔍 Starting overlay fetch process');
-      
-      if (!marketId) {
-        console.log('⚠️ No market ID provided');
-        return;
-      }
-
-      console.log('🎯 Using market ID:', marketId);
-      
-      try {
-        console.log('🔍 Querying market_camera_settings for market ID:', marketId);
-        
-        const { data, error } = await supabase
-          .from('market_camera_settings')
-          .select('*')
-          .eq('market_id', marketId)
-          .single();
-
-        if (error) {
-          console.error('❌ Error fetching overlay:', error);
-          return;
-        }
-
-        console.log('📦 Complete market_camera_settings data:', data);
-
-        if (data?.border_url) {
-          console.log('🎯 Found border URL:', data.border_url);
-          // Use the border_url directly as it should already be a full URL
-          setOverlayUrl(data.border_url);
-          console.log('🔗 Setting overlay URL to:', data.border_url);
-        } else {
-          console.log('⚠️ No border_url found in settings. Full data:', data);
-        }
-      } catch (error) {
-        console.error('❌ Unexpected error:', error);
-      }
-    }
-
-    fetchOverlay();
-  }, [marketId]);
-
-  // Add a debug effect to monitor overlayUrl changes
-  useEffect(() => {
-    console.log('💫 overlayUrl changed:', overlayUrl);
-  }, [overlayUrl]);
 
   const handleCropChange = (photoId) => (location) => {
     setCrops(prev => ({
@@ -475,102 +810,157 @@ export default function MarketTemplate({ marketId }) {
     }
   };
 
-  // Update print handler to check for unsaved changes
   const handlePrint = async () => {
-    console.log('🖨️ [handlePrint] Starting print process...'); // Log: Start
+    console.log('[handlePrint] Initiating print process.');
+    const photosToPrint = template.filter(photo => photo !== null);
+    if (photosToPrint.length === 0) {
+      toast.error('No photos in the template to print.');
+      return;
+    }
+
+    const photoIdsToPrint = photosToPrint.map(p => p.id);
+    console.log('[handlePrint] Photo IDs to print:', photoIdsToPrint);
+    setLastPrintedBatchIds(photoIdsToPrint);
+
     try {
-      // Check for any unsaved changes
-      const unsavedPhotos = Object.keys(editedPhotos);
-      if (unsavedPhotos.length > 0) {
-        console.log('⚠️ [handlePrint] Unsaved changes detected:', unsavedPhotos); // Log: Unsaved changes
-        const saveFirst = window.confirm('There are unsaved changes. Save before printing?');
-        if (saveFirst) {
-          console.log('💾 [handlePrint] User chose to save first.'); // Log: Saving choice
-          // Save all edited photos
-          for (const photoId of unsavedPhotos) {
-            const photo = template.find(p => p?.id === photoId);
-            if (photo) {
-              console.log(`💾 [handlePrint] Saving changes for photo ${photoId}...`); // Log: Saving specific photo
-              await handleSaveEdit(photo);
-            }
-          }
-          console.log('✅ [handlePrint] Finished saving changes.'); // Log: Saving complete
-        } else {
-           console.log('🚫 [handlePrint] User chose not to save before printing.'); // Log: Not saving
-        }
-      }
+      // Show loading toast
+      const loadingToast = toast.loading('Preparing print job...');
 
-      const photosToPrint = template.filter(photo => photo !== null);
-      const photoIdsToPrint = photosToPrint.map(photo => photo.id); // Get IDs BEFORE printing
-
-      console.log(`📄 [handlePrint] Photos identified for printing: ${photoIdsToPrint.join(', ')}`); // Log: Photos identified
-
-      if (photoIdsToPrint.length === 0) {
-        console.log('❌ [handlePrint] No photos to print.'); // Log: No photos
-        toast.error('No photos to print');
-        return;
-      }
-
-      // --- Crucial Part: Get Next Print Number ---
-      // We need a function to get the next available print number for this market.
-      // Let's assume we have a function called getNextPrintNumber(marketId)
-      // If it doesn't exist, we'll need to create it. For now, we'll placeholder it.
-
-      // Placeholder: We need the actual function call here.
-      // For now, let's just log that we would fetch it.
-      console.log(`🔢 [handlePrint] Would attempt to get next print number for market ${marketId}`); 
-      // const nextPrintNumber = await getNextPrintNumber(marketId); // Example future call
-      // console.log(`🔢 [handlePrint] Next available print number is: ${nextPrintNumber}`); // Example future log
-
-      // --- End Crucial Part ---
-
-      // Show print dialog
-      console.log('🖥️ [handlePrint] Showing system print dialog...'); // Log: Show print dialog
-      window.print();
-
-      // After print dialog closes, ask for confirmation
-      console.log('❓ [handlePrint] Asking user for print confirmation...'); // Log: Ask confirmation
-      const didPrint = window.confirm('Did you complete printing? Click OK if you printed, Cancel if you did not print.');
+      // Update status of printed photos in the database
+      const updates = photoIdsToPrint.map(id => 
+        supabase.from('market_photos').update({ 
+          status: 'printed',
+          updated_at: new Date().toISOString() 
+        }).eq('id', id)
+      );
       
-      if (didPrint) {
-        console.log('👍 [handlePrint] User confirmed printing.'); // Log: User confirmed
-        
-        // *** STORE THE IDs of the photos that were just printed ***
-        setLastPrintedBatchIds(photoIdsToPrint);
-        console.log(`📝 [handlePrint] Stored last printed batch IDs: ${photoIdsToPrint.join(', ')}`);
-
-        // --- Database Update Attempt ---
-        console.log(`🔄 [handlePrint] Preparing to update database status for photos: ${photoIdsToPrint.join(', ')}`); 
-
-        const updatePayload = { 
-            status: 'printed',
-            printed_at: new Date().toISOString()
-        };
-        const { error: updateError } = await supabase
-          .from('market_photos')
-          .update(updatePayload)
-          .in('id', photoIdsToPrint); // Use the IDs captured before print
-        
-        if (updateError) {
-           // ... (existing error logging) ...
-           // Don't throw error here anymore, just log it, as reprint list doesn't depend on it
-           console.error('❌ [handlePrint] Database update FAILED (but proceeding): ', updateError.message);
-        } else {
-           console.log('✅ [handlePrint] Database update call successful or no error thrown.');
+      const results = await Promise.all(updates);
+      results.forEach(result => {
+        if (result.error) {
+          console.error('[handlePrint] Error updating photo status:', result.error);
         }
-        // ... (rest of existing success logic: clear template, show toast) ...
+      });
 
-        console.log('✅ [handlePrint] Post-print actions completed.'); 
-        setTemplate(Array(9).fill(null)); // Clear template
-        console.log('🔄 [handlePrint] Template cleared.'); // Log: Template cleared
-        toast.success('Print job recorded. Template cleared.');
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
 
-      } else {
-        console.log('👎 [handlePrint] User cancelled printing.'); // Log: User cancelled
+      // Add to processedPhotoIds
+      setProcessedPhotoIds(current => {
+        const newSet = new Set(current);
+        photoIdsToPrint.forEach(id => newSet.add(id));
+        return newSet;
+      });
+
+      // Clear current order state
+      setCurrentOrderCode(null);
+      setCurrentOrderPhotos([]);
+      setTemplate(Array(9).fill(null));
+
+      // Create a print-specific window
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        throw new Error('Pop-up blocked. Please allow pop-ups for this site.');
       }
+
+      // Write the print-specific HTML
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Template</title>
+            <style>
+              @page { 
+                size: 8.5in 11in;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              .print-template {
+                width: 8.5in;
+                height: 8.5in;
+                display: grid;
+                grid-template-columns: repeat(3, 2.835in);
+                gap: 0;
+                margin: 0;
+                padding: 0;
+                background-color: white;
+                position: relative;
+                justify-content: center;
+              }
+              .print-cell {
+                width: 2.835in;
+                height: 2.835in;
+                position: relative;
+                border: 1px solid #ddd;
+                box-sizing: border-box;
+                overflow: hidden;
+              }
+              .print-cell img {
+                width: 2in;
+                height: 2in;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                object-fit: cover;
+              }
+              .website-url {
+                position: absolute;
+                width: 2in;
+                text-align: center;
+                bottom: 0.2in;
+                left: 50%;
+                transform: translateX(-50%) rotate(180deg);
+                font-size: 8pt;
+                color: black;
+                font-family: Arial, sans-serif;
+              }
+              .order-code {
+                position: absolute;
+                width: auto;
+                text-align: center;
+                top: 50%;
+                left: 0.2in;
+                font-size: 8pt;
+                color: black;
+                font-family: Arial, sans-serif;
+                transform: translateY(-50%) rotate(-90deg);
+                transform-origin: left center;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="print-template">
+              ${photosToPrint.map(photo => `
+                <div class="print-cell">
+                  <img src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}" />
+                  <div class="website-url">${websiteUrl}</div>
+                  <div class="order-code">${photo.order_code || 'No Code'}</div>
+                </div>
+              `).join('')}
+            </div>
+            <script>
+              window.onload = function() {
+                window.print();
+                window.onafterprint = function() {
+                  window.close();
+                };
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      // Load next order after a short delay
+      setTimeout(() => {
+        loadNextOrder();
+      }, 1000);
+
     } catch (error) {
-      console.error('💥 [handlePrint] Error during print process:', error); // Log: General Error
-      toast.error('Print failed: ' + error.message);
+      console.error('[handlePrint] Error during print process:', error);
+      toast.error('Error processing print: ' + error.message);
     }
   };
 
@@ -716,6 +1106,70 @@ export default function MarketTemplate({ marketId }) {
     }
   };
 
+  const handleClearTemplate = async () => {
+    console.log('=== CLEAR TEMPLATE START ===');
+    try {
+      // Get all photos in the current template that aren't null
+      const photosToClear = template.filter(photo => photo !== null);
+      
+      if (photosToClear.length === 0) {
+        toast('Template is already empty');
+        return;
+      }
+
+      // Show confirmation dialog
+      if (!confirm(`Are you sure you want to clear all ${photosToClear.length} photos from the template?`)) {
+        return;
+      }
+
+      // Update all photos to deleted status
+      const updates = photosToClear.map(photo => 
+        supabase
+          .from('market_photos')
+          .update({ 
+            status: 'deleted',
+            updated_at: new Date().toISOString(),
+            is_uploaded: true,
+            has_overlay: false
+          })
+          .eq('id', photo.id)
+      );
+
+      const results = await Promise.all(updates);
+      
+      // Check for any errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Errors updating photos:', errors);
+        throw new Error('Failed to clear some photos');
+      }
+
+      // Add all photo IDs to processedPhotoIds
+      setProcessedPhotoIds(current => {
+        const newSet = new Set(current);
+        photosToClear.forEach(photo => newSet.add(photo.id));
+        return newSet;
+      });
+
+      // Clear the template
+      setTemplate(Array(9).fill(null));
+      setCurrentOrderCode(null);
+      setCurrentOrderPhotos([]);
+      
+      toast.success(`Cleared ${photosToClear.length} photos from template`);
+
+      // Load next order after a short delay
+      setTimeout(() => {
+        loadNextOrder();
+      }, 100);
+
+    } catch (error) {
+      console.error('Error clearing template:', error);
+      toast.error('Failed to clear template: ' + error.message);
+    }
+    console.log('=== CLEAR TEMPLATE END ===');
+  };
+
   return (
     <div>
       {/* Print Controls */}
@@ -731,6 +1185,24 @@ export default function MarketTemplate({ marketId }) {
           onClick={handleShowReprintModal}
         >
           Reprints
+        </button>
+        <button
+          className={styles.clearButton}
+          onClick={handleClearTemplate}
+          style={{
+            backgroundColor: '#dc2626', // red-600
+            color: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            marginLeft: '0.5rem'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#b91c1c'} // red-700
+          onMouseOut={(e) => e.target.style.backgroundColor = '#dc2626'} // red-600
+        >
+          Clear Template
         </button>
       </div>
 
@@ -773,7 +1245,10 @@ export default function MarketTemplate({ marketId }) {
                   <>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleDeletePhoto(photo, index)}
+                        onClick={() => {
+                          console.log('Delete button clicked for photo:', photo.id);
+                          handleDeletePhoto(photo, index);
+                        }}
                         className="bg-red-600 text-white w-8 h-8 rounded hover:bg-red-700 flex items-center justify-center shadow-sm transition-colors"
                         title="Delete photo"
                       >
@@ -982,12 +1457,19 @@ export default function MarketTemplate({ marketId }) {
             visibility: visible !important;
           }
 
+          /* Hide empty cells during print */
+          .print-cell:empty,
+          .print-cell:has(> div:empty) {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
           /* Ensure website URL maintains its position */
           .website-url {
             position: absolute !important;
             width: 50.8mm !important;
             textAlign: center !important;
-            bottom: 5mm !important;  // Changed from 3mm to 5mm to move it closer to photo
+            bottom: 5mm !important;
             left: 50% !important;
             transform: translateX(-50%) rotate(180deg) !important;
             fontSize: 8pt !important;

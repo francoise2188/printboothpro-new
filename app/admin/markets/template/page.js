@@ -83,7 +83,7 @@ export default function AdminMarketTemplate() {
       {/* Template Component */}
       {selectedMarketId && (
         <div className={styles.templateContainer}>
-          <MarketTemplate marketId={selectedMarketId} />
+          <MarketTemplate key={selectedMarketId} marketId={selectedMarketId} />
         </div>
       )}
     </div>

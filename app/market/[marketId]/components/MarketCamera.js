@@ -93,6 +93,7 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
   const [error, setError] = useState(null);
   const [message, setMessage] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -233,6 +234,7 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
     if (!photo?.raw || !user) return;
 
     try {
+      setIsUploading(true);
       console.log('Starting save process');
 
       // Process the photo for printing
@@ -290,6 +292,7 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
     } catch (error) {
       console.error('Error saving photo:', error);
       setMessage('Failed to save photo. Please try again.');
+      setIsUploading(false);
     }
   };
 
@@ -476,6 +479,7 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
 
             <button 
               onClick={savePhoto}
+              disabled={isUploading}
               style={{
                 width: '100%',
                 padding: '16px',
@@ -484,10 +488,12 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
                 borderRadius: '8px',
                 border: 'none',
                 fontSize: '16px',
-                fontWeight: '500'
+                fontWeight: '500',
+                opacity: isUploading ? '0.7' : '1',
+                cursor: isUploading ? 'not-allowed' : 'pointer'
               }}
             >
-              Print My Photo!
+              {isUploading ? 'Uploading...' : 'Print My Photo!'}
             </button>
 
             <div style={{

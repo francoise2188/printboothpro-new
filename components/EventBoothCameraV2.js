@@ -36,6 +36,7 @@ const CountdownOverlay = ({ number }) => {
 
 export default function EventBoothCameraV2({ eventId }) {
   console.log('🎥 EventBoothCameraV2 mounted - Version 3.0');
+  console.log('EventBoothCameraV2 received eventId prop:', eventId);
   const videoRef = useRef(null);
   const [photo, setPhoto] = useState(null);
   const [overlayUrl, setOverlayUrl] = useState('');
@@ -45,6 +46,7 @@ export default function EventBoothCameraV2({ eventId }) {
   const [error, setError] = useState(null);
   const router = useRouter();
   const supabase = createClientComponentClient();
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Fetch frame overlay when component mounts
   useEffect(() => {
@@ -80,7 +82,15 @@ export default function EventBoothCameraV2({ eventId }) {
     }
 
     fetchFrame();
-  }, [eventId, isFetching]);
+
+    // Get current user
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      console.log('EventBoothCameraV2 - Current user:', user ? user.id : 'No user');
+    };
+    getUser();
+  }, [eventId, isFetching, supabase]);
 
   // Define setupCamera in the component scope, wrapped in useCallback
   const setupCamera = useCallback(async () => {
@@ -228,6 +238,9 @@ export default function EventBoothCameraV2({ eventId }) {
       return;
     }
 
+    console.log('📸 printPhoto called with eventId:', eventId);
+    console.log('📸 printPhoto current user ID:', currentUser ? currentUser.id : 'No user available for photo record');
+
     if (!eventId) {
       toast.error('No event selected. Please select an event first.');
       return;
@@ -304,6 +317,7 @@ export default function EventBoothCameraV2({ eventId }) {
         .from('photos')
         .insert([{
           event_id: eventId,
+          user_id: currentUser ? currentUser.id : null,
           url: publicUrl,
           status: 'pending',
           created_at: new Date().toISOString(),
