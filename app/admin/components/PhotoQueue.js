@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from 'react-hot-toast';
+import styles from './PhotoQueue.module.css';
 
 export default function PhotoQueue({ selectedEventId }) {
   const [photos, setPhotos] = useState([]);
   const [queueCount, setQueueCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [draggedPhoto, setDraggedPhoto] = useState(null);
 
   useEffect(() => {
     const fetchPhotos = async () => {
@@ -19,27 +22,27 @@ export default function PhotoQueue({ selectedEventId }) {
 
       setLoading(true);
       try {
-        // First, get total count of photos in queue, excluding deleted ones
+        // Get total count of photos in queue
         const { count, error: countError } = await supabase
           .from('photos')
           .select('*', { count: 'exact', head: true })
           .eq('event_id', selectedEventId)
-          .eq('status', 'available')
-          .is('deleted_at', null)  // Only count non-deleted photos
+          .eq('status', 'pending')
+          .is('deleted_at', null)
           .order('created_at', { ascending: true });
 
         if (countError) throw countError;
         setQueueCount(count || 0);
 
-        // Then get the preview of next photos (limiting to 8 for display)
+        // Get next 9 photos for preview
         const { data, error } = await supabase
           .from('photos')
           .select('*')
           .eq('event_id', selectedEventId)
-          .eq('status', 'available')
-          .is('deleted_at', null)  // Only get non-deleted photos
+          .eq('status', 'pending')
+          .is('deleted_at', null)
           .order('created_at', { ascending: true })
-          .limit(8);
+          .limit(9);
 
         if (error) throw error;
         setPhotos(data || []);
@@ -57,61 +60,156 @@ export default function PhotoQueue({ selectedEventId }) {
     return () => clearInterval(interval);
   }, [selectedEventId]);
 
+  const handleDeletePhoto = async (photoId) => {
+    try {
+      const { error } = await supabase
+        .from('photos')
+        .update({
+          status: 'deleted',
+          deleted_at: new Date().toISOString()
+        })
+        .eq('id', photoId);
+
+      if (error) throw error;
+
+      // Update local state
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
+      setQueueCount(prev => prev - 1);
+      toast.success('Photo removed from queue');
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      toast.error('Failed to remove photo');
+    }
+  };
+
+  const handleDragStart = (e, photo) => {
+    setDraggedPhoto(photo);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, targetPhoto) => {
+    e.preventDefault();
+    if (!draggedPhoto || draggedPhoto.id === targetPhoto.id) return;
+
+    try {
+      // Get the new order of photos
+      const newPhotos = [...photos];
+      const draggedIndex = newPhotos.findIndex(p => p.id === draggedPhoto.id);
+      const targetIndex = newPhotos.findIndex(p => p.id === targetPhoto.id);
+      
+      // Remove dragged photo and insert at new position
+      newPhotos.splice(draggedIndex, 1);
+      newPhotos.splice(targetIndex, 0, draggedPhoto);
+
+      // Update the order in the database
+      const updates = newPhotos.map((photo, index) => ({
+        id: photo.id,
+        queue_order: index
+      }));
+
+      const { error } = await supabase
+        .from('photos')
+        .upsert(updates);
+
+      if (error) throw error;
+
+      // Update local state
+      setPhotos(newPhotos);
+      toast.success('Photo order updated');
+    } catch (error) {
+      console.error('Error reordering photos:', error);
+      toast.error('Failed to reorder photos');
+    }
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Photo Queue</h2>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-            {queueCount} photo{queueCount !== 1 ? 's' : ''} waiting
-          </span>
+    <div className={styles.queueContainer}>
+      <div className={styles.queueHeader}>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.title}>Photo Queue</h2>
+          <p className={styles.subtitle}>Next photos waiting to be printed</p>
+        </div>
+        <div className={styles.headerRight}>
+          <div className={styles.queueStats}>
+            <span className={styles.queueCount}>{queueCount}</span>
+            <span className={styles.queueLabel}>photos waiting</span>
+          </div>
           {loading && (
-            <span className="text-gray-500 text-sm">
-              Refreshing...
-            </span>
+            <div className={styles.loadingIndicator}>
+              <div className={styles.spinner}></div>
+              <span>Updating...</span>
+            </div>
           )}
         </div>
       </div>
 
       {error && (
-        <div className="text-red-500 text-sm mb-4">
+        <div className={styles.errorMessage}>
           {error}
         </div>
       )}
 
       {!selectedEventId ? (
-        <div className="text-center text-gray-500 py-4">
+        <div className={styles.emptyState}>
           Please select an event to view its photo queue
         </div>
       ) : photos.length === 0 ? (
-        <div className="text-center text-gray-500 py-4">
-          No pending photos in queue
+        <div className={styles.emptyState}>
+          No photos waiting in queue
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-4 gap-4">
-            {photos.map((photo, index) => (
-              <div key={photo.id} className="relative aspect-square group">
+        <div className={styles.photoGrid}>
+          {photos.map((photo, index) => (
+            <div
+              key={photo.id}
+              className={styles.photoCard}
+              draggable
+              onDragStart={(e) => handleDragStart(e, photo)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, photo)}
+            >
+              <div className={styles.photoPreview}>
                 <img
                   src={photo.url}
-                  alt={`Photo ${photo.id}`}
-                  className="w-full h-full object-cover rounded shadow-sm transition-transform group-hover:scale-105"
+                  alt={`Photo ${index + 1}`}
+                  className={styles.photoImage}
                 />
-                <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs">
-                  #{index + 1}
-                </div>
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                  {new Date(photo.created_at).toLocaleTimeString()}
+                <div className={styles.photoOverlay}>
+                  <button
+                    onClick={() => handleDeletePhoto(photo.id)}
+                    className={styles.deleteButton}
+                    title="Remove from queue"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-          {queueCount > photos.length && (
-            <div className="mt-4 text-center text-gray-500 text-sm">
-              +{queueCount - photos.length} more photos in queue
+              <div className={styles.photoInfo}>
+                <span className={styles.photoNumber}>#{index + 1}</span>
+                <span className={styles.photoTime}>{formatTime(photo.created_at)}</span>
+              </div>
+              <div className={styles.dragHandle} title="Drag to reorder">
+                ⋮⋮
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
+      )}
+
+      {queueCount > photos.length && (
+        <div className={styles.morePhotos}>
+          +{queueCount - photos.length} more photos in queue
+        </div>
       )}
     </div>
   );

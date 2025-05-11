@@ -464,6 +464,9 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
     const loadingToast = toast.loading('Adding reprints to template...');
 
     try {
+      // Create a new template array to update all at once
+      const newTemplate = [...template];
+      
       // Add selected photos to empty slots
       for (let i = 0; i < selectedPhotos.length; i++) {
         if (emptySlots[i] !== undefined) {
@@ -497,7 +500,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
               status: 'in_template',
               template_position: templatePosition,
               print_status: 'pending',
-              print_number: originalPhoto.print_number, // Keep original print number
+              print_number: originalPhoto.print_number,
               original_photo_id: originalPhoto.id,
               created_at: new Date().toISOString(),
               source: 'reprint'
@@ -525,17 +528,16 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
             position: templatePosition
           });
 
-          // Update UI with the new photo
-          setTemplate(current => {
-            const newTemplate = [...current];
-            newTemplate[slotIndex] = newPhoto;
-            return newTemplate;
-          });
-
-          // Add to processed photos to prevent auto-reprint
-          setProcessedPhotoIds(prev => new Set([...prev, newPhoto.id]));
+          // Update the template array
+          newTemplate[slotIndex] = newPhoto;
         }
       }
+
+      // Update the template state all at once
+      setTemplate(newTemplate);
+      
+      // Force a re-render of the template
+      setLoadedImages(new Set());
 
       toast.dismiss(loadingToast);
       setIsReprintOpen(false);
@@ -737,7 +739,7 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
     const allImagesLoaded = nonEmptyPhotos.every(photo => loadedImages.has(photo.id));
 
     if (!templateIsFull || !allImagesLoaded) {
-      autoPrintTriggeredRef.current = false;
+         autoPrintTriggeredRef.current = false;
     }
 
     if (
@@ -768,21 +770,99 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
               throw updateError;
             }
 
+            // Create a static print template
+            const printDiv = document.createElement('div');
+            printDiv.className = 'print-template print-only';
+            printDiv.innerHTML = `
+                <style>
+                    @media print {
+                        body * { display: none !important; }
+                        .print-only { display: block !important; }
+                        .print-template { 
+                            position: fixed;
+                            left: 50%;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 8.409in;
+                            height: 8.409in;
+                        }
+                        .print-cell {
+                            position: absolute;
+                            width: 2.803in;
+                            height: 2.803in;
+                            border: 3px solid #c0c0c0;
+                        }
+                        .print-image {
+                            width: 2in;
+                            height: 2in;
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            object-fit: cover;
+                        }
+                        .print-number {
+                            position: absolute;
+                            width: 2in;
+                            text-align: center;
+                            font-size: 8pt;
+                            color: black;
+                            transform: rotate(180deg);
+                            left: 50%;
+                            margin-left: -1in;
+                            top: calc(50% - 1in - 10pt);
+                        }
+                    }
+                </style>
+            `;
+
+            // Add cells for each photo
+            photosToPrint.forEach((photo) => {
+                if (photo) {
+                    const row = Math.floor((photo.template_position - 1) / 3);
+                    const col = (photo.template_position - 1) % 3;
+                    
+                    const cell = document.createElement('div');
+                    cell.className = 'print-cell print-only';
+                    cell.style.cssText = `
+                        left: ${col * 2.803}in;
+                        top: ${row * 2.803}in;
+                    `;
+
+                    const img = document.createElement('img');
+                    img.src = photo.url;
+                    img.className = 'print-image print-only';
+
+                    const printNumber = document.createElement('div');
+                    printNumber.className = 'print-number print-only';
+                    printNumber.textContent = `#${photo.print_number || '?'}`;
+
+                    cell.appendChild(img);
+                    cell.appendChild(printNumber);
+                    printDiv.appendChild(cell);
+                }
+            });
+
+            // Add print-only class to body
+            document.body.classList.add('print-only');
+            
+            // Add the print div to the document
+            document.body.appendChild(printDiv);
+
             // Trigger the print
             await onAutoPrintTrigger();
             
+            // Clean up
+            document.body.removeChild(printDiv);
+            document.body.classList.remove('print-only');
+
             // Clear the template and update UI
-            console.log('Clearing template after successful auto-print');
             setTemplate(Array(9).fill(null));
             setLoadedImages(new Set());
             
-            // Add printed photos to processed list to prevent reprinting
+            // Add printed photos to processed list
             const printedPhotoIds = photosToPrint.map(p => p.id);
-            console.log('Adding printed photos to processed list:', printedPhotoIds);
             setProcessedPhotoIds(prev => new Set([...prev, ...printedPhotoIds]));
-            
-            // Reset the auto print trigger flag
-            autoPrintTriggeredRef.current = false;
           } catch (error) {
             console.error("Error during auto-print:", error);
             // Reset the flag even if there's an error
@@ -1020,7 +1100,8 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                             top: '0.4015in',
                             left: '0.4015in',
                             objectFit: 'cover',
-                            opacity: loadedImages.has(photo.id) ? 1 : 0.5
+                            opacity: 1,
+                            transition: 'none'
                           }}
                           onLoad={() => handleImageLoad(photo.id)}
                           onError={(e) => {
@@ -1164,14 +1245,13 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                 console.log("Manual Print button clicked, triggering helper...");
                 if (isPrintConnectorReady) {
                     // Check if template has photos before printing
-                    if (template.some(p => p !== null)) {
+                    const photosToPrint = template.filter(p => p !== null);
+                    if (photosToPrint.length > 0) {
                         try {
-                            // Get all photos in the template
-                            const photosToPrint = template.filter(p => p !== null);
                             console.log('Photos to print:', photosToPrint.map(p => ({
                                 id: p.id,
-                                status: p.status,
-                                print_number: p.print_number
+                                print_number: p.print_number,
+                                position: p.template_position
                             })));
                             
                             // Update photo status in database first
@@ -1189,21 +1269,106 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                                 throw new Error(`Failed to update photo status: ${updateError.message}`);
                             }
 
-                            console.log('Database update successful:', updateData);
+                            // Create a new template array with only the photos to print
+                            const printTemplate = Array(9).fill(null);
+                            photosToPrint.forEach(photo => {
+                                if (photo.template_position) {
+                                    printTemplate[photo.template_position - 1] = photo;
+                                }
+                            });
+
+                            // Create a static print template
+                            const printDiv = document.createElement('div');
+                            printDiv.className = 'print-template print-only';
+                            printDiv.innerHTML = `
+                                <style>
+                                    @media print {
+                                        body * { display: none !important; }
+                                        .print-only { display: block !important; }
+                                        .print-template { 
+                                            position: fixed;
+                                            left: 50%;
+                                            top: 50%;
+                                            transform: translate(-50%, -50%);
+                                            width: 8.409in;
+                                            height: 8.409in;
+                                        }
+                                        .print-cell {
+                                            position: absolute;
+                                            width: 2.803in;
+                                            height: 2.803in;
+                                            border: 3px solid #c0c0c0;
+                                        }
+                                        .print-image {
+                                            width: 2in;
+                                            height: 2in;
+                                            position: absolute;
+                                            top: 50%;
+                                            left: 50%;
+                                            transform: translate(-50%, -50%);
+                                            object-fit: cover;
+                                        }
+                                        .print-number {
+                                            position: absolute;
+                                            width: 2in;
+                                            text-align: center;
+                                            font-size: 8pt;
+                                            color: black;
+                                            transform: rotate(180deg);
+                                            left: 50%;
+                                            margin-left: -1in;
+                                            top: calc(50% - 1in - 10pt);
+                                        }
+                                    }
+                                </style>
+                            `;
+
+                            // Add cells for each photo
+                            photosToPrint.forEach((photo) => {
+                                if (photo) {
+                                    const row = Math.floor((photo.template_position - 1) / 3);
+                                    const col = (photo.template_position - 1) % 3;
+                                    
+                                    const cell = document.createElement('div');
+                                    cell.className = 'print-cell print-only';
+                                    cell.style.cssText = `
+                                        left: ${col * 2.803}in;
+                                        top: ${row * 2.803}in;
+                                    `;
+
+                                    const img = document.createElement('img');
+                                    img.src = photo.url;
+                                    img.className = 'print-image print-only';
+
+                                    const printNumber = document.createElement('div');
+                                    printNumber.className = 'print-number print-only';
+                                    printNumber.textContent = `#${photo.print_number || '?'}`;
+
+                                    cell.appendChild(img);
+                                    cell.appendChild(printNumber);
+                                    printDiv.appendChild(cell);
+                                }
+                            });
+
+                            // Add print-only class to body
+                            document.body.classList.add('print-only');
+                            
+                            // Add the print div to the document
+                            document.body.appendChild(printDiv);
 
                             // Trigger the print
-                            console.log('Triggering print helper...');
                             await onAutoPrintTrigger();
-                            console.log('Print helper completed');
                             
+                            // Clean up
+                            document.body.removeChild(printDiv);
+                            document.body.classList.remove('print-only');
+
                             // Clear the template and update UI
-                            console.log('Clearing template after successful print');
                             setTemplate(Array(9).fill(null));
                             setLoadedImages(new Set());
                             
-                            // Add printed photos to processed list to prevent reprinting
+                            // Add printed photos to processed list
                             const printedPhotoIds = photosToPrint.map(p => p.id);
-                            console.log('Adding printed photos to processed list:', printedPhotoIds);
                             setProcessedPhotoIds(prev => new Set([...prev, ...printedPhotoIds]));
                             
                             toast.success('Template printed successfully');
@@ -1304,7 +1469,8 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                           top: '0.4015in',
                           left: '0.4015in',
                           objectFit: 'cover',
-                          opacity: loadedImages.has(photo.id) ? 1 : 0.5
+                          opacity: 1,
+                          transition: 'none'
                         }}
                         onLoad={() => handleImageLoad(photo.id)}
                         onError={(e) => {
@@ -1474,135 +1640,50 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
             margin: 0;
           }
           
-          /* First hide everything */
           body * { 
-            visibility: hidden !important;
             display: none !important;
           }
 
-          /* Hide preview elements */
-          .preview-only {
-            display: none !important;
-            visibility: hidden !important;
-          }
-          
-          /* Then explicitly show only what we want to print */
-          .print-template,
-          .print-cell,
-          .print-image,
-          .cutting-guide-square,
-          .printNumberBadge { 
-            visibility: visible !important;
+          .print-only {
             display: block !important;
           }
 
-          .screen-url,
-          .print-preview-grid { 
-            display: none !important;
-          }
-          
-          /* Template positioning - Reverted to centered layout */
           .print-template {
             position: fixed !important;
-            /* Calculate total grid width: (3 cells * cell_width) + (2 gaps * gap_width) */
-            width: calc(3 * 2.803in + 2 * 0.05in) !important;
-            /* Calculate total grid height */
-            height: calc(3 * 2.803in + 2 * 0.05in) !important; 
-            /* Center horizontally */
             left: 50% !important;
-            /* Center vertically */
             top: 50% !important;
-            /* Adjust position using transform */
             transform: translate(-50%, -50%) !important;
-            margin: 0 !important;
-            padding: 0 !important; 
-            /* Make it a grid container */
-            display: grid !important;
-            grid-template-columns: repeat(3, 2.803in) !important;
-            /* Remove justify-content property */
-            /* justify-content: center !important; */
-            /* Restore fixed gap between columns */
-            gap: 0.05in !important; 
-            box-sizing: border-box !important;
-            background-color: white !important;
-            border: none !important;
+            width: 8.409in !important;
+            height: 8.409in !important;
           }
 
-          /* Position the cells - Remove absolute positioning */
           .print-cell {
+            position: absolute !important;
             width: 2.803in !important;
             height: 2.803in !important;
-            position: relative !important; /* Use relative positioning */
-            /* Remove absolute positioning styles */
-            /* top: 0 !important; */
-            /* left: 0 !important; */
-            /* margin-left: ... !important; */
-            /* transform: ... !important; */
-            box-sizing: border-box !important;
+            border: 3px solid #c0c0c0 !important;
           }
 
-          /* Position each cell at its center point */
-          /* Remove this rule as centering is handled by the grid container */
-          /* .print-cell:nth-child(1) { ... } */
-          /* .print-cell:nth-child(2) { ... } */
-          /* .print-cell:nth-child(3) { ... } */
-
-          /* Image positioning within cells - Reverted to 2in */
           .print-image {
-            width: 2in !important; /* Reverted size */
-            height: 2in !important; /* Reverted size */
+            width: 2in !important;
+            height: 2in !important;
             position: absolute !important;
-            /* Center image within the cell */
             top: 50% !important;
             left: 50% !important;
             transform: translate(-50%, -50%) !important;
             object-fit: cover !important;
           }
 
-          /* Print number badge positioning - Reverted for 2in photo */
-          .printNumberBadge {
-            /* Positioning relative to the 2in photo */
+          .print-number {
             position: absolute !important;
-            /* Center above the image */
-            width: 2in !important; /* Match image width */
+            width: 2in !important;
             text-align: center !important;
             font-size: 8pt !important;
             color: black !important;
             transform: rotate(180deg) !important;
             left: 50% !important;
-            margin-left: -1in !important; /* -(Width/2) */
-            top: calc(50% - 1in - 10pt) !important; /* -(Height/2) - offset */
-            /* Original styles (adjust as needed) */
-            background: transparent !important;
-            padding: 0 !important;
-            border: none !important;
-            /* visibility / display are handled above */
-            z-index: 100 !important;
-          }
-
-          /* Cutting guide - centered within cell */
-          .cutting-guide-square {
-            border: 3px solid #c0c0c0 !important;
-            width: 71.2mm !important; /* Approx 2.803 inches */
-            height: 71.2mm !important;
-            position: absolute !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            box-sizing: border-box !important;
-            background-color: transparent !important;
-          }
-
-          /* Center the cells themselves */
-          /* Remove this rule as centering is handled by the grid container */
-          /* .print-cell {
-            transform: translateX(-50%) !important;
-          } */
-        }
-
-        @media screen {
-          .preview-only {
-            display: block;
+            margin-left: -1in !important;
+            top: calc(50% - 1in - 10pt) !important;
           }
         }
       `}</style>
