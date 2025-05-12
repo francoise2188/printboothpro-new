@@ -5,10 +5,17 @@ import { useAuth } from '../../lib/AuthContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './admin.module.css';
+import { useState } from 'react';
 
 function AdminLayout({ children }) {
   const pathname = usePathname();
   const { user, loading, signOut } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Close sidebar when clicking overlay
+  const handleOverlayClick = () => {
+    setIsSidebarOpen(false);
+  };
 
   // Don't check auth for login page
   if (pathname === '/admin/login') {
@@ -188,8 +195,29 @@ function AdminLayout({ children }) {
 
   return (
     <div className={styles.adminContainer}>
+      {/* Mobile Menu Button */}
+      <button 
+        className={styles.menuButton}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        aria-label="Toggle menu"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          {isSidebarOpen ? (
+            <path d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      <div 
+        className={`${styles.menuOverlay} ${isSidebarOpen ? styles.open : ''}`}
+        onClick={handleOverlayClick}
+      />
+
       {/* Sidebar */}
-      <div className={styles.sidebar}>
+      <div className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
         {/* Logo */}
         <div className={styles.logo}>
           PrintBooth Pro
@@ -201,6 +229,7 @@ function AdminLayout({ children }) {
             <Link 
               href={item.path}
               className={pathname === item.path ? styles.menuItemActive : styles.menuItem}
+              onClick={() => setIsSidebarOpen(false)}
             >
               {item.icon}
               {item.name}
@@ -214,6 +243,7 @@ function AdminLayout({ children }) {
                     key={subItem.path}
                     href={subItem.path}
                     className={pathname === subItem.path ? styles.subMenuItemActive : styles.subMenuItem}
+                    onClick={() => setIsSidebarOpen(false)}
                   >
                     {subItem.icon}
                     {subItem.name}

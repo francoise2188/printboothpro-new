@@ -5,6 +5,22 @@
   position: relative;
 }
 
+/* Mobile menu overlay */
+.menuOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
+.menuOverlay.open {
+  display: block;
+}
+
 .sidebar {
   width: 250px;
   background-color: var(--primary-green);
@@ -26,9 +42,10 @@
   background: var(--primary-green);
   border: none;
   color: white;
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.75rem;
+  border-radius: 8px;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .menuButton svg {
@@ -176,6 +193,7 @@
     top: 0;
     bottom: 0;
     transform: translateX(-100%);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   }
 
   .sidebar.open {
