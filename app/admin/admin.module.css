@@ -2,6 +2,7 @@
   display: flex;
   min-height: 100vh;
   background-color: var(--background-light);
+  position: relative;
 }
 
 .sidebar {
@@ -11,6 +12,28 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+/* Mobile menu button */
+.menuButton {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 101;
+  background: var(--primary-green);
+  border: none;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.menuButton svg {
+  width: 24px;
+  height: 24px;
 }
 
 .logo {
@@ -92,6 +115,7 @@
   flex: 1;
   padding: 2rem;
   background-color: var(--background-light);
+  transition: margin-left 0.3s ease;
 }
 
 /* Dashboard card styles */
@@ -138,4 +162,61 @@
 
 .subMenuItemActive .menuIcon {
   opacity: 1;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .menuButton {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mainContent {
+    margin-left: 0 !important;
+    padding: 1rem;
+    padding-top: 4rem; /* Space for menu button */
+  }
+
+  .menuItem {
+    padding: 1rem;
+    font-size: 1.1rem; /* Larger touch targets */
+  }
+
+  .subMenuItem {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .signOutButton {
+    margin-top: 1rem;
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .mainContent {
+    margin-left: 200px;
+  }
+
+  .menuItem {
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
 } 

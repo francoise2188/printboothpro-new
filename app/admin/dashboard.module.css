@@ -199,4 +199,71 @@
   100% {
     opacity: 0.4;
   }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .dashboardContainer {
+    padding: 0.5rem;
+    gap: 1rem;
+  }
+
+  .welcomeTitle {
+    font-size: 2rem;
+  }
+
+  .welcomeSubtitle {
+    font-size: 1rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .statsCard {
+    padding: 1.25rem;
+  }
+
+  .statsValue {
+    font-size: 1.5rem;
+  }
+
+  .recentActivity {
+    padding: 1rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .activityItem {
+    padding: 0.75rem;
+  }
+
+  .quickActions {
+    grid-template-columns: 1fr;
+  }
+
+  .actionButton {
+    padding: 0.875rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .dashboardContainer {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quickActions {
+    grid-template-columns: repeat(2, 1fr);
+  }
 } 
