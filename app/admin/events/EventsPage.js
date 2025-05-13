@@ -1270,13 +1270,13 @@ export default function EventsPage() {
                       <div className={styles.eventActions}>
                         <button
                           onClick={() => handleEditEvent(event)}
-                          className={styles.editButton}
+                          className={`${styles.actionButton} ${styles.editButton}`}
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteEvent(event.id)}
-                          className={styles.deleteButton}
+                          className={`${styles.actionButton} ${styles.deleteButton}`}
                         >
                           Delete
                         </button>
