@@ -36,13 +36,11 @@ export default function TemplatePage() {
           return;
         }
 
-        const today = new Date().toISOString().split('T')[0];
         const { data, error } = await supabase
           .from('events')
           .select('id, name, date')
           .eq('user_id', user.id)
-          .gte('date', today)
-          .order('date', { ascending: true });
+          .order('date', { ascending: false });
 
         if (error) throw error;
         setEvents(data || []);

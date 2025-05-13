@@ -90,7 +90,9 @@ const EventDetailsPage = ({ params }) => {
     address: '',
     expectedGuests: '',
     package: '',
-    packagePrice: ''
+    packagePrice: '',
+    totalPhotoLimit: '',
+    photosPerPerson: '1'
   });
 
   const [landingImageLoaded, setLandingImageLoaded] = useState(false);
@@ -189,7 +191,9 @@ const EventDetailsPage = ({ params }) => {
         address: eventData.address || '',
         expectedGuests: eventData.expected_guests?.toString() || '',
         package: eventData.package || '',
-        packagePrice: eventData.package_price?.toString() || ''
+        packagePrice: eventData.package_price?.toString() || '',
+        totalPhotoLimit: eventData.total_photo_limit?.toString() || '',
+        photosPerPerson: eventData.photos_per_person?.toString() || '1'
       };
 
       console.log('Setting form data:', formData);
@@ -228,7 +232,9 @@ const EventDetailsPage = ({ params }) => {
         package: editForm.package,
         package_price: parseFloat(editForm.packagePrice) || 0,
         photo_limit: parseInt(editForm.photoLimit) || 0,
-        status: editForm.status
+        status: editForm.status,
+        total_photo_limit: editForm.totalPhotoLimit ? parseInt(editForm.totalPhotoLimit) : null,
+        photos_per_person: parseInt(editForm.photosPerPerson) || 1
       };
 
       // Only include design settings if we have new images or existing ones
@@ -789,40 +795,57 @@ const EventDetailsPage = ({ params }) => {
                   />
                 </div>
 
-                <div className={styles.grid}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Package</label>
-                    <input
-                      type="text"
-                      value={editForm.package}
-                      onChange={(e) => setEditForm({...editForm, package: e.target.value})}
-                      className={styles.formInput}
-                    />
-                  </div>
+                <div className={styles.formSection}>
+                  <h3 className={styles.sectionTitle}>Package Details</h3>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Package</label>
+                      <input
+                        type="text"
+                        value={editForm.package}
+                        onChange={(e) => setEditForm({...editForm, package: e.target.value})}
+                        className={styles.formInput}
+                      />
+                    </div>
 
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Package Price</label>
-                    <input
-                      type="number"
-                      value={editForm.packagePrice}
-                      onChange={(e) => setEditForm({...editForm, packagePrice: e.target.value})}
-                      className={styles.formInput}
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Package Price</label>
+                      <input
+                        type="number"
+                        value={editForm.packagePrice}
+                        onChange={(e) => setEditForm({...editForm, packagePrice: e.target.value})}
+                        className={styles.formInput}
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Photo Limit</label>
-                  <input
-                    type="number"
-                    value={editForm.photoLimit}
-                    onChange={(e) => setEditForm({...editForm, photoLimit: e.target.value})}
-                    min="0"
-                    className={styles.formInput}
-                    placeholder="0 for unlimited"
-                  />
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Total Event Photo Limit</label>
+                      <input
+                        type="number"
+                        value={editForm.totalPhotoLimit}
+                        onChange={(e) => setEditForm({...editForm, totalPhotoLimit: e.target.value})}
+                        min="0"
+                        className={styles.formInput}
+                        placeholder="Leave empty for unlimited"
+                      />
+                      <small className={styles.helpText}>Leave empty for unlimited total photos</small>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Photos Per Person</label>
+                      <input
+                        type="number"
+                        value={editForm.photosPerPerson}
+                        onChange={(e) => setEditForm({...editForm, photosPerPerson: e.target.value})}
+                        min="1"
+                        required
+                        className={styles.formInput}
+                      />
+                      <small className={styles.helpText}>Minimum 1 photo per person</small>
+                    </div>
+                  </div>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -1005,7 +1028,7 @@ const EventDetailsPage = ({ params }) => {
                     </div>
                     <div className={styles.infoItem}>
                       <span className={styles.label}>Photo Limit</span>
-                      <span className={styles.value}>{event.photo_limit || 'Unlimited'}</span>
+                      <span className={styles.value}>{event.total_photo_limit || 'Unlimited'}</span>
                     </div>
                   </div>
                 </div>

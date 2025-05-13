@@ -48,6 +48,8 @@ export async function POST(request) {
       package: body.package,
       package_price: body.package_price,
       photo_limit: body.photo_limit,
+      total_photo_limit: body.total_photo_limit,
+      photos_per_person: body.photos_per_person || 1,
       client_name: body.client_name,
       client_email: body.client_email,
       client_phone: body.client_phone

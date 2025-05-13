@@ -93,6 +93,58 @@ export default function EventPage() {
       setIsSubmitting(true);
       setSubmitError(null);
       try {
+        // First check if user has reached their photo limit
+        const { data: eventData, error: eventError } = await supabase
+          .from('events')
+          .select('photos_per_person, total_photo_limit')
+          .eq('id', eventId)
+          .single();
+
+        if (eventError) {
+          throw new Error('Failed to verify event. Please try again.');
+        }
+
+        // Check total event photo limit if set
+        if (eventData.total_photo_limit) {
+          const { count, error: countError } = await supabase
+            .from('photos')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', eventId)
+            .is('deleted_at', null);
+
+          if (countError) {
+            throw new Error('Failed to check event photo limit. Please try again.');
+          }
+
+          if (count >= eventData.total_photo_limit) {
+            setSubmitError('You have reached your photo limit for this event. For any questions, please contact the event organizer.');
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
+        // Check current photo submissions for this user
+        const { data: submissionData, error: submissionError } = await supabase
+          .from('photo_submissions')
+          .select('photos_submitted')
+          .eq('event_id', eventId)
+          .eq('email', email)
+          .single();
+
+        if (submissionError && submissionError.code !== 'PGRST116') {
+          throw new Error('Failed to check photo limit. Please try again.');
+        }
+
+        const currentSubmissions = submissionData?.photos_submitted || 0;
+        const photosPerPerson = eventData.photos_per_person;
+
+        if (photosPerPerson && currentSubmissions >= photosPerPerson) {
+          setSubmitError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
+          setIsSubmitting(false);
+          return;
+        }
+
+        // If we get here, user hasn't reached their limit, so save their email
         const { error: insertError } = await supabase
           .from('emails') 
           .insert({ 
@@ -105,7 +157,8 @@ export default function EventPage() {
           throw new Error('Failed to save email. Please check your connection and try again.');
         }
 
-        localStorage.setItem('userEmail', email); 
+        // Save email to localStorage and redirect to camera
+        localStorage.setItem('userEmail', email);
         router.push(`/camera/${eventId}`);
 
       } catch (err) {
@@ -114,9 +167,9 @@ export default function EventPage() {
         setIsSubmitting(false);
       }
     } else if (!email) {
-        setSubmitError("Please enter your email address.");
+      setSubmitError("Please enter your email address.");
     } else if (!eventId) {
-        setSubmitError("Event ID is missing. Cannot proceed.");
+      setSubmitError("Event ID is missing. Cannot proceed.");
     }
   };
 

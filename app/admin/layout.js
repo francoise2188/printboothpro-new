@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './admin.module.css';
 import { useState } from 'react';
+import WelcomePopup from '../components/WelcomePopup';
 
 function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -194,83 +195,86 @@ function AdminLayout({ children }) {
   const isMarketsSection = pathname.includes('/admin/markets');
 
   return (
-    <div className={styles.adminContainer}>
-      {/* Mobile Menu Button */}
-      <button 
-        className={styles.menuButton}
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        aria-label="Toggle menu"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          {isSidebarOpen ? (
-            <path d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
+    <div className={styles.container}>
+      <WelcomePopup />
+      <div className={styles.adminContainer}>
+        {/* Mobile Menu Button */}
+        <button 
+          className={styles.menuButton}
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          aria-label="Toggle menu"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {isSidebarOpen ? (
+              <path d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
 
-      {/* Mobile Menu Overlay */}
-      <div 
-        className={`${styles.menuOverlay} ${isSidebarOpen ? styles.open : ''}`}
-        onClick={handleOverlayClick}
-      />
+        {/* Mobile Menu Overlay */}
+        <div 
+          className={`${styles.menuOverlay} ${isSidebarOpen ? styles.open : ''}`}
+          onClick={handleOverlayClick}
+        />
 
-      {/* Sidebar */}
-      <div className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
-        {/* Logo */}
-        <div className={styles.logo}>
-          PrintBooth Pro
+        {/* Sidebar */}
+        <div className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
+          {/* Logo */}
+          <div className={styles.logo}>
+            PrintBooth Pro
+          </div>
+
+          {menuItems.map((item) => (
+            <div key={item.path} className={styles.menuItemContainer}>
+              {/* Main menu item */}
+              <Link 
+                href={item.path}
+                className={pathname === item.path ? styles.menuItemActive : styles.menuItem}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                {item.icon}
+                {item.name}
+              </Link>
+
+              {/* Sub-items */}
+              {item.subItems && (pathname.includes(item.path) || isMarketsSection) && (
+                <div className={styles.subMenu}>
+                  {item.subItems.map((subItem) => (
+                    <Link
+                      key={subItem.path}
+                      href={subItem.path}
+                      className={pathname === subItem.path ? styles.subMenuItemActive : styles.subMenuItem}
+                      onClick={() => setIsSidebarOpen(false)}
+                    >
+                      {subItem.icon}
+                      {subItem.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Sign Out Button */}
+          <button
+            onClick={() => signOut()}
+            className={styles.signOutButton}
+          >
+            <svg className={styles.menuIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sign Out
+          </button>
         </div>
 
-        {menuItems.map((item) => (
-          <div key={item.path} className={styles.menuItemContainer}>
-            {/* Main menu item */}
-            <Link 
-              href={item.path}
-              className={pathname === item.path ? styles.menuItemActive : styles.menuItem}
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              {item.icon}
-              {item.name}
-            </Link>
-
-            {/* Sub-items */}
-            {item.subItems && (pathname.includes(item.path) || isMarketsSection) && (
-              <div className={styles.subMenu}>
-                {item.subItems.map((subItem) => (
-                  <Link
-                    key={subItem.path}
-                    href={subItem.path}
-                    className={pathname === subItem.path ? styles.subMenuItemActive : styles.subMenuItem}
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    {subItem.icon}
-                    {subItem.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {/* Sign Out Button */}
-        <button
-          onClick={() => signOut()}
-          className={styles.signOutButton}
-        >
-          <svg className={styles.menuIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Sign Out
-        </button>
-      </div>
-
-      {/* Main content */}
-      <div className={styles.mainContent}>
-        {children}
+        {/* Main content */}
+        <div className={styles.mainContent}>
+          {children}
+        </div>
       </div>
     </div>
   );

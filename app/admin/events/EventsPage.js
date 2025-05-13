@@ -31,6 +31,9 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [totalPhotoLimit, setTotalPhotoLimit] = useState('');
+  const [photosPerPerson, setPhotosPerPerson] = useState('1');
+  const [unlimitedPhotosPerPerson, setUnlimitedPhotosPerPerson] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -217,6 +220,10 @@ export default function EventsPage() {
 
         const data = await response.json();
 
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to delete event');
+        }
+
         if (data.success) {
           setEvents(events.filter(event => event.id !== eventId));
           showSuccess('Event deleted successfully');
@@ -225,7 +232,7 @@ export default function EventsPage() {
         }
       } catch (err) {
         console.error('Delete error:', err);
-        setError('Failed to delete event');
+        setError(err.message || 'Failed to delete event');
       }
     }
   };
@@ -260,12 +267,11 @@ export default function EventsPage() {
     setIsSubmitting(true);
     
     try {
-      // Just use the date string directly from the form
       console.log('Debug - Form submission date:', eventDate);
 
       const eventData = {
         name: eventName,
-        date: eventDate,  // This will now be just YYYY-MM-DD
+        date: eventDate,
         status: eventStatus,
         start_time: startTime,
         end_time: endTime,
@@ -278,7 +284,9 @@ export default function EventsPage() {
         client_name: clientName,
         client_email: clientEmail,
         client_phone: clientPhone,
-        user_id: user.id
+        user_id: user.id,
+        total_photo_limit: totalPhotoLimit ? parseInt(totalPhotoLimit) : null,
+        photos_per_person: unlimitedPhotosPerPerson ? null : parseInt(photosPerPerson) || 1
       };
 
       console.log('Debug - Event data being saved:', eventData);
@@ -409,6 +417,9 @@ export default function EventsPage() {
     setEditingEvent(null);
     setLandingPageImage(null);
     setCameraOverlay(null);
+    setTotalPhotoLimit('');
+    setPhotosPerPerson('1');
+    setUnlimitedPhotosPerPerson(false);
   };
 
   const handleCreateNew = () => {
@@ -900,12 +911,44 @@ export default function EventsPage() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Photo Limit</label>
+                <label className={styles.label}>Total Event Photo Limit</label>
                 <input
                   type="number"
+                  value={totalPhotoLimit}
+                  onChange={(e) => setTotalPhotoLimit(e.target.value)}
                   min="0"
+                  placeholder="Leave empty for unlimited"
                   className={styles.input}
                 />
+                <small className={styles.helpText}>Leave empty for unlimited total photos</small>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Photos Per Person</label>
+                <div className={styles.checkboxGroup}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={unlimitedPhotosPerPerson}
+                      onChange={(e) => setUnlimitedPhotosPerPerson(e.target.checked)}
+                      className={styles.checkbox}
+                    />
+                    Unlimited photos per person
+                  </label>
+                </div>
+                {!unlimitedPhotosPerPerson && (
+                  <>
+                    <input
+                      type="number"
+                      value={photosPerPerson}
+                      onChange={(e) => setPhotosPerPerson(e.target.value)}
+                      min="1"
+                      required
+                      className={styles.input}
+                    />
+                    <small className={styles.helpText}>Minimum 1 photo per person</small>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1043,8 +1086,8 @@ export default function EventsPage() {
                             {event.end_time && ` - ${formatTime(event.end_time)}`}
                           </p>
                         </div>
-                        <span className={`${styles.status} ${statusColors[event.status]}`}>
-                          {statusOptions.find(opt => opt.value === event.status)?.label}
+                        <span className={`${styles.statusBadge} ${statusColors[event.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {event.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
 
@@ -1102,8 +1145,8 @@ export default function EventsPage() {
                             {event.end_time && ` - ${formatTime(event.end_time)}`}
                           </p>
                         </div>
-                        <span className={`${styles.status} ${statusColors[event.status]}`}>
-                          {statusOptions.find(opt => opt.value === event.status)?.label}
+                        <span className={`${styles.statusBadge} ${statusColors[event.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {event.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
 
@@ -1161,8 +1204,8 @@ export default function EventsPage() {
                             {event.end_time && ` - ${formatTime(event.end_time)}`}
                           </p>
                         </div>
-                        <span className={`${styles.status} ${statusColors[event.status]}`}>
-                          {statusOptions.find(opt => opt.value === event.status)?.label}
+                        <span className={`${styles.statusBadge} ${statusColors[event.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {event.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
 
@@ -1220,41 +1263,20 @@ export default function EventsPage() {
                             {event.end_time && ` - ${formatTime(event.end_time)}`}
                           </p>
                         </div>
-                        <span className={`${styles.status} ${statusColors[event.status]}`}>
-                          {statusOptions.find(opt => opt.value === event.status)?.label}
+                        <span className={`${styles.statusBadge} ${statusColors[event.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {event.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
-
-                      <div className={styles.eventDetails}>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>Client</span>
-                          <span className={styles.detailValue}>{event.client_name || 'N/A'}</span>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>Location</span>
-                          <span className={styles.detailValue}>{event.location || 'N/A'}</span>
-                        </div>
-                        <div className={styles.detailItem}>
-                          <span className={styles.detailLabel}>Package</span>
-                          <span className={styles.detailValue}>{event.package || 'N/A'}</span>
-                        </div>
-                      </div>
-
                       <div className={styles.eventActions}>
-                        <Link href={`/admin/events/${event.id}`}>
-                          <button className={`${styles.actionButton} ${styles.viewButton}`}>
-                            View Details
-                          </button>
-                        </Link>
                         <button
                           onClick={() => handleEditEvent(event)}
-                          className={`${styles.actionButton} ${styles.editButton}`}
+                          className={styles.editButton}
                         >
-                          Edit Event
+                          Edit
                         </button>
                         <button
                           onClick={() => handleDeleteEvent(event.id)}
-                          className={`${styles.actionButton} ${styles.deleteButton}`}
+                          className={styles.deleteButton}
                         >
                           Delete
                         </button>
@@ -1263,34 +1285,10 @@ export default function EventsPage() {
                   ))}
                 </div>
               )}
-
-              {/* Show message if no events */}
-              {!loading && events.length === 0 && (
-                <div className={styles.noEvents}>
-                  <p>No events found. Click "Create Event" to add your first event.</p>
-                </div>
-              )}
             </div>
           ) : (
-            <div className={styles.calendarWrapper}>
-              {/* Add Calendar Legend */}
-              <div className={styles.calendarLegend}>
-                <div className={styles.legendItem}>
-                  <div className={`${styles.legendColor} ${styles.marketColor}`}></div>
-                  <span>Markets</span>
-                </div>
-                <div className={styles.legendItem}>
-                  <div className={`${styles.legendColor} ${styles.eventColor}`}></div>
-                  <span>Events</span>
-                </div>
-              </div>
-
+            <div className={styles.calendarView}>
               <FullCalendar
-                ref={(el) => {
-                  if (el) {
-                    setCalendarApi(el.getApi());
-                  }
-                }}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                 initialView="dayGridMonth"
                 headerToolbar={{
@@ -1299,34 +1297,11 @@ export default function EventsPage() {
                   right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 }}
                 events={getCalendarEvents()}
-                eventClick={handleEventClick}
                 eventContent={renderEventContent}
-                eventClassNames={(eventInfo) => [
-                  styles.calendarEventItem,
-                  styles[`status${eventInfo.event.extendedProps.status.replace(/_/g, '')}`],
-                  selectedEvent?.id === eventInfo.event.id ? styles.selectedEvent : '',
-                  eventInfo.event.extendedProps.type === 'market' ? styles.marketEvent : styles.regularEvent
-                ]}
-                slotMinTime="06:00:00"
-                slotMaxTime="24:00:00"
-                dayMaxEvents={3}
-                eventTimeFormat={{
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  meridiem: true
-                }}
+                eventClick={handleEventClick}
                 height="auto"
-                expandRows={true}
-                dayMaxEventRows={4}
-                moreLinkContent={(args) => `+${args.num} events`}
-                moreLinkClick="popover"
+                ref={(ref) => setCalendarApi(ref)}
               />
-              {selectedEvent && (
-                <ExpandedEventDetails 
-                  event={selectedEvent} 
-                  onClose={() => setSelectedEvent(null)} 
-                />
-              )}
             </div>
           )}
         </>

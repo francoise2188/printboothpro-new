@@ -48,7 +48,9 @@ export async function PUT(request, { params }) {
       expected_guests: body.expected_guests,
       package: body.package,
       package_price: body.package_price,
-      photo_limit: body.photo_limit
+      photo_limit: body.photo_limit,
+      total_photo_limit: body.total_photo_limit,
+      photos_per_person: body.photos_per_person
     };
 
     // Remove undefined values
@@ -308,13 +310,14 @@ export async function DELETE(request, { params }) {
     // Delete in this order:
     // 1. Delete photos from storage
     // 2. Delete photo records from 'photos' table
-    // 3. Delete design settings
-    // 4. Delete event record
+    // 3. Delete photo submissions
+    // 4. Delete design settings
+    // 5. Delete event record
 
     // 1. Get and delete photos from storage
     const { data: photos, error: photosError } = await supabaseServer
-      .from('photos')  // Changed from event_photos to photos
-      .select('photo_url')
+      .from('photos')
+      .select('url')
       .eq('event_id', id);
 
     if (photosError) {
@@ -330,9 +333,9 @@ export async function DELETE(request, { params }) {
       // Extract just the file paths from the full URLs
       const photoUrls = photos
         .map(p => {
-          if (!p.photo_url) return null;
+          if (!p.url) return null;
           // Remove the storage URL prefix to get just the file path
-          const match = p.photo_url.match(/photos\/.*$/);  // Updated regex pattern
+          const match = p.url.match(/photos\/.*$/);
           return match ? match[0] : null;
         })
         .filter(Boolean);
@@ -356,7 +359,7 @@ export async function DELETE(request, { params }) {
 
     // 2. Delete photo records
     const { error: photoDeleteError } = await supabaseServer
-      .from('photos')  // Changed from event_photos to photos
+      .from('photos')
       .delete()
       .eq('event_id', id);
 
@@ -368,7 +371,21 @@ export async function DELETE(request, { params }) {
       console.log('Successfully deleted photo records');
     }
 
-    // 3. Delete design settings
+    // 3. Delete photo submissions
+    const { error: submissionsDeleteError } = await supabaseServer
+      .from('photo_submissions')
+      .delete()
+      .eq('event_id', id);
+
+    if (submissionsDeleteError) {
+      console.error('Error deleting photo submissions:', submissionsDeleteError);
+      // Continue with other deletions
+      console.log('Continuing deletion process despite photo submissions deletion error');
+    } else {
+      console.log('Successfully deleted photo submissions');
+    }
+
+    // 4. Delete design settings
     const { error: designDeleteError } = await supabaseServer
       .from('design_settings')
       .delete()
@@ -382,7 +399,7 @@ export async function DELETE(request, { params }) {
       console.log('Successfully deleted design settings');
     }
 
-    // 4. Finally delete the event
+    // 5. Finally delete the event
     const { error: deleteError } = await supabaseServer
       .from('events')
       .delete()
@@ -398,11 +415,14 @@ export async function DELETE(request, { params }) {
     }
 
     console.log('Successfully deleted event and all associated data');
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      message: 'Event deleted successfully'
+    });
   } catch (error) {
     console.error('Error in DELETE:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

@@ -15,28 +15,181 @@ export default function AdminGuidePage() {
     title: 'PrintBooth Pro Overview',
     sections: [
       {
-        title: 'Initial Setup',
-        content: 'The first step is setting up the Print Booth Helper application for direct printing. Download the installer from Account Settings, install it on the computer connected to your printer, and keep it running during events. This enables the auto-print feature and manual printing from the Template page.'
+        title: 'What You\'ll Need',
+        content: 'Hardware: Windows laptop or desktop (with WiFi), compatible printer (for 2x2 magnet prints), magnet-making equipment. Software: PrintBooth Helper App (Windows only), web browser + internet connection.'
       },
       {
-        title: 'Event Management',
-        content: 'Create and manage events with detailed information including event name, date, type, time, expected guests, venue, address, package details, pricing, and photo limits. Customize each event with landing page backgrounds (1920x1080 pixels) and camera overlays (50.8mm x 50.8mm) which can be designed in Canva. Each event gets a unique QR code that can be printed and displayed for guests to access the photo booth.'
+        title: 'Quick Setup Steps',
+        content: (
+          <div className={styles.setupSteps}>
+            <div className={styles.setupContent}>
+{`1. **Download & Install PrintBooth Helper (Windows Only)**
+   • Log into your account
+   • Go to Account Settings > Download Helper
+   • Install on your Windows computer (must be connected to printer)
+   • Keep the Helper App running during events for auto-print
+
+   PrintBooth Helper Management:
+   • Finding the Helper:
+     - Look for the PrintBooth icon in your system tray (bottom right of screen)
+     - If you don't see it, check the hidden icons (^ arrow)
+     - Double-click the icon to open the Helper window
+   
+   • If Helper Isn't Running:
+     - Open Start Menu
+     - Search for "PrintBooth Helper"
+     - Click to start the application
+     - You should see the icon in your system tray
+   
+   • Restarting the Helper:
+     - Right-click the Helper icon in system tray
+     - Click "Exit" or "Close"
+     - Wait a few seconds
+     - Start the Helper again from Start Menu
+     - Check the Template page to confirm connection
+
+2. **Set Up Your Printer**
+   • Use 8.5x11" photo paper
+   • Confirm printer is connected & working
+   • Test a print to ensure proper alignment
+
+3. **Create an Event**
+   • Go to your dashboard > "New Event"
+   • Fill in event details:
+     - Name, date, location
+     - Expected guest count
+     - Package type and pricing
+   • Upload required images:
+     - Landing Page Background (1920x1080 JPG/PNG, 5MB max)
+       * Can be designed in Canva or any image editor
+     - Camera Overlay (2x2", transparent PNG, 5MB max)
+       * Can be designed in Canva or any image editor
+   • Set photo limits (optional)
+   • Download your event QR code
+
+   Event Features Explained:
+   • Photo Queue:
+     - Shows the next 9 photos waiting to be printed
+     - Photos automatically fill the template grid
+     - You can drag and drop photos to reorder them
+     - Click the X to remove a photo from the queue
+     - Click the + to duplicate a photo in the queue
+   
+   • Reprint Feature:
+     - Stores up to 150 past photos
+     - Access by clicking "Reprint" button
+     - Select any past photo to add to current queue
+     - Great for reprints or if a print fails
+     - Photos stay available until you end the event
+
+4. **Set Up a Market**
+   • Go to Markets > "New Market"
+   • Enter market details:
+     - Market name and location
+     - Operating hours
+     - Pricing for magnets
+   • Upload required images:
+     - Landing Page Background (1920x1080 JPG/PNG, 5MB max)
+       * Can be designed in Canva or any image editor
+     - Camera Overlay (2x2", transparent PNG, 5MB max)
+       * Can be designed in Canva or any image editor
+   • Download your market QR code
+
+   Market Order System Explained:
+   • How Orders Work:
+     - Each customer order creates a new template
+     - You'll see a pop-up notification for new orders
+     - Current order fills the template automatically
+     - Template shows all 9 photos for the order
+   
+   • Processing Orders:
+     - Print the current order's photos
+     - Once printed, you can:
+       * Click "Clear Template" to remove current order
+       * Next order will automatically fill the template
+     - Or manually clear to prepare for next order
+   
+   • Order Management:
+     - See all pending orders in the queue
+     - Reorder photos within an order if needed
+     - Delete photos if customer wants to retake
+     - Each order stays in queue until cleared
+
+5. **Set Up Payment Methods**
+   • Go to Settings > Payment Settings
+   • Add your payment information:
+     - PayPal.me username
+     - Venmo username (no @ symbol)
+   • Set your magnet pricing
+   • Enable/disable tax collection
+   • Set tax rate if enabled
+
+6. **Test Your Setup**
+   • Scan the QR code with your phone
+   • Take a test photo
+   • Verify the print process
+   • Check payment flow (for markets)
+
+Common Issues & Solutions:
+• Printer Not Connecting:
+  - Check if printer is turned on and connected
+  - Verify paper is loaded correctly
+  - Try restarting the PrintBooth Helper
+  - Check printer settings in Windows
+  - Make sure correct printer is selected in Helper
+
+• Photos Not Appearing in Queue:
+  - Check if PrintBooth Helper is running
+  - Verify internet connection
+  - Try refreshing the template page
+  - Check if photos are being taken successfully
+  - Look for any error messages in Helper
+
+• Payment Issues:
+  - Verify PayPal.me username is correct
+  - Check Venmo username (no @ symbol)
+  - Ensure prices are set correctly
+  - Test payment flow in preview mode
+  - Check customer's payment method
+
+• Template Alignment Problems:
+  - Verify printer paper size is 8.5x11"
+  - Check printer settings for margins
+  - Test print alignment using test button
+  - Adjust template settings if needed
+  - Make sure camera overlay size is correct
+
+Need More Help?
+• Check the FAQ section
+• Contact support at support@printboothpro.com
+• Visit our help center at help.printboothpro.com`}
+            </div>
+          </div>
+        )
       },
       {
-        title: 'Photo Template System',
-        content: 'The template manager allows you to select events and customize the photo layout. Add your website or email to be printed under each photo. Photos automatically enter the template when guests take them. With auto-print enabled and the Helper App connected, full templates print automatically using the printer selected in the Helper connection box. A queue system manages incoming photos while printing is in progress, and you can reprint up to 150 past photos.'
+        title: 'Guest Photo Experience',
+        content: 'At the event: Guests scan the QR code, camera opens on their phone with overlay, countdown + photo preview, they click "Make My Magnet!" → It auto-sends to your computer & prints!'
       },
       {
-        title: 'Market Features',
-        content: 'Similar to events, markets can be customized with backgrounds and borders. Customers can either take themed photos in the booth or upload their own photos. The market template allows photo adjustments (zoom/pan) before printing, and includes integrated checkout options.'
+        title: 'Printing System & Template Workflow',
+        content: 'Template: 3x3 photo grid auto-fills, drag & drop to rearrange, add watermark/email branding, preview before printing → Photos print automatically. Queue: See next 9 photos waiting, reorder or delete photos, reprint up to 150 past photos.'
       },
       {
-        title: 'Order Management',
-        content: 'Create and manage orders with customer details, shipping information, and photo specifications. The order template provides zoom and pan controls for optimal photo positioning before printing.'
+        title: 'Payments & Pricing',
+        content: 'Supported Methods: PayPal (enter your PayPal.me username), Venmo (enter your Venmo username—no @ symbol). Pricing Tiers: Set prices for 1, 3, 6, or 9 magnets (in dollars + cents), option to enable tax collection, set your tax rate (%) in Settings.'
       },
       {
-        title: 'Settings & Configuration',
-        content: 'Configure payment settings (PayPal/Venmo), set pricing tiers for magnets (single, 3, 6, or 9), and manage tax rates. Account Settings displays your email information and provides the download link for the Print Booth Helper application.'
+        title: 'Admin Dashboard Features',
+        content: 'View active events & photo counts, monitor print queue, access and share QR codes, manage printer settings, customize invoice details (business name, logo, terms).'
+      },
+      {
+        title: 'Troubleshooting Tips',
+        content: 'Not printing? Make sure Helper App is running. Wrong prints? Check template size or printer alignment. Queue stuck? Clear old photos and restart the Helper App.'
+      },
+      {
+        title: 'Support',
+        content: 'Need help? Check the FAQ or contact support at support@printboothpro.com. We\'re here to help your business stick. 😉'
       }
     ]
   };

@@ -7,7 +7,7 @@ export async function POST(request) {
   console.log('🚨 Starting photo upload process...');
   
   try {
-    const { photo, saveToDatabase = true, eventId = null, status = 'pending', source = 'guest' } = await request.json();
+    const { photo, saveToDatabase = true, eventId = null, status = 'pending', source = 'guest', email = null } = await request.json();
     
     if (!photo) {
       return NextResponse.json(
@@ -20,7 +20,7 @@ export async function POST(request) {
       // Check event photo limit
       const { data: eventData, error: eventError } = await supabaseServer
         .from('events')
-        .select('photo_limit')
+        .select('photo_limit, photos_per_person')
         .eq('id', eventId)
         .single();
 
@@ -29,8 +29,8 @@ export async function POST(request) {
         throw eventError;
       }
 
+      // Check total event photo limit
       if (eventData.photo_limit) {
-        // Count existing photos
         const { count, error: countError } = await supabaseServer
           .from('photos')
           .select('*', { count: 'exact', head: true })
@@ -49,6 +49,36 @@ export async function POST(request) {
               message: `This event has reached its photo limit. Please see the event host if you have any questions.`,
               details: {
                 limitReached: true
+              }
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Check per-email photo limit if email is provided
+      if (email && eventData.photos_per_person) {
+        const { data: submissionData, error: submissionError } = await supabaseServer
+          .from('photo_submissions')
+          .select('submission_count')
+          .eq('event_id', eventId)
+          .eq('email', email)
+          .single();
+
+        if (submissionError && submissionError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error('❌ Error checking submission count:', submissionError);
+          throw submissionError;
+        }
+
+        const currentCount = submissionData?.submission_count || 0;
+        if (currentCount >= eventData.photos_per_person) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `You have reached your limit of ${eventData.photos_per_person} photos for this event.`,
+              details: {
+                limitReached: true,
+                limitType: 'per_email'
               }
             },
             { status: 400 }
@@ -111,7 +141,8 @@ export async function POST(request) {
       storage_status: 'uploaded',
       error_message: null,
       error_timestamp: null,
-      source: source
+      source: source,
+      email: email // Add email to photo record
     } : {
       url: publicUrl,
       status: 'pending',
@@ -132,6 +163,26 @@ export async function POST(request) {
     if (dbError) {
       console.error('❌ Database error:', dbError);
       throw dbError;
+    }
+
+    // Update photo submission count if this is an event photo with an email
+    if (eventId && email) {
+      const { error: upsertError } = await supabaseServer
+        .from('photo_submissions')
+        .upsert({
+          event_id: eventId,
+          email: email,
+          submission_count: 1,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'event_id,email',
+          count: 'submission_count + 1'
+        });
+
+      if (upsertError) {
+        console.error('❌ Error updating submission count:', upsertError);
+        // Don't throw here - the photo was saved successfully
+      }
     }
 
     console.log('✅ Photo saved successfully');

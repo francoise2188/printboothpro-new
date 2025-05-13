@@ -44,9 +44,20 @@ export default function EventBoothCameraV2({ eventId }) {
   const [facingMode, setFacingMode] = useState('environment');
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const router = useRouter();
   const supabase = createClientComponentClient();
   const [currentUser, setCurrentUser] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
+
+  // Get email from localStorage when component mounts
+  useEffect(() => {
+    const email = localStorage.getItem('userEmail');
+    if (email) {
+      console.log('Found user email in localStorage:', email);
+      setUserEmail(email);
+    }
+  }, []);
 
   // Fetch frame overlay when component mounts
   useEffect(() => {
@@ -91,6 +102,80 @@ export default function EventBoothCameraV2({ eventId }) {
     };
     getUser();
   }, [eventId, isFetching, supabase]);
+
+  // Add initial limit check when component mounts
+  useEffect(() => {
+    async function checkInitialLimits() {
+      if (!eventId || !userEmail) {
+        console.log('Missing eventId or userEmail:', { eventId, userEmail });
+        return;
+      }
+      
+      try {
+        console.log('Checking initial limits for:', { eventId, userEmail });
+        
+        const { data: eventData, error: eventError } = await supabase
+          .from('events')
+          .select('photos_per_person, total_photo_limit')
+          .eq('id', eventId)
+          .single();
+
+        if (eventError) {
+          console.error('Error fetching event data:', eventError);
+          throw new Error('Failed to verify event. Please try again.');
+        }
+
+        // Check total event photo limit if set
+        if (eventData.total_photo_limit) {
+          const { count, error: countError } = await supabase
+            .from('photos')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', eventId)
+            .is('deleted_at', null);
+
+          if (countError) {
+            console.error('Error checking total photos:', countError);
+            throw new Error('Failed to check event photo limit. Please try again.');
+          }
+
+          console.log('Total photos for event:', count, 'Limit:', eventData.total_photo_limit);
+          
+          if (count >= eventData.total_photo_limit) {
+            setError('You have reached your photo limit for this event. For any questions, please contact the event organizer.');
+            return;
+          }
+        }
+
+        // Check current photo submissions for this user
+        const { data: submissionData, error: submissionError } = await supabase
+          .from('photo_submissions')
+          .select('photos_submitted')
+          .eq('event_id', eventId)
+          .eq('email', userEmail)
+          .single();
+
+        if (submissionError && submissionError.code !== 'PGRST116') {
+          console.error('Error checking user submissions:', submissionError);
+          throw new Error('Failed to check photo limit. Please try again.');
+        }
+
+        const currentSubmissions = submissionData?.photos_submitted || 0;
+        const photosPerPerson = eventData.photos_per_person;
+
+        console.log('User submissions:', currentSubmissions, 'Limit:', photosPerPerson);
+
+        if (photosPerPerson && currentSubmissions >= photosPerPerson) {
+          setError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking initial limits:', err);
+        setError(err.message || 'An error occurred while checking photo limits. Please try again.');
+      }
+    }
+
+    checkInitialLimits();
+  }, [eventId, userEmail]);
 
   // Define setupCamera in the component scope, wrapped in useCallback
   const setupCamera = useCallback(async () => {
@@ -154,10 +239,181 @@ export default function EventBoothCameraV2({ eventId }) {
     };
   }, [setupCamera]); // useEffect now depends on the memoized setupCamera
 
-  const takePhoto = () => {
+  const printPhoto = async () => {
+    if (!photo) {
+      console.error('No photo to print');
+      return;
+    }
+
+    try {
+      // Check photo limits before proceeding
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('photos_per_person, total_photo_limit')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) {
+        throw new Error('Failed to verify event. Please try again.');
+      }
+
+      // Check total event photo limit if set
+      if (eventData.total_photo_limit) {
+        const { count, error: countError } = await supabase
+          .from('photos')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .is('deleted_at', null);
+
+        if (countError) {
+          throw new Error('Failed to check event photo limit. Please try again.');
+        }
+
+        if (count >= eventData.total_photo_limit) {
+          setError('You have reached your photo limit for this event. For any questions, please contact the event organizer.');
+          return;
+        }
+      }
+
+      // Check current photo submissions for this user
+      const { data: submissionData, error: submissionError } = await supabase
+        .from('photo_submissions')
+        .select('photos_submitted')
+        .eq('event_id', eventId)
+        .eq('email', userEmail)
+        .single();
+
+      if (submissionError && submissionError.code !== 'PGRST116') {
+        throw new Error('Failed to check photo limit. Please try again.');
+      }
+
+      const currentSubmissions = submissionData?.photos_submitted || 0;
+      const photosPerPerson = eventData.photos_per_person || 1;
+
+      if (currentSubmissions >= photosPerPerson) {
+        setError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
+        return;
+      }
+
+      // If we get here, user hasn't reached their limit, proceed with photo upload
+      const photoBlob = await fetch(photo).then(r => r.blob());
+      const photoFile = new File([photoBlob], 'photo.jpg', { type: 'image/jpeg' });
+      
+      // Upload photo
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(`${eventId}/${Date.now()}.jpg`, photoFile);
+
+      if (uploadError) {
+        throw new Error('Failed to upload photo. Please try again.');
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('photos')
+        .getPublicUrl(uploadData.path);
+
+      // Save photo record
+      const { error: photoError } = await supabase
+        .from('photos')
+        .insert({
+          event_id: eventId,
+          url: publicUrl,
+          email: userEmail,
+          status: 'pending'
+        });
+
+      if (photoError) {
+        throw new Error('Failed to save photo record. Please try again.');
+      }
+
+      // Update submission count
+      const { error: submissionUpdateError } = await supabase
+        .from('photo_submissions')
+        .upsert({
+          event_id: eventId,
+          email: userEmail,
+          photos_submitted: 1
+        }, {
+          onConflict: 'event_id,email'
+        });
+
+      if (submissionUpdateError) {
+        console.error('Error updating submission count:', submissionUpdateError);
+      }
+
+      // Redirect to thank you page
+      router.push('/thank-you');
+
+    } catch (err) {
+      console.error('Error in printPhoto:', err);
+      setError(err.message || 'An error occurred while processing your photo. Please try again.');
+    }
+  };
+
+  const takePhoto = async () => {
     if (!videoRef.current) return;
     
     try {
+      console.log('Checking limits before taking photo for:', { eventId, userEmail });
+      
+      // Check photo limits before proceeding
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('photos_per_person, total_photo_limit')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) {
+        console.error('Error fetching event data:', eventError);
+        throw new Error('Failed to verify event. Please try again.');
+      }
+
+      // Check total event photo limit if set
+      if (eventData.total_photo_limit) {
+        const { count, error: countError } = await supabase
+          .from('photos')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .is('deleted_at', null);
+
+        if (countError) {
+          console.error('Error checking total photos:', countError);
+          throw new Error('Failed to check event photo limit. Please try again.');
+        }
+
+        console.log('Total photos for event:', count, 'Limit:', eventData.total_photo_limit);
+        
+        if (count >= eventData.total_photo_limit) {
+          setError('You have reached your photo limit for this event. For any questions, please contact the event organizer.');
+          return;
+        }
+      }
+
+      // Check current photo submissions for this user
+      const { data: submissionData, error: submissionError } = await supabase
+        .from('photo_submissions')
+        .select('photos_submitted')
+        .eq('event_id', eventId)
+        .eq('email', userEmail)
+        .single();
+
+      if (submissionError && submissionError.code !== 'PGRST116') {
+        console.error('Error checking user submissions:', submissionError);
+        throw new Error('Failed to check photo limit. Please try again.');
+      }
+
+      const currentSubmissions = submissionData?.photos_submitted || 0;
+      const photosPerPerson = eventData.photos_per_person || 1;
+
+      console.log('User submissions:', currentSubmissions, 'Limit:', photosPerPerson);
+
+      if (currentSubmissions >= photosPerPerson) {
+        setError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
+        return;
+      }
+
+      // If we get here, user hasn't reached their limit, proceed with taking photo
       const video = videoRef.current;
       const canvas = document.createElement('canvas');
       canvas.width = 1080;
@@ -208,7 +464,7 @@ export default function EventBoothCameraV2({ eventId }) {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      toast.error('Failed to take photo');
+      setError(error.message || 'Failed to take photo');
     }
   };
 
@@ -229,122 +485,6 @@ export default function EventBoothCameraV2({ eventId }) {
     } catch (error) {
       console.error('Error saving photo:', error);
       toast.error('Failed to download photo');
-    }
-  };
-
-  const printPhoto = async () => {
-    if (!photo) {
-      toast.error('No photo to print');
-      return;
-    }
-
-    console.log('📸 printPhoto called with eventId:', eventId);
-    console.log('📸 printPhoto current user ID:', currentUser ? currentUser.id : 'No user available for photo record');
-
-    if (!eventId) {
-      toast.error('No event selected. Please select an event first.');
-      return;
-    }
-
-    try {
-      const loadingToast = toast.loading('Sending photo to print queue...');
-      
-      // First, verify event exists and check photo limit
-      const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .select('id, name, photo_limit')
-        .eq('id', eventId)
-        .single();
-
-      if (eventError || !eventData) {
-        console.error('Event verification failed:', eventError);
-        toast.dismiss(loadingToast);
-        toast.error('Invalid event selected. Please check the event and try again.');
-        return;
-      }
-
-      // If there's a photo limit, check current count
-      if (eventData.photo_limit) {
-        const { count, error: countError } = await supabase
-          .from('photos')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', eventId)
-          .is('deleted_at', null);
-
-        if (countError) {
-          console.error('Error counting photos:', countError);
-          toast.dismiss(loadingToast);
-          toast.error('Failed to check photo limit. Please try again.');
-          return;
-        }
-
-        if (count >= eventData.photo_limit) {
-          toast.dismiss(loadingToast);
-          toast.error(
-            `📸 This event has reached its photo limit. Please see the event host if you have any questions.`, 
-            { duration: 5000 }
-          );
-          return;
-        }
-      }
-
-      // Convert base64 to blob
-      const base64Data = photo.replace(/^data:image\/\w+;base64,/, '');
-      const photoBlob = Buffer.from(base64Data, 'base64');
-
-      // Generate filename with event ID
-      const timestamp = Date.now();
-      const filename = `photos/${eventId}/${timestamp}.jpg`;
-      
-      // Upload to storage
-      const { error: uploadError } = await supabase
-        .storage
-        .from('photos')
-        .upload(filename, photoBlob, {
-          contentType: 'image/jpeg'
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase
-        .storage
-        .from('photos')
-        .getPublicUrl(filename);
-
-      // Save to database
-      const { data, error: dbError } = await supabase
-        .from('photos')
-        .insert([{
-          event_id: eventId,
-          user_id: currentUser ? currentUser.id : null,
-          url: publicUrl,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          template_position: null,
-          template_id: null,
-          print_status: 'pending',
-          storage_status: 'uploaded',
-          error_message: null,
-          error_timestamp: null,
-          source: 'event_booth'
-        }])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      toast.dismiss(loadingToast);
-      toast.success('Photo sent to print queue!');
-      router.push('/thank-you');
-
-    } catch (error) {
-      console.error('Error in print process:', error);
-      if (error.message === 'Photo limit reached for this event') {
-        toast.error('Photo limit has been reached for this event.');
-      } else {
-        toast.error('Failed to send photo to print queue. Please try again.');
-      }
     }
   };
 
@@ -438,6 +578,34 @@ export default function EventBoothCameraV2({ eventId }) {
               >
                 Back to Event
               </button>
+            </div>
+          ) : success ? (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              padding: '20px',
+              textAlign: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)'
+            }}>
+              <h2 style={{ 
+                marginBottom: '20px',
+                fontSize: '24px',
+                fontWeight: 'bold'
+              }}>
+                {success}
+              </h2>
+              <p style={{ 
+                marginBottom: '20px',
+                fontSize: '16px',
+                color: '#9CA3AF'
+              }}>
+                Redirecting you back to the event...
+              </p>
             </div>
           ) : (
             <>
