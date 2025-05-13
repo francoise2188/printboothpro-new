@@ -19,6 +19,65 @@ export default function AdminGuidePage() {
         content: 'Hardware: Windows laptop or desktop (with WiFi), compatible printer (for 2x2 magnet prints), magnet-making equipment. Software: PrintBooth Helper App (Windows only), web browser + internet connection.'
       },
       {
+        title: 'Photo Limits Explained',
+        content: (
+          <div className={styles.setupSteps}>
+            <div className={styles.setupContent}>
+{`**Why Use Photo Limits?**
+• Control costs by limiting total photos per event
+• Ensure fair distribution of photos among guests
+• Manage printer resources and supplies
+• Create different packages (e.g., 2 photos per person)
+
+**Types of Limits You Can Set:**
+
+1. **Total Event Photo Limit**
+   • Controls the total number of photos for the entire event
+   • Leave empty for unlimited photos
+   • Perfect for:
+     - Budget control
+     - Limited supplies
+     - Package-based events
+   • Example: Set to 100 for a 50-person event with 2 photos each
+
+2. **Photos Per Person**
+   • Controls how many photos each guest can take
+   • Two options:
+     - Set a specific number (e.g., 2 photos)
+     - Enable unlimited photos
+   • Perfect for:
+     - Package deals
+     - VIP guests
+     - Open photo booths
+   • Example: Set to 2 for a standard package
+
+**How Limits Work:**
+• When a guest enters their email:
+  - System checks their previous submissions
+  - Shows remaining photos they can take
+  - Prevents access if they've reached their limit
+
+• For the total event limit:
+  - System tracks all photos taken
+  - Shows remaining photos for the event
+  - Prevents new photos when limit is reached
+
+**Best Practices:**
+• For weddings: Consider unlimited photos per person
+• For corporate events: Set specific limits per person
+• For markets: Use total event limit based on supplies
+• For package deals: Match limits to package prices
+
+**Changing Limits:**
+• You can adjust limits anytime during the event
+• Changes only affect new photo submissions
+• Previous photos remain in the system
+• Great for extending limits if needed`}
+            </div>
+          </div>
+        )
+      },
+      {
         title: 'Quick Setup Steps',
         content: (
           <div className={styles.setupSteps}>
@@ -168,6 +227,10 @@ Need More Help?
         )
       },
       {
+        title: 'Photo Limits & Controls',
+        content: 'Set flexible photo limits for your events: Total Event Photo Limit (optional) - Control the total number of photos for the entire event. Photos Per Person - Set a specific limit per person or enable unlimited photos. Perfect for controlling costs and managing guest experience.'
+      },
+      {
         title: 'Guest Photo Experience',
         content: 'At the event: Guests scan the QR code, camera opens on their phone with overlay, countdown + photo preview, they click "Make My Magnet!" → It auto-sends to your computer & prints!'
       },
@@ -258,7 +321,9 @@ Need More Help?
         '- Venue and address',
         '- Expected guest count',
         '- Package type and pricing',
-        '- Photo limit (if applicable)',
+        'Set photo limits:',
+        '- Total Event Photo Limit (optional) - Leave empty for unlimited',
+        '- Photos Per Person - Set a number or check "Unlimited"',
         'Customize event appearance:',
         '- Upload landing page background (1920x1080 pixels)',
         '- Add camera overlay (50.8mm x 50.8mm)',
@@ -317,6 +382,10 @@ Need More Help?
     {
       question: 'What should I prepare before an event?',
       answer: 'Ensure the Print Booth Helper application is installed and running on the correct computer, test the printer connection via the Template page, verify paper size is set to Letter (8.5x11"), prepare backup supplies, test the event QR code, check your landing page and overlays look correct, and verify your website/email watermark in the template.'
+    },
+    {
+      question: 'How do photo limits work?',
+      answer: 'You can set two types of limits for your events: 1) Total Event Photo Limit - Controls the total number of photos for the entire event (leave empty for unlimited). 2) Photos Per Person - Controls how many photos each guest can take (set a number or enable unlimited). The system will automatically enforce these limits and show appropriate messages to guests when limits are reached.'
     }
   ];
 
@@ -369,7 +438,11 @@ Need More Help?
               {programOverview.sections.map((section, index) => (
                 <div key={index} className={styles.overviewCard}>
                   <h3>{section.title}</h3>
-                  <p>{section.content}</p>
+                  {typeof section.content === 'string' ? (
+                    <p>{section.content}</p>
+                  ) : (
+                    section.content
+                  )}
                 </div>
               ))}
             </div>
