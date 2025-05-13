@@ -543,7 +543,7 @@ export default function EventBoothCameraV2({ eventId }) {
                 fontWeight: '500'
               }}
             >
-              Print My Photo
+              Make My Magnet!
             </button>
             <button 
               onClick={handleRetake}

@@ -493,7 +493,7 @@ export default function MarketCamera({ userEmail, maxPhotos, marketId, marketNam
                 cursor: isUploading ? 'not-allowed' : 'pointer'
               }}
             >
-              {isUploading ? 'Uploading...' : 'Print My Photo!'}
+              {isUploading ? 'Uploading...' : 'Make My Magnet!'}
             </button>
 
             <div style={{
