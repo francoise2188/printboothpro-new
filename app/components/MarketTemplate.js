@@ -393,7 +393,7 @@ export default function MarketTemplate({ marketId }) {
     height: '207mm',
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 69mm)',  // 2.717 inches in mm
-    gap: '0mm',
+    gap: '2mm',
     backgroundColor: '#fff',
     padding: '0',
     margin: '0 auto'
@@ -869,64 +869,64 @@ export default function MarketTemplate({ marketId }) {
             <title>Print Template</title>
             <style>
               @page { 
-                size: 8.5in 11in;
+                size: 216mm 279mm;
                 margin: 0;
               }
               body {
                 margin: 0;
                 padding: 0;
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+                min-height: 100vh;
               }
               .print-template {
-                width: 8.5in;
-                height: 8.5in;
+                width: 207mm;
+                height: 207mm;
                 display: grid;
-                grid-template-columns: repeat(3, 2.835in);
-                gap: 0;
-                margin: 0;
+                grid-template-columns: repeat(3, 69mm);
+                gap: 2mm;
+                margin-left: 2mm;
+                margin-right: 0;
                 padding: 0;
                 background-color: white;
-                position: relative;
-                justify-content: center;
               }
               .print-cell {
-                width: 2.835in;
-                height: 2.835in;
+                width: 69mm;
+                height: 69mm;
                 position: relative;
-                border: 1px solid #ddd;
+                border: 1px solid black;
                 box-sizing: border-box;
                 overflow: hidden;
               }
               .print-cell img {
-                width: 2in;
-                height: 2in;
+                width: 50.8mm;
+                height: 50.8mm;
                 position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
+                top: 9.1mm;
+                left: 9.1mm;
                 object-fit: cover;
               }
               .website-url {
                 position: absolute;
-                width: 2in;
+                width: 50.8mm;
                 text-align: center;
-                bottom: 0.2in;
-                left: 50%;
-                transform: translateX(-50%) rotate(180deg);
+                top: calc(0.3585in + 2.05in);
+                left: 0.3585in;
                 font-size: 8pt;
                 color: black;
                 font-family: Arial, sans-serif;
+                transform: rotate(180deg);
               }
               .order-code {
                 position: absolute;
-                width: auto;
+                width: 69mm;
                 text-align: center;
-                top: 50%;
-                left: 0.2in;
-                font-size: 8pt;
+                font-size: 10px;
                 color: black;
-                font-family: Arial, sans-serif;
-                transform: translateY(-50%) rotate(-90deg);
-                transform-origin: left center;
+                font-family: Arial;
+                top: 4mm;
+                left: 0;
               }
             </style>
           </head>
@@ -1170,6 +1170,108 @@ export default function MarketTemplate({ marketId }) {
     console.log('=== CLEAR TEMPLATE END ===');
   };
 
+  // Print Preview function (like handlePrint, but does NOT call window.print())
+  const handlePrintPreview = async () => {
+    try {
+      const photosToPrint = template.filter(photo => photo !== null);
+      if (photosToPrint.length === 0) {
+        toast.error('No photos to preview');
+        return;
+      }
+
+      const previewWindow = window.open('', '_blank');
+      if (!previewWindow) {
+        toast.error('Please allow pop-ups for this website');
+        return;
+      }
+
+      previewWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Preview</title>
+            <style>
+              @page { 
+                size: 216mm 279mm;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+                min-height: 100vh;
+              }
+              .print-template {
+                width: 207mm;
+                height: 207mm;
+                display: grid;
+                grid-template-columns: repeat(3, 69mm);
+                gap: 2mm;
+                margin-left: 2mm;
+                margin-right: 0;
+                padding: 0;
+                background-color: white;
+              }
+              .print-cell {
+                width: 69mm;
+                height: 69mm;
+                position: relative;
+                border: 1px solid black;
+                box-sizing: border-box;
+                overflow: hidden;
+              }
+              .print-cell img {
+                width: 50.8mm;
+                height: 50.8mm;
+                position: absolute;
+                top: 9.1mm;
+                left: 9.1mm;
+                object-fit: cover;
+              }
+              .website-url {
+                position: absolute;
+                width: 50.8mm;
+                text-align: center;
+                top: calc(0.3585in + 2.05in);
+                left: 0.3585in;
+                font-size: 8pt;
+                color: black;
+                font-family: Arial, sans-serif;
+                transform: rotate(180deg);
+              }
+              .order-code {
+                position: absolute;
+                width: 69mm;
+                text-align: center;
+                font-size: 10px;
+                color: black;
+                font-family: Arial;
+                top: 4mm;
+                left: 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="print-template">
+              ${photosToPrint.map(photo => `
+                <div class="print-cell">
+                  <img src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}" />
+                  <div class="website-url">${websiteUrl}</div>
+                  <div class="order-code">${photo.order_code || 'No Code'}</div>
+                </div>
+              `).join('')}
+            </div>
+          </body>
+        </html>
+      `);
+      previewWindow.document.close();
+    } catch (error) {
+      console.error('[handlePrintPreview] Error:', error);
+      toast.error('Error generating preview: ' + error.message);
+    }
+  };
+
   return (
     <div>
       {/* Print Controls */}
@@ -1203,6 +1305,13 @@ export default function MarketTemplate({ marketId }) {
           onMouseOut={(e) => e.target.style.backgroundColor = '#dc2626'} // red-600
         >
           Clear Template
+        </button>
+        <button
+          className={styles.primaryButton}
+          style={{ marginLeft: '0.5rem', backgroundColor: '#64748b' }}
+          onClick={handlePrintPreview}
+        >
+          Print Preview
         </button>
       </div>
 
@@ -1435,7 +1544,7 @@ export default function MarketTemplate({ marketId }) {
       <style jsx global>{`
         @media print {
           @page { 
-            size: 8.5in 11in;
+            size: 216mm 279mm;
             margin: 0;
           }
           
@@ -1450,85 +1559,92 @@ export default function MarketTemplate({ marketId }) {
           #printArea .print-cell,
           #printArea .reactEasyCrop_Container,
           #printArea .reactEasyCrop_Image,
-          #printArea .print-overlay,
           #printArea .website-url,
-          #printArea .order-code,
-          #printArea .cutting-square {
+          #printArea .order-code {
             visibility: visible !important;
           }
 
-          /* Hide empty cells during print */
-          .print-cell:empty,
-          .print-cell:has(> div:empty) {
+          /* Hide all controls and non-essential elements */
+          .print\\:hidden,
+          button,
+          input,
+          .empty-slot,
+          [class*="controls"],
+          [style*="zoomControlsStyle"],
+          .reactEasyCrop_Container > *:not(.reactEasyCrop_Image),
+          .text-gray-400 {
             display: none !important;
             visibility: hidden !important;
+            opacity: 0 !important;
           }
 
-          /* Ensure website URL maintains its position */
-          .website-url {
-            position: absolute !important;
-            width: 50.8mm !important;
-            textAlign: center !important;
-            bottom: 5mm !important;
-            left: 50% !important;
-            transform: translateX(-50%) rotate(180deg) !important;
-            fontSize: 8pt !important;
-            color: black !important;
-            fontFamily: Arial, sans-serif !important;
-            pointerEvents: none !important;
-            zIndex: 10 !important;
-          }
-
-          /* Add 72x72mm squares around photos */
-          .print-cell {
-            position: relative !important;
-            width: 2.835in !important; /* 72mm in inches */
-            height: 2.835in !important;
-          }
-
-          .print-cell::before {
-            content: '' !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 2.835in !important;
-            height: 2.835in !important;
-            border: 1px solid #dddddd !important;
-            visibility: visible !important;
-            z-index: 9999 !important;
-            pointer-events: none !important;
-          }
-
-          /* Position print template */
-          .print-template {
-            width: 8.5in !important;
-            height: 8.5in !important;
-            display: grid !important;
-            grid-template-columns: repeat(3, 2.835in) !important;
-            gap: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background-color: white !important;
-            position: relative !important;
-            justify-content: center !important;
+          body {
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            min-height: 100vh !important;
           }
 
           #printArea {
-            position: fixed !important;
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 8.5in !important;
-            height: 8.5in !important;
-            max-width: 8.5in !important;
-            max-height: 8.5in !important;
-            overflow: visible !important;
+            position: relative !important;
+            width: 207mm !important;
+            height: 207mm !important;
+            margin-left: 2mm !important;
+            margin-right: 0 !important;
           }
 
-          /* Hide the old cutting guides */
-          .cutting-guide,
-          .reactEasyCrop_Container::before {
-            display: none !important;
+          .print-template {
+            width: 207mm !important;
+            height: 207mm !important;
+            display: grid !important;
+            grid-template-columns: repeat(3, 69mm) !important;
+            gap: 2mm !important;
+            margin-left: 2mm !important;
+            margin-right: 0 !important;
+            padding: 0 !important;
+            background-color: white !important;
+          }
+
+          .print-cell {
+            width: 69mm !important;
+            height: 69mm !important;
+            position: relative !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 1px solid black !important;
+            background-color: white !important;
+            overflow: hidden !important;
+          }
+
+          /* Style the order code */
+          .order-code {
+            visibility: visible !important;
+            display: block !important;
+            position: absolute !important;
+            width: 69mm !important;
+            text-align: center !important;
+            font-size: 10px !important;
+            color: black !important;
+            font-family: Arial !important;
+            top: 4mm !important;
+            left: 0 !important;
+            z-index: 20 !important;
+          }
+
+          /* Style the website URL */
+          .website-url {
+            visibility: visible !important;
+            display: block !important;
+            position: absolute !important;
+            width: 50.8mm !important;
+            text-align: center !important;
+            top: calc(0.3585in + 2.05in) !important;
+            left: 0.3585in !important;
+            font-size: 8pt !important;
+            color: black !important;
+            font-family: Arial, sans-serif !important;
+            transform: rotate(180deg) !important;
+            z-index: 20 !important;
           }
         }
       `}</style>
