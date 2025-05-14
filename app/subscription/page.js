@@ -245,10 +245,10 @@ export default function SubscriptionPage() {
 
               <button
                 onClick={handleSubscribe}
-                disabled={loading}
-                className={`${styles.subscribeButton} ${loading ? styles.disabled : ''}`}
+                disabled={true}
+                className={`${styles.subscribeButton} ${styles.disabled}`}
               >
-                {loading ? 'Starting Trial...' : 'Start Free Trial'}
+                Coming Soon
               </button>
 
               <div className={styles.loginSection}>
