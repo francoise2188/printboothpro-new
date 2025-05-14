@@ -22,6 +22,11 @@ export default function AccountPage() {
     business_website: '',
     tax_rate: ''
   });
+  const [subscriptionInfo, setSubscriptionInfo] = useState({
+    plan: 'Loading...',
+    status: 'Loading...',
+    nextBillingDate: 'Loading...'
+  });
 
   useEffect(() => {
     const initializeSettings = async () => {
@@ -30,6 +35,7 @@ export default function AccountPage() {
       try {
         if (!user) return;
         
+        // Fetch business settings
         const { data: settingsData, error: fetchError } = await supabase
           .from('user_settings')
           .select('business_name, business_address_line1, business_address_line2, business_phone, business_email, business_website, tax_rate')
@@ -59,9 +65,36 @@ export default function AccountPage() {
              tax_rate: ''
            });
         }
+
+        // Fetch subscription details
+        const { data: subscriptionData, error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+          throw subscriptionError;
+        }
+
+        if (subscriptionData) {
+          setSubscriptionInfo({
+            plan: 'PrintBooth Pro',
+            status: subscriptionData.status || 'Active',
+            nextBillingDate: subscriptionData.current_period_end 
+              ? new Date(subscriptionData.current_period_end).toLocaleDateString()
+              : 'No active subscription'
+          });
+        } else {
+          setSubscriptionInfo({
+            plan: 'No Active Plan',
+            status: 'Inactive',
+            nextBillingDate: 'No active subscription'
+          });
+        }
       } catch (error) {
-        console.error('Error loading business settings:', error);
-        setMessage('Error loading business settings.');
+        console.error('Error loading settings:', error);
+        setMessage('Error loading settings. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -127,18 +160,48 @@ export default function AccountPage() {
     }
   };
 
-  if (loading && !user) {
+  const handleManageSubscription = async () => {
+    try {
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        setMessage(`Error: ${data.error}`);
+        return;
+      }
+
+      // Redirect to Stripe Customer Portal
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage('Error accessing subscription portal. Please try again.');
+    }
+  };
+
+  if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Loading Account...</h1>
+          <h1 className={styles.title}>Loading...</h1>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return <div className={styles.container}><p>Please log in.</p></div>;
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Please Log In</h1>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -162,6 +225,26 @@ export default function AccountPage() {
         <div className={styles.infoGroup}>
           <div className={styles.label}>Email</div>
           <div className={styles.value}>{user.email}</div>
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Subscription Management</h2>
+        <div className={styles.subscriptionInfo}>
+          <div className={styles.subscriptionDetails}>
+            <p><strong>Current Plan:</strong> {subscriptionInfo.plan}</p>
+            <p><strong>Status:</strong> {subscriptionInfo.status}</p>
+            <p><strong>Next Billing Date:</strong> {subscriptionInfo.nextBillingDate}</p>
+          </div>
+          <div className={styles.buttonGroup}>
+            <button
+              type="button"
+              onClick={handleManageSubscription}
+              className={styles.button}
+            >
+              Manage Subscription
+            </button>
+          </div>
         </div>
       </div>
 

@@ -127,55 +127,73 @@ function CreatePasswordContent() {
 
       // Create user account
       console.log('Creating user account...');
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            is_subscribed: true,
-            stripe_customer_id: data.customerId,
-            stripe_subscription_id: data.subscriptionId
+      try {
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              is_subscribed: true,
+              stripe_customer_id: data.customerId,
+              stripe_subscription_id: data.subscriptionId
+            }
           }
+        });
+
+        if (signUpError) {
+          if (signUpError.message === 'User already registered') {
+            // Try to sign in instead
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+
+            if (signInError) {
+              // Instead of throwing an error, redirect to login
+              setMessage('Account already exists. Redirecting to login...');
+              setTimeout(() => {
+                router.push('/login');
+              }, 2000);
+              return;
+            }
+          }
+          throw signUpError;
         }
-      });
 
-      console.log('Sign up response:', { 
-        user: authData?.user,
-        session: authData?.session,
-        error: signUpError
-      });
+        if (!authData?.user?.id) throw new Error('No user ID returned from sign up');
 
-      if (signUpError) throw signUpError;
-      if (!authData?.user?.id) throw new Error('No user ID returned from sign up');
+        // Sign in immediately after signup
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
 
-      // Sign in immediately after signup
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+        if (signInError) throw signInError;
 
-      if (signInError) throw signInError;
+        // Send confirmation email
+        const emailResponse = await fetch('/api/send-confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
 
-      // Send confirmation email
-      const emailResponse = await fetch('/api/send-confirmation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
+        if (!emailResponse.ok) {
+          console.error('Failed to send confirmation email');
+        }
 
-      if (!emailResponse.ok) {
-        console.error('Failed to send confirmation email');
+        setSuccess(true);
+        setMessage('Account created successfully! Check your email for confirmation and redirecting to Printbooth Pro...');
+        
+        // Wait a moment for the session to be established
+        setTimeout(() => {
+          router.push('/admin');
+        }, 2000);
+      } catch (err) {
+        console.error('Error creating account:', err);
+        setError(err.message || 'Something went wrong. Please try again.');
       }
-
-      setSuccess(true);
-      setMessage('Account created successfully! Check your email for confirmation and redirecting to Printbooth Pro...');
-      
-      // Wait a moment for the session to be established
-      setTimeout(() => {
-        router.push('/admin');
-      }, 2000);
     } catch (err) {
       console.error('Error creating account:', err);
       setError(err.message || 'Something went wrong. Please try again.');

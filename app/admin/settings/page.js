@@ -258,9 +258,9 @@ export default function AdminSettingsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Payment Settings</h1>
+        <h1 className={styles.title}>Settings</h1>
       </div>
-      
+
       {message && (
         <div className={`${styles.message} ${message.includes('Error') ? styles.error : styles.success}`}>
           {message}

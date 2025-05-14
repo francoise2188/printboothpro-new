@@ -299,4 +299,18 @@
   background-color: rgba(0, 0, 0, 0.05);
   border-radius: 12px;
   padding: 1rem;
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.trialText {
+  color: #059669;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
 } 

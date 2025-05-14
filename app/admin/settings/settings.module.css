@@ -153,4 +153,38 @@
 .secondaryButton:hover {
   background-color: #E9EDC9;
   transform: translateY(-1px);
+}
+
+.subscriptionInfo {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  margin-top: 1rem;
+}
+
+.subscriptionDetails {
+  margin-bottom: 1.5rem;
+}
+
+.subscriptionDetails p {
+  margin: 0.5rem 0;
+  color: #1e293b;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subscriptionDetails p strong {
+  color: #475569;
+  min-width: 140px;
+}
+
+.subscriptionInfo .buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  border-top: none;
+  padding-top: 0;
 } 

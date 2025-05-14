@@ -16,9 +16,62 @@ import {
   ChartBarIcon,
   SwatchIcon
 } from '@heroicons/react/24/outline';
+import { loadStripe } from '@stripe/stripe-js';
 
 export default function SubscriptionPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubscribe = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // Get the user's email (you might want to add a form for this)
+      const email = prompt('Please enter your email to start your free trial:');
+      
+      if (!email) {
+        setError('Email is required to start your trial');
+        return;
+      }
+
+      // Create checkout session
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong');
+      }
+
+      // Initialize Stripe
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      // Redirect to Stripe Checkout
+      const { error: stripeError } = await stripe.redirectToCheckout({ 
+        sessionId: data.sessionId 
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -173,6 +226,7 @@ export default function SubscriptionPage() {
                   <span className={styles.price}>$59</span>
                   <span className={styles.interval}>/month</span>
                 </div>
+                <p className={styles.trialText}>Start with a 3-day free trial</p>
               </div>
 
               <ul className={styles.featureDetails}>
@@ -182,13 +236,19 @@ export default function SubscriptionPage() {
                 <li>✓ Business Analytics</li>
                 <li>✓ Priority Support</li>
                 <li>✓ Cancel Anytime</li>
+                <li>✓ 3-Day Free Trial</li>
               </ul>
 
+              {error && (
+                <p className={styles.error}>{error}</p>
+              )}
+
               <button
-                disabled
-                className={`${styles.subscribeButton} ${styles.disabled}`}
+                onClick={handleSubscribe}
+                disabled={loading}
+                className={`${styles.subscribeButton} ${loading ? styles.disabled : ''}`}
               >
-                Coming Soon
+                {loading ? 'Starting Trial...' : 'Start Free Trial'}
               </button>
 
               <div className={styles.loginSection}>
