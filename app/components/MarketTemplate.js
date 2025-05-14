@@ -864,45 +864,31 @@ export default function MarketTemplate({ marketId }) {
           <head>
             <title>Print Template</title>
             <style>
-              @page { 
-                size: 216mm 279mm;
-                margin: 0;
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: flex-start;
-                align-items: center;
-                min-height: 100vh;
-              }
+              @page { size: 216mm 279mm; margin: 0; }
+              body { margin: 0; padding: 0; background: white; }
               .print-template {
-                width: 207mm;
-                height: 207mm;
-                display: grid;
-                grid-template-columns: repeat(3, 69mm);
-                gap: 2mm;
-                margin-left: 2mm;
-                margin-right: 0;
-                padding: 0;
-                background-color: white;
+                width: 207mm !important;
+                height: 207mm !important;
+                display: grid !important;
+                grid-template-columns: repeat(3, 67.66mm) !important;
+                gap: 2mm !important;
+                background-color: white !important;
+                margin: 0 auto !important;
+                position: fixed !important;
+                left: 50% !important;
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
               }
               .print-cell {
-                width: 69mm;
-                height: 69mm;
-                position: relative;
-                border: 1px solid black;
-                box-sizing: border-box;
-                overflow: hidden;
+                width: 67.66mm !important;
+                height: 67.66mm !important;
+                border: 1px solid black !important;
+                background-color: white !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                position: static !important;
               }
-              .print-cell img {
-                width: 50.8mm;
-                height: 50.8mm;
-                position: absolute;
-                top: 9.1mm;
-                left: 9.1mm;
-                object-fit: cover;
-              }
+              .print-cell img { width: 50.8mm; height: 50.8mm; position: absolute; top: 9.1mm; left: 9.1mm; object-fit: cover; }
               .website-url {
                 position: absolute;
                 width: 50.8mm;
