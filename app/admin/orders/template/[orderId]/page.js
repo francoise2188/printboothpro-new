@@ -442,7 +442,7 @@ export default function OrderTemplate({ params }) {
     height: '207mm',
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 69mm)',
-    gap: '3mm',
+    gap: '1mm',
     backgroundColor: '#fff',
     padding: '0',
     margin: '0 auto'  // Changed back to auto to center on screen
@@ -858,14 +858,22 @@ export default function OrderTemplate({ params }) {
           
           /* Show only essential print elements */
           #printArea,
-          #printArea .print-template,
-          #printArea .print-cell,
+          #printArea .print-template {
+            visibility: visible !important;
+          }
+
+          /* Only show cells that have photos */
+          #printArea .print-cell:empty,
+          #printArea .print-cell:not(:has(img)) {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
+          #printArea .print-cell:not(:empty),
           #printArea .reactEasyCrop_Container,
           #printArea .reactEasyCrop_Image,
           #printArea .order-code,
-          #printArea .website-url,
-          #printArea .cutting-guide,
-          #printArea .print-cutting-guide {
+          #printArea .website-url {
             visibility: visible !important;
           }
 
@@ -895,24 +903,33 @@ export default function OrderTemplate({ params }) {
           .print-template {
             width: 207mm !important;
             height: 207mm !important;
-            display: grid !important;
-            grid-template-columns: repeat(3, 69mm) !important;
-            gap: 3mm !important;
-            margin: 0 0 0 -3mm !important;  // Only shift left when printing
-            padding: 0 !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
             background-color: white !important;
           }
 
           .print-cell {
-            width: 69mm !important;
-            height: 69mm !important;
-            position: relative !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            position: absolute !important;
+            width: 68.33mm !important;  /* Reduced from 69mm to create 1mm gap */
+            height: 68.33mm !important; /* Reduced from 69mm to create 1mm gap */
             border: 1px solid black !important;
             background-color: white !important;
             overflow: hidden !important;
+            box-sizing: border-box !important;
           }
+
+          /* Position each cell manually with 1mm gaps */
+          .print-cell:nth-child(1) { left: 0mm !important; top: 0mm !important; }
+          .print-cell:nth-child(2) { left: 69.33mm !important; top: 0mm !important; }  /* 68.33 + 1mm gap */
+          .print-cell:nth-child(3) { left: 138.66mm !important; top: 0mm !important; } /* (68.33 * 2) + (1mm * 2) */
+          .print-cell:nth-child(4) { left: 0mm !important; top: 69.33mm !important; }
+          .print-cell:nth-child(5) { left: 69.33mm !important; top: 69.33mm !important; }
+          .print-cell:nth-child(6) { left: 138.66mm !important; top: 69.33mm !important; }
+          .print-cell:nth-child(7) { left: 0mm !important; top: 138.66mm !important; }
+          .print-cell:nth-child(8) { left: 69.33mm !important; top: 138.66mm !important; }
+          .print-cell:nth-child(9) { left: 138.66mm !important; top: 138.66mm !important; }
 
           /* Style the cutting guide -- HIDE THIS ON PRINT */
           .cutting-guide {
