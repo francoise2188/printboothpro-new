@@ -274,25 +274,20 @@ export default function MarketTemplate({ marketId }) {
       return;
     }
 
-    // Only poll if there's no current order
-    if (currentOrderCode) {
-      console.log('[Polling useEffect] Current order in progress, skipping poll');
-      return;
-    }
-
-    console.log('[Polling useEffect] Conditions MET. Initializing polling for new orders.');
+    // Always poll, even if there's a current order
+    console.log('[Polling useEffect] Polling will run regardless of current order.');
     const pollInterval = setInterval(() => {
       pollForNewOrders();
-    }, 30000); // Increased to 30 seconds
+    }, 30000); // 30 seconds
 
     return () => {
       console.log('[Polling] Clearing polling interval.');
       clearInterval(pollInterval);
     };
-  }, [marketId, initialOrderLoaded, currentOrderCode]); // Added currentOrderCode dependency
+  }, [marketId, initialOrderLoaded]); // Removed currentOrderCode from dependencies
 
   const pollForNewOrders = async () => {
-    if (!marketId || isLoadingOrder || currentOrderCode) {
+    if (!marketId || isLoadingOrder) {
       return;
     }
 
@@ -329,6 +324,7 @@ export default function MarketTemplate({ marketId }) {
           loadNextOrder();
         } else {
           console.log('[Polling] Template is NOT empty. Notifying user instead of auto-loading.');
+          console.log('[DEBUG] About to show toast for new photos:', count);
           toast.success(`(${count}) New photos available. Finish current order to load.`, { duration: 5000 });
         }
       }
