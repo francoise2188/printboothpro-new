@@ -57,7 +57,7 @@ export async function POST(request) {
       }
 
       // Check per-email photo limit if email is provided
-      if (email && eventData.photos_per_person) {
+      if (email && eventData.photos_per_person !== null) {
         const { data: submissionData, error: submissionError } = await supabaseServer
           .from('photo_submissions')
           .select('submission_count')

@@ -54,12 +54,16 @@ export default function TemplatePage() {
   }, [user]);
 
   const generatePdfDataUri = async () => {
-    const input = document.getElementById('template-preview-area');
+    const input = document.getElementById('print-capture-area');
     if (!input) {
-      console.error("Could not find element with ID 'template-preview-area'");
-      alert("Error: Could not find the template area to capture.");
+      console.error("Could not find element with ID 'print-capture-area'");
+      alert("Error: Could not find the print capture area to capture.");
       return null;
     }
+
+    // Temporarily show the print-capture-area for html2canvas
+    const prevDisplay = input.style.display;
+    input.style.display = 'block';
 
     console.log("Generating PDF data for element:", input);
 
@@ -67,16 +71,10 @@ export default function TemplatePage() {
       const canvas = await html2canvas(input, {
         useCORS: true,
         scale: 2,
-        onclone: (clonedDoc) => {
-            const scaledElement = clonedDoc.querySelector('.print-template'); 
-            if (scaledElement) {
-                console.log('Removing transform scale from cloned element for capture.');
-                scaledElement.style.transform = 'none'; 
-            } else {
-                console.warn('Could not find .print-template element in cloned document to remove scale.');
-            }
-        }
+        backgroundColor: '#fff',
       });
+      // Hide the print-capture-area again
+      input.style.display = prevDisplay;
       
       const imgData = canvas.toDataURL('image/png');
       const pdfWidth = 612;
@@ -108,10 +106,12 @@ export default function TemplatePage() {
       pdf.addImage(imgData, 'PNG', xPos, yPos, finalImgWidth, finalImgHeight);
 
       const pdfDataUri = pdf.output('datauristring');
-      console.log("PDF data URI generated."); 
+      console.log("PDF data URI generated.");
       return pdfDataUri;
       
     } catch (err) {
+      // Always hide the print-capture-area again, even on error
+      input.style.display = prevDisplay;
       console.error("Error generating PDF data URI:", err);
       alert("Error generating PDF data. See console for details.");
       return null;

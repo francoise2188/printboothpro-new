@@ -164,7 +164,8 @@ export default function EventBoothCameraV2({ eventId }) {
 
         console.log('User submissions:', currentSubmissions, 'Limit:', photosPerPerson);
 
-        if (photosPerPerson && currentSubmissions >= photosPerPerson) {
+        // Only check limit if photos_per_person is not null (not unlimited)
+        if (photosPerPerson !== null && currentSubmissions >= photosPerPerson) {
           setError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
           return;
         }
@@ -288,9 +289,12 @@ export default function EventBoothCameraV2({ eventId }) {
       }
 
       const currentSubmissions = submissionData?.photos_submitted || 0;
-      const photosPerPerson = eventData.photos_per_person || 1;
+      const photosPerPerson = eventData.photos_per_person;
 
-      if (currentSubmissions >= photosPerPerson) {
+      console.log('User submissions:', currentSubmissions, 'Limit:', photosPerPerson);
+
+      // Only check limit if photos_per_person is not null (not unlimited)
+      if (photosPerPerson !== null && currentSubmissions >= photosPerPerson) {
         setError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
         return;
       }
@@ -404,11 +408,12 @@ export default function EventBoothCameraV2({ eventId }) {
       }
 
       const currentSubmissions = submissionData?.photos_submitted || 0;
-      const photosPerPerson = eventData.photos_per_person || 1;
+      const photosPerPerson = eventData.photos_per_person;
 
       console.log('User submissions:', currentSubmissions, 'Limit:', photosPerPerson);
 
-      if (currentSubmissions >= photosPerPerson) {
+      // Only check limit if photos_per_person is not null (not unlimited)
+      if (photosPerPerson !== null && currentSubmissions >= photosPerPerson) {
         setError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
         return;
       }

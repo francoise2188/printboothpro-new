@@ -138,11 +138,13 @@ export default function EventPage() {
         const currentSubmissions = submissionData?.photos_submitted || 0;
         const photosPerPerson = eventData.photos_per_person;
 
-        if (photosPerPerson && currentSubmissions >= photosPerPerson) {
+        // Only check limit if photos_per_person is not null (not unlimited)
+        if (photosPerPerson !== null && currentSubmissions >= photosPerPerson) {
           setSubmitError(`You have already taken your ${photosPerPerson} photo${photosPerPerson > 1 ? 's' : ''} for this event.`);
           setIsSubmitting(false);
           return;
         }
+        // If unlimited, do not show a limit error
 
         // If we get here, user hasn't reached their limit, so save their email
         const { error: insertError } = await supabase

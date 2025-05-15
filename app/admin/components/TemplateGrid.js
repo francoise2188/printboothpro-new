@@ -774,74 +774,62 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
             const printDiv = document.createElement('div');
             printDiv.className = 'print-template print-only';
             printDiv.innerHTML = `
-                <style>
-                    @media print {
-                        body * { display: none !important; }
-                        .print-only { display: block !important; }
-                        .print-template { 
-                            position: fixed;
-                            left: 50%;
-                            top: 50%;
-                            transform: translate(-50%, -50%);
-                            width: 8.409in;
-                            height: 8.409in;
-                        }
-                        .print-cell {
-                            position: absolute;
-                            width: 2.803in;
-                            height: 2.803in;
-                            border: 3px solid #c0c0c0;
-                        }
-                        .print-image {
-                            width: 2in;
-                            height: 2in;
-                            position: absolute;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            object-fit: cover;
-                        }
-                        .print-number {
-                            position: absolute;
-                            width: 2in;
-                            text-align: center;
-                            font-size: 8pt;
-                            color: black;
-                            transform: rotate(180deg);
-                            left: 50%;
-                            margin-left: -1in;
-                            top: calc(50% - 1in - 10pt);
-                        }
-                    }
-                </style>
-            `;
-
-            // Add cells for each photo
-            photosToPrint.forEach((photo) => {
-                if (photo) {
-                    const row = Math.floor((photo.template_position - 1) / 3);
-                    const col = (photo.template_position - 1) % 3;
-                    
-                    const cell = document.createElement('div');
-                    cell.className = 'print-cell print-only';
-                    cell.style.cssText = `
-                        left: ${col * 2.803}in;
-                        top: ${row * 2.803}in;
-                    `;
-
-                    const img = document.createElement('img');
-                    img.src = photo.url;
-                    img.className = 'print-image print-only';
-
-                    const printNumber = document.createElement('div');
-                    printNumber.className = 'print-number print-only';
-                    printNumber.textContent = `#${photo.print_number || '?'}`;
-
-                    cell.appendChild(img);
-                    cell.appendChild(printNumber);
-                    printDiv.appendChild(cell);
+              <style>
+                @media print {
+                  body * { display: none !important; }
+                  .print-only { display: block !important; }
+                  .print-template {
+                    position: fixed;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 8.409in;
+                    height: 8.409in;
+                    display: grid;
+                    grid-template-columns: repeat(3, 2.803in);
+                    grid-template-rows: repeat(3, 2.803in);
+                    gap: 2mm;
+                    background: white;
+                  }
+                  .print-cell {
+                    width: 2.803in;
+                    height: 2.803in;
+                    border: 1px solid #e0e0e0;
+                    background: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                  }
+                  .print-image {
+                    width: 2in;
+                    height: 2in;
+                    object-fit: cover;
+                    border-radius: 0;
+                    box-shadow: none;
+                  }
+                  .print-number {
+                    position: absolute;
+                    width: 2in;
+                    text-align: center;
+                    font-size: 6pt;
+                    color: black;
+                    transform: rotate(180deg);
+                    left: 50%;
+                    margin-left: -1in;
+                    top: calc(50% - 1in - 10pt);
+                  }
                 }
-            });
+              </style>
+              <div class="print-template print-only">
+                ${photosToPrint.map((photo, i) => `
+                  <div class="print-cell">
+                    <img src="${photo.url}" class="print-image" />
+                    <div class="print-number">#${photo.print_number || '?'}<\/div>
+                  <\/div>
+                `).join('')}
+              <\/div>
+            `;
 
             // Add print-only class to body
             document.body.classList.add('print-only');
@@ -1285,34 +1273,41 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                                     @media print {
                                         body * { display: none !important; }
                                         .print-only { display: block !important; }
-                                        .print-template { 
+                                        .print-template {
                                             position: fixed;
                                             left: 50%;
                                             top: 50%;
                                             transform: translate(-50%, -50%);
                                             width: 8.409in;
                                             height: 8.409in;
+                                            display: grid;
+                                            grid-template-columns: repeat(3, 2.803in);
+                                            grid-template-rows: repeat(3, 2.803in);
+                                            gap: 2mm;
+                                            background: white;
                                         }
                                         .print-cell {
-                                            position: absolute;
                                             width: 2.803in;
                                             height: 2.803in;
-                                            border: 3px solid #c0c0c0;
+                                            border: 1px solid #e0e0e0;
+                                            background: white;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            position: relative;
                                         }
                                         .print-image {
                                             width: 2in;
                                             height: 2in;
-                                            position: absolute;
-                                            top: 50%;
-                                            left: 50%;
-                                            transform: translate(-50%, -50%);
                                             object-fit: cover;
+                                            border-radius: 0;
+                                            box-shadow: none;
                                         }
                                         .print-number {
                                             position: absolute;
                                             width: 2in;
                                             text-align: center;
-                                            font-size: 8pt;
+                                            font-size: 6pt;
                                             color: black;
                                             transform: rotate(180deg);
                                             left: 50%;
@@ -1321,34 +1316,15 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
                                         }
                                     }
                                 </style>
+                                <div class="print-template print-only">
+                                    ${photosToPrint.map((photo, i) => `
+                                        <div class="print-cell">
+                                            <img src="${photo.url}" class="print-image" />
+                                            <div class="print-number">#${photo.print_number || '?'}<\/div>
+                                        <\/div>
+                                    `).join('')}
+                                <\/div>
                             `;
-
-                            // Add cells for each photo
-                            photosToPrint.forEach((photo) => {
-                                if (photo) {
-                                    const row = Math.floor((photo.template_position - 1) / 3);
-                                    const col = (photo.template_position - 1) % 3;
-                                    
-                                    const cell = document.createElement('div');
-                                    cell.className = 'print-cell print-only';
-                                    cell.style.cssText = `
-                                        left: ${col * 2.803}in;
-                                        top: ${row * 2.803}in;
-                                    `;
-
-                                    const img = document.createElement('img');
-                                    img.src = photo.url;
-                                    img.className = 'print-image print-only';
-
-                                    const printNumber = document.createElement('div');
-                                    printNumber.className = 'print-number print-only';
-                                    printNumber.textContent = `#${photo.print_number || '?'}`;
-
-                                    cell.appendChild(img);
-                                    cell.appendChild(printNumber);
-                                    printDiv.appendChild(cell);
-                                }
-                            });
 
                             // Add print-only class to body
                             document.body.classList.add('print-only');
@@ -1411,147 +1387,219 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
         <div 
            id="template-preview-area"
            className={styles.gridContainer}
+           style={{
+             width: '8.409in',
+             height: '8.409in',
+             display: 'grid',
+             gridTemplateColumns: 'repeat(3, 2.803in)',
+             gap: '0.05in',
+             transform: 'scale(0.85)',
+             transformOrigin: 'center',
+             position: 'relative',
+             backgroundColor: '#f9f9f9'
+           }}
         >
+          {/* On-screen grid (original layout) */}
+          {template.map((photo, index) => (
+            <div 
+              key={index} 
+              className={`print-cell ${photo ? styles.cellWithPhoto : styles.cell}`}
+              style={{
+                width: '2.803in',
+                height: '2.803in',
+                position: 'relative',
+                border: '1px solid #e0e0e0',
+                boxSizing: 'border-box',
+                backgroundColor: photo ? 'white' : '#f5f5f9'
+              }}
+            >
+              {photo && (
+                <>
+                  <div className={styles.photoContainer}>
+                    <div className={styles.printNumberBadge} style={{ 
+                      position: 'absolute',
+                      width: '2in',
+                      textAlign: 'center',
+                      fontSize: '8pt',
+                      color: 'black',
+                      transform: 'rotate(180deg)',
+                      left: '0.4015in',
+                      top: 'calc(0.4015in - 16pt)',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      padding: '0',
+                      pointerEvents: 'none'
+                    }}>
+                      #{photo.print_number || '?'}
+                    </div>
+                    <img 
+                      src={photo.url} 
+                      alt={`Photo ${index + 1}`}
+                      className="print-image"
+                      style={{
+                        width: '2in',
+                        height: '2in',
+                        position: 'absolute',
+                        top: '0.4015in',
+                        left: '0.4015in',
+                        objectFit: 'cover',
+                        opacity: 1,
+                        transition: 'none'
+                      }}
+                      onLoad={() => handleImageLoad(photo.id)}
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/200';
+                        handleImageLoad(photo.id);
+                      }}
+                    />
+                    <div className={styles.cellControls}>
+                      <button
+                        onClick={() => handleDeletePhoto(photo, index)}
+                        className={styles.dangerButton}
+                      >
+                        ×
+                      </button>
+                      <button
+                        onClick={() => handleAddCopyToTemplate(photo)}
+                        className={styles.primaryButton}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <div 
+                    className="screen-url"
+                    style={{
+                      position: 'absolute',
+                      width: '2in',
+                      textAlign: 'center',
+                      top: 'calc(0.4015in + 2.05in)',
+                      left: '0.4015in',
+                      fontSize: '8pt',
+                      color: 'black',
+                      transform: 'rotate(180deg)'
+                    }}
+                  >
+                    {websiteUrl}
+                  </div>
+                  <div 
+                    className="cutting-guide-square"
+                    style={{
+                      position: 'absolute',
+                      border: '3px solid #c0c0c0',
+                      width: '71.2mm',
+                      height: '71.2mm',
+                      top: '0',
+                      left: '0',
+                      pointerEvents: 'none',
+                      boxSizing: 'border-box',
+                      zIndex: 999,
+                      display: 'block',
+                      pageBreakInside: 'avoid',
+                      backgroundColor: 'transparent',
+                      margin: '0',
+                      padding: '0',
+                      color: '#c0c0c0'
+                    }} 
+                  />
+                </>
+              )}
+            </div>
+          ))}
+
+          {/* Hidden print-only grid for PDF/print helper */}
           <div 
-            className="print-template"
+            id="print-capture-area"
             style={{
-              width: '8.409in',
-              height: '8.409in',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 2.803in)',
-              gap: '0.05in',
-              transform: 'scale(0.85)',
-              transformOrigin: 'center',
-              position: 'relative',
-              backgroundColor: '#f9f9f9'
+              display: 'none',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '207mm',
+              height: '207mm',
+              background: 'white',
+              zIndex: -1
             }}
           >
-            {template.map((photo, index) => (
-              <div 
-                key={index} 
-                className={`print-cell ${photo ? styles.cellWithPhoto : styles.cell}`}
-                style={{
-                  width: '2.803in',
-                  height: '2.803in',
-                  position: 'relative',
-                  border: '1px solid #e0e0e0',
-                  boxSizing: 'border-box',
-                  backgroundColor: photo ? 'white' : '#f5f5f9'
-                }}
-              >
-                {photo && (
-                  <>
-                    <div className={styles.photoContainer}>
-                      <div className={styles.printNumberBadge} style={{ 
-                        position: 'absolute',
-                        width: '2in',
-                        textAlign: 'center',
-                        fontSize: '8pt',
-                        color: 'black',
-                        transform: 'rotate(180deg)',
-                        left: '0.4015in',
-                        top: 'calc(0.4015in - 16pt)',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        padding: '0',
-                        pointerEvents: 'none'
-                      }}>
-                        #{photo.print_number || '?'}
-                      </div>
-                      <img 
-                        src={photo.url} 
-                        alt={`Photo ${index + 1}`}
-                        className="print-image"
+            {template.map((photo, index) => {
+              const row = Math.floor(index / 3);
+              const col = index % 3;
+              const cellLeft = `${col * 69.33}mm`;
+              const cellTop = `${row * 69.33}mm`;
+              return (
+                <div
+                  key={index}
+                  className="print-cell"
+                  style={{
+                    position: 'absolute',
+                    left: cellLeft,
+                    top: cellTop,
+                    width: '68.33mm',
+                    height: '68.33mm',
+                    border: '1px solid black',
+                    backgroundColor: 'white',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                    display: photo ? 'block' : 'none',
+                  }}
+                >
+                  {photo && (
+                    <>
+                      <img
+                        src={photo.url}
+                        alt={`Photo ${photo.print_number || '?'}`}
                         style={{
-                          width: '2in',
-                          height: '2in',
-                          position: 'absolute',
-                          top: '0.4015in',
-                          left: '0.4015in',
+                          width: '50.8mm',
+                          height: '50.8mm',
                           objectFit: 'cover',
-                          opacity: 1,
-                          transition: 'none'
-                        }}
-                        onLoad={() => handleImageLoad(photo.id)}
-                        onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/200';
-                          handleImageLoad(photo.id);
+                          position: 'absolute',
+                          top: '9.1mm',
+                          left: '9.1mm',
                         }}
                       />
-                      <div className={styles.cellControls}>
-                        <button
-                          onClick={() => handleDeletePhoto(photo, index)}
-                          className={styles.dangerButton}
-                        >
-                          ×
-                        </button>
-                        <button
-                          onClick={() => handleAddCopyToTemplate(photo)}
-                          className={styles.primaryButton}
-                        >
-                          +
-                        </button>
+                      <div
+                        className="print-number"
+                        style={{
+                          position: 'absolute',
+                          width: '68.33mm',
+                          left: 0,
+                          top: '4mm',
+                          textAlign: 'center',
+                          fontSize: '10px',
+                          color: 'black',
+                          fontFamily: 'Arial, sans-serif',
+                          zIndex: 20,
+                        }}
+                      >
+                        #{photo.print_number || '?'}
                       </div>
-                    </div>
-                    <div 
-                      className="screen-url"
-                      style={{
-                        position: 'absolute',
-                        width: '2in',
-                        textAlign: 'center',
-                        top: 'calc(0.4015in + 2.05in)',
-                        left: '0.4015in',
-                        fontSize: '8pt',
-                        color: 'black',
-                        transform: 'rotate(180deg)'
-                      }}
-                    >
-                      {websiteUrl}
-                    </div>
-                    <div 
-                      className="cutting-guide-square"
-                      style={{
-                        position: 'absolute',
-                        border: '3px solid #c0c0c0',
-                        width: '71.2mm',
-                        height: '71.2mm',
-                        top: '0',
-                        left: '0',
-                        pointerEvents: 'none',
-                        boxSizing: 'border-box',
-                        zIndex: 999,
-                        display: 'block',
-                        pageBreakInside: 'avoid',
-                        backgroundColor: 'transparent',
-                        margin: '0',
-                        padding: '0',
-                        color: '#c0c0c0'
-                      }} 
-                    />
-                  </>
-                )}
-              </div>
-            ))}
-            
-            {template.map((photo, index) => photo && (
-              <div
-                key={`print-url-${index}`}
-                className="print-only-url"
-                style={{
-                  position: 'absolute',
-                  width: '2in',
-                  textAlign: 'center',
-                  top: `${Math.floor(index / 3) * 2.803 + 2.4015}in`,
-                  left: `${(index % 3) * 2.803 + 0.4015}in`,
-                  fontSize: '8pt',
-                  color: 'black',
-                  transform: 'rotate(180deg)',
-                  display: 'none'
-                }}
-              >
-                {websiteUrl}
-              </div>
-            ))}
+                      <div
+                        className="website-url"
+                        style={{
+                          position: 'absolute',
+                          width: '60mm',
+                          left: '-6mm',
+                          top: '61mm',
+                          textAlign: 'center',
+                          fontSize: '7pt',
+                          color: 'black',
+                          fontFamily: 'Arial, sans-serif',
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-all',
+                          lineHeight: 1.2,
+                          background: 'white',
+                          transform: 'rotate(180deg)',
+                          zIndex: 20,
+                          letterSpacing: '1pt',
+                        }}
+                      >
+                        {websiteUrl}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1678,12 +1726,30 @@ export default function TemplateGrid({ selectedEventId, onAutoPrintTrigger, isPr
             position: absolute !important;
             width: 2in !important;
             text-align: center !important;
-            font-size: 8pt !important;
+            font-size: 6pt !important;
             color: black !important;
             transform: rotate(180deg) !important;
             left: 50% !important;
             margin-left: -1in !important;
             top: calc(50% - 1in - 10pt) !important;
+          }
+
+          #print-capture-area .website-url {
+            position: absolute !important;
+            width: 60mm !important;
+            left: 14mm !important;
+            top: 61mm !important;
+            text-align: center !important;
+            font-size: 7pt !important;
+            color: black !important;
+            font-family: Arial, sans-serif !important;
+            white-space: normal !important;
+            word-break: break-all !important;
+            line-height: 1.2 !important;
+            background: white !important;
+            transform: rotate(180deg) !important;
+            z-index: 20 !important;
+            letter-spacing: 1pt !important;
           }
         }
       `}</style>

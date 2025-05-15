@@ -1,0 +1,57 @@
+@media print {
+  #market-print-root body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  #market-print-root #printArea {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 207mm !important;
+    height: 207mm !important;
+    margin: 0 !important;
+    background: white !important;
+    z-index: 9999 !important;
+  }
+
+  #market-print-root .print-template {
+    width: 207mm !important;
+    height: 207mm !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    background-color: white !important;
+  }
+
+  #market-print-root .print-cell {
+    position: absolute !important;
+    width: 68.33mm !important;
+    height: 68.33mm !important;
+    border: 1px solid black !important;
+    background-color: white !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Position each cell manually with 1mm gaps */
+  #market-print-root .print-cell:nth-child(1) { left: 0mm !important; top: 0mm !important; }
+  #market-print-root .print-cell:nth-child(2) { left: 69.33mm !important; top: 0mm !important; }
+  #market-print-root .print-cell:nth-child(3) { left: 138.66mm !important; top: 0mm !important; }
+  #market-print-root .print-cell:nth-child(4) { left: 0mm !important; top: 69.33mm !important; }
+  #market-print-root .print-cell:nth-child(5) { left: 69.33mm !important; top: 69.33mm !important; }
+  #market-print-root .print-cell:nth-child(6) { left: 138.66mm !important; top: 69.33mm !important; }
+  #market-print-root .print-cell:nth-child(7) { left: 0mm !important; top: 138.66mm !important; }
+  #market-print-root .print-cell:nth-child(8) { left: 69.33mm !important; top: 138.66mm !important; }
+  #market-print-root .print-cell:nth-child(9) { left: 138.66mm !important; top: 138.66mm !important; }
+
+  /* Hide everything else by default */
+  #market-print-root body * {
+    visibility: hidden;
+  }
+  #market-print-root #printArea, #market-print-root .print-template, #market-print-root .print-cell, #market-print-root .website-url, #market-print-root .order-code {
+    visibility: visible !important;
+  }
+} 
