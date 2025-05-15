@@ -163,10 +163,10 @@ export default function HomePage() { // Renamed function
               </ul>
 
               <button
-                disabled
-                className={`${styles.subscribeButton} ${styles.disabled}`}
+                onClick={() => router.push('/subscription')}
+                className={styles.subscribeButton}
               >
-                Coming Soon
+                Start Free Trial
               </button>
 
               <div className={styles.loginSection}>
