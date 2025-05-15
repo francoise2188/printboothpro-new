@@ -162,12 +162,12 @@ export default function HomePage() { // Renamed function
                 <li>✓ Cancel Anytime</li>
               </ul>
 
-              <button
-                onClick={() => router.push('/subscription')}
+              <Link
+                href="/subscription"
                 className={styles.subscribeButton}
               >
                 Start Free Trial
-              </button>
+              </Link>
 
               <div className={styles.loginSection}>
                 <p className={styles.loginText}>Already a beta tester?</p>
