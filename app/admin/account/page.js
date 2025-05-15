@@ -156,6 +156,8 @@ export default function AccountPage() {
   };
 
   const handleManageSubscription = async () => {
+    setMessage('');
+    setLoading(true);
     try {
       const response = await fetch('/api/create-portal-session', {
         method: 'POST',
@@ -172,10 +174,16 @@ export default function AccountPage() {
       }
 
       // Redirect to Stripe Customer Portal
-      window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No portal URL received');
+      }
     } catch (error) {
       console.error('Error:', error);
       setMessage('Error accessing subscription portal. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 

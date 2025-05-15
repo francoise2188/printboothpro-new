@@ -42,13 +42,27 @@ export async function POST() {
       );
     }
 
-    // Create a Stripe Customer Portal session
-    const session = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/admin/account`,
-    });
+    try {
+      // Create a Stripe Customer Portal session
+      const session = await stripe.billingPortal.sessions.create({
+        customer: subscription.stripe_customer_id,
+        return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/admin/account`,
+        configuration: 'bpm_1ROhGpHDMDX2JtQdmC3h0QgK', // Your portal configuration ID
+      });
 
-    return NextResponse.json({ url: session.url });
+      return NextResponse.json({ url: session.url });
+    } catch (stripeError) {
+      console.error('Stripe portal session error:', stripeError);
+      
+      // If there's an error with the portal session, try the direct portal link
+      if (stripeError.code === 'resource_missing') {
+        return NextResponse.json({ 
+          url: 'https://billing.stripe.com/p/login/4gM8wP9qq9f2cWh8Bb3gk00'
+        });
+      }
+      
+      throw stripeError;
+    }
   } catch (error) {
     console.error('Error creating portal session:', error);
     return NextResponse.json(
