@@ -162,6 +162,24 @@ function CreatePasswordContent() {
 
         if (!authData?.user?.id) throw new Error('No user ID returned from sign up');
 
+        // Create subscription record
+        const { error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .insert([
+            {
+              user_id: authData.user.id,
+              stripe_customer_id: data.customerId,
+              stripe_subscription_id: data.subscriptionId,
+              status: 'active',
+              current_period_end: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days from now for trial
+            }
+          ]);
+
+        if (subscriptionError) {
+          console.error('Error creating subscription record:', subscriptionError);
+          throw new Error('Failed to create subscription record');
+        }
+
         // Sign in immediately after signup
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
