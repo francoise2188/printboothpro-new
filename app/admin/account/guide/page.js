@@ -19,65 +19,6 @@ export default function AdminGuidePage() {
         content: 'Hardware: Windows laptop or desktop (with WiFi), compatible printer (for 2x2 magnet prints), magnet-making equipment. Software: PrintBooth Helper App (Windows only), web browser + internet connection.'
       },
       {
-        title: 'Photo Limits Explained',
-        content: (
-          <div className={styles.setupSteps}>
-            <div className={styles.setupContent}>
-{`**Why Use Photo Limits?**
-• Control costs by limiting total photos per event
-• Ensure fair distribution of photos among guests
-• Manage printer resources and supplies
-• Create different packages (e.g., 2 photos per person)
-
-**Types of Limits You Can Set:**
-
-1. **Total Event Photo Limit**
-   • Controls the total number of photos for the entire event
-   • Leave empty for unlimited photos
-   • Perfect for:
-     - Budget control
-     - Limited supplies
-     - Package-based events
-   • Example: Set to 100 for a 50-person event with 2 photos each
-
-2. **Photos Per Person**
-   • Controls how many photos each guest can take
-   • Two options:
-     - Set a specific number (e.g., 2 photos)
-     - Enable unlimited photos
-   • Perfect for:
-     - Package deals
-     - VIP guests
-     - Open photo booths
-   • Example: Set to 2 for a standard package
-
-**How Limits Work:**
-• When a guest enters their email:
-  - System checks their previous submissions
-  - Shows remaining photos they can take
-  - Prevents access if they've reached their limit
-
-• For the total event limit:
-  - System tracks all photos taken
-  - Shows remaining photos for the event
-  - Prevents new photos when limit is reached
-
-**Best Practices:**
-• For weddings: Consider unlimited photos per person
-• For corporate events: Set specific limits per person
-• For markets: Use total event limit based on supplies
-• For package deals: Match limits to package prices
-
-**Changing Limits:**
-• You can adjust limits anytime during the event
-• Changes only affect new photo submissions
-• Previous photos remain in the system
-• Great for extending limits if needed`}
-            </div>
-          </div>
-        )
-      },
-      {
         title: 'Quick Setup Steps',
         content: (
           <div className={styles.setupSteps}>
@@ -140,6 +81,23 @@ export default function AdminGuidePage() {
      - Select any past photo to add to current queue
      - Great for reprints or if a print fails
      - Photos stay available until you end the event
+
+   • Photo Limits:
+     - Total Event Photo Limit:
+       * Controls total photos for entire event
+       * Leave empty for unlimited
+       * Example: Set to 100 for a 50-person event
+     
+     - Photos Per Person:
+       * Set minimum of 1 or choose unlimited
+       * Perfect for package deals and VIP guests
+       * Example: Set to 2 for standard package
+
+   • Event Deactivation:
+     - Click "Deactivate QR" when event ends
+     - Guests will see "event ended" message
+     - No new photos can be taken
+     - Click "Activate QR" to reopen if needed
 
 4. **Set Up a Market**
    • Go to Markets > "New Market"
@@ -225,10 +183,6 @@ Need More Help?
             </div>
           </div>
         )
-      },
-      {
-        title: 'Photo Limits & Controls',
-        content: 'Set flexible photo limits for your events: Total Event Photo Limit (optional) - Control the total number of photos for the entire event. Photos Per Person - Set a specific limit per person or enable unlimited photos. Perfect for controlling costs and managing guest experience.'
       },
       {
         title: 'Guest Photo Experience',
