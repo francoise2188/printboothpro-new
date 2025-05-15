@@ -234,19 +234,15 @@ export default function AccountPage() {
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>Subscription Management</h2>
         <div className={styles.subscriptionInfo}>
-          <div className={styles.subscriptionDetails}>
-            <p><strong>Current Plan:</strong> {subscriptionInfo.plan}</p>
-            <p><strong>Status:</strong> {subscriptionInfo.status}</p>
-            <p><strong>Next Billing Date:</strong> {subscriptionInfo.nextBillingDate}</p>
-          </div>
           <div className={styles.buttonGroup}>
-            <button
-              type="button"
-              onClick={handleManageSubscription}
+            <a
+              href="https://billing.stripe.com/p/login/4gM8wP9qq9f2cWh8Bb3gk00"
+              target="_blank"
+              rel="noopener noreferrer"
               className={styles.button}
             >
               Manage Subscription
-            </button>
+            </a>
           </div>
         </div>
       </div>
