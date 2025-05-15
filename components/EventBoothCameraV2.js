@@ -183,7 +183,24 @@ export default function EventBoothCameraV2({ eventId }) {
     try {
       const hasPermission = await navigator.permissions.query({ name: 'camera' });
       if (hasPermission.state === 'denied') {
-        throw new Error('Camera permission denied');
+        setError(
+          <div className="text-center p-4">
+            <h3 className="text-lg font-semibold mb-2">Camera Access Denied</h3>
+            <p className="mb-4">We need camera access to take photos. Here's how to enable it:</p>
+            <ol className="text-left list-decimal pl-6 mb-4">
+              <li>Click the camera icon in your browser's address bar</li>
+              <li>Select "Allow" for camera access</li>
+              <li>Refresh this page</li>
+            </ol>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
+          </div>
+        );
+        return;
       }
 
       if (videoRef.current?.srcObject) {
@@ -224,7 +241,7 @@ export default function EventBoothCameraV2({ eventId }) {
       toast.error('Unable to access camera. Please check permissions.');
       setError('Camera access failed. Please check permissions and try again.');
     }
-  }, [facingMode, setError, videoRef]); // videoRef is stable, setError is stable. facingMode is the key driver.
+  }, [facingMode, setError, videoRef]);
 
   // Initialize camera and re-initialize if setupCamera changes (e.g., facingMode changes)
   useEffect(() => {
