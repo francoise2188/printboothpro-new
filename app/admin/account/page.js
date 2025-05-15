@@ -54,16 +54,6 @@ export default function AccountPage() {
             business_website: settingsData.business_website || '',
             tax_rate: settingsData.tax_rate ? (parseFloat(settingsData.tax_rate) * 100).toString() : ''
           });
-        } else {
-           setBusinessSettings({
-             business_name: '',
-             business_address_line1: '',
-             business_address_line2: '',
-             business_phone: '',
-             business_email: '',
-             business_website: '',
-             tax_rate: ''
-           });
         }
 
         // Fetch subscription details
@@ -74,13 +64,18 @@ export default function AccountPage() {
           .single();
 
         if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+          console.error('Subscription fetch error:', subscriptionError);
           throw subscriptionError;
         }
 
         if (subscriptionData) {
+          const isActive = subscriptionData.status === 'active' || 
+                          (subscriptionData.current_period_end && 
+                           new Date(subscriptionData.current_period_end) > new Date());
+
           setSubscriptionInfo({
             plan: 'PrintBooth Pro',
-            status: subscriptionData.status || 'Active',
+            status: isActive ? 'Active' : 'Inactive',
             nextBillingDate: subscriptionData.current_period_end 
               ? new Date(subscriptionData.current_period_end).toLocaleDateString()
               : 'No active subscription'

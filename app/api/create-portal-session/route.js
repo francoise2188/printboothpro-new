@@ -12,6 +12,7 @@ export async function POST() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -21,11 +22,20 @@ export async function POST() {
     // Get the customer's Stripe ID from your database
     const { data: subscription, error: dbError } = await supabase
       .from('subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, stripe_subscription_id')
       .eq('user_id', user.id)
       .single();
 
-    if (dbError || !subscription?.stripe_customer_id) {
+    if (dbError) {
+      console.error('Database error:', dbError);
+      return NextResponse.json(
+        { error: 'Error fetching subscription data' },
+        { status: 500 }
+      );
+    }
+
+    if (!subscription?.stripe_customer_id) {
+      console.error('No subscription found for user:', user.id);
       return NextResponse.json(
         { error: 'No subscription found' },
         { status: 404 }
