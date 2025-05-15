@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../../lib/AuthContext';
 import styles from './WelcomePopup.module.css';
 
 export default function WelcomePopup() {
