@@ -19,6 +19,32 @@ import {
 
 export default function HomePage() { // Renamed function
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleStartTrial = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Error starting trial:', error);
+      alert('There was an error starting your trial. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -162,12 +188,13 @@ export default function HomePage() { // Renamed function
                 <li>✓ Cancel Anytime</li>
               </ul>
 
-              <Link
-                href="/subscription"
+              <button
+                onClick={handleStartTrial}
+                disabled={isLoading}
                 className={styles.subscribeButton}
               >
-                Start Free Trial
-              </Link>
+                {isLoading ? 'Loading...' : 'Start Free Trial'}
+              </button>
 
               <div className={styles.loginSection}>
                 <p className={styles.loginText}>Already a beta tester?</p>
