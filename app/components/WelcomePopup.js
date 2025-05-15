@@ -2,20 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../lib/AuthContext';
 import styles from './WelcomePopup.module.css';
 
 export default function WelcomePopup() {
   const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Check if this is the user's first visit
-    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-    if (!hasSeenWelcome) {
-      setIsVisible(true);
-      localStorage.setItem('hasSeenWelcome', 'true');
+    // Check if user is logged in and hasn't seen the welcome message
+    if (user) {
+      const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+      if (!hasSeenWelcome) {
+        setIsVisible(true);
+        localStorage.setItem('hasSeenWelcome', 'true');
+      }
     }
-  }, []);
+  }, [user]); // Re-run when user changes (logs in)
 
   if (!isVisible) return null;
 
