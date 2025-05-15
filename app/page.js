@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Head from 'next/head';
 import styles from './page.module.css'; // Corrected style import
+import { loadStripe } from '@stripe/stripe-js';
 import {
   SparklesIcon,
   BoltIcon,
@@ -24,19 +25,41 @@ export default function HomePage() { // Renamed function
   const handleStartTrial = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/create-checkout-session', {
+      // Get the user's email
+      const email = prompt('Please enter your email to start your free trial:');
+      
+      if (!email) {
+        alert('Email is required to start your trial');
+        return;
+      }
+
+      const response = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL received');
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong');
+      }
+
+      // Initialize Stripe
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      // Redirect to Stripe Checkout
+      const { error: stripeError } = await stripe.redirectToCheckout({ 
+        sessionId: data.sessionId 
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
       }
     } catch (error) {
       console.error('Error starting trial:', error);
