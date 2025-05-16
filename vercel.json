@@ -11,10 +11,6 @@
         {
           "key": "Cache-Control",
           "value": "no-store, must-revalidate"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
         }
       ]
     }
@@ -32,11 +28,6 @@
     },
     {
       "source": "https://printboothpro.com",
-      "destination": "https://www.printboothpro.com",
-      "permanent": true
-    },
-    {
-      "source": "https://printboothpro-new.vercel.app",
       "destination": "https://www.printboothpro.com",
       "permanent": true
     }

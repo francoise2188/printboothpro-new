@@ -78,10 +78,6 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'no-store, must-revalidate'
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
           }
         ],
       }
