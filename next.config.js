@@ -42,7 +42,6 @@ const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        // Handle www subdomain
         {
           source: '/:path*',
           has: [
@@ -53,6 +52,16 @@ const nextConfig = {
           ],
           destination: 'https://www.printboothpro.com/:path*',
         },
+        {
+          source: '/:path*',
+          has: [
+            {
+              type: 'host',
+              value: 'printboothpro.com',
+            },
+          ],
+          destination: 'https://www.printboothpro.com/:path*',
+        }
       ],
     }
   },
@@ -64,20 +73,15 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/camera/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, must-revalidate'
-          }
-        ],
-      },
-      {
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
             value: 'no-store, must-revalidate'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
           }
         ],
       }
