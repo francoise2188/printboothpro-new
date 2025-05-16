@@ -30,6 +30,16 @@
       "source": "https://printboothpro.com",
       "destination": "https://www.printboothpro.com",
       "permanent": true
+    },
+    {
+      "source": "http://printboothpro-b3coew2m5-francoise-tonetos-projects.vercel.app",
+      "destination": "https://www.printboothpro.com",
+      "permanent": true
+    },
+    {
+      "source": "https://printboothpro-b3coew2m5-francoise-tonetos-projects.vercel.app",
+      "destination": "https://www.printboothpro.com",
+      "permanent": true
     }
   ]
 } 
