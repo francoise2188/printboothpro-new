@@ -665,10 +665,15 @@ export default function EventsPage() {
     );
   };
 
-  // Add cleanup effect for calendar
+  // Add calendar API initialization
+  const handleCalendarApi = (api) => {
+    setCalendarApi(api);
+  };
+
+  // Update cleanup effect for calendar
   useEffect(() => {
     return () => {
-      if (calendarApi) {
+      if (calendarApi && typeof calendarApi.destroy === 'function') {
         calendarApi.destroy();
       }
     };
@@ -1287,7 +1292,7 @@ export default function EventsPage() {
               )}
             </div>
           ) : (
-            <div className={styles.calendarView}>
+            <div className={styles.calendarContainer}>
               <FullCalendar
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                 initialView="dayGridMonth"
@@ -1299,8 +1304,8 @@ export default function EventsPage() {
                 events={getCalendarEvents()}
                 eventContent={renderEventContent}
                 eventClick={handleEventClick}
+                ref={handleCalendarApi}
                 height="auto"
-                ref={(ref) => setCalendarApi(ref)}
               />
             </div>
           )}
