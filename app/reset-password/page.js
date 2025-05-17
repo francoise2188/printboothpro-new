@@ -12,9 +12,18 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    // Simulate page load
+    const timer = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -43,6 +52,18 @@ function ResetPasswordContent() {
       setLoading(false);
     }
   };
+
+  if (isPageLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.formCard}>
+          <div className={styles.header}>
+            <h2 className={styles.title}>Loading...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
