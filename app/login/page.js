@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Link from 'next/link';
 import styles from './login.module.css';
-import emailjs from '@emailjs/browser';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,11 +14,6 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false);
   const router = useRouter();
   const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    // Initialize EmailJS with your public key
-    emailjs.init('-zdSrFA-DDgNeXp82');
-  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -50,41 +44,20 @@ export default function LoginPage() {
       setLoading(true);
       setError('');
 
-      // First, check if the email exists in Supabase
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .single();
-
-      if (userError || !userData) {
-        throw new Error('No account found with this email address');
-      }
-
-      // Generate reset link with the correct redirect URL
-      const { data: resetData, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      // Use Supabase's built-in password reset
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (resetError) throw resetError;
-
-      // Send email using EmailJS
-      const templateParams = {
-        from_name: 'PrintBooth Pro',
-        from_email: 'noreply@printboothpro.com',
-        to_name: email.split('@')[0],
-        to_email: email,
-        subject: 'Reset Your PrintBooth Pro Password',
-        message: `Click the link below to reset your password: ${window.location.origin}/reset-password`,
-        reply_to: 'support@printboothpro.com'
-      };
-
-      await emailjs.send(
-        'service_763qumt',
-        'template_daiienw', // Using the same template as contact form
-        templateParams,
-        '-zdSrFA-DDgNeXp82'
-      );
+      if (resetError) {
+        // If the error is about the user not existing, we'll still show the success message
+        // for security reasons
+        if (resetError.message.includes('User not found')) {
+          setResetSent(true);
+          return;
+        }
+        throw resetError;
+      }
 
       setResetSent(true);
     } catch (err) {
@@ -114,7 +87,7 @@ export default function LoginPage() {
           )}
           {resetSent && (
             <div className={styles.success}>
-              Password reset email sent! Please check your inbox.
+              If an account exists with this email, you will receive a password reset link shortly.
             </div>
           )}
 
