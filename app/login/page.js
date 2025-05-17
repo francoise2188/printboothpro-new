@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Link from 'next/link';
 import styles from './login.module.css';
+import emailjs from '@emailjs/browser';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const router = useRouter();
   const supabase = createClientComponentClient();
 
@@ -37,6 +39,43 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError('');
+
+      // Generate reset link
+      const { data: resetData, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (resetError) throw resetError;
+
+      // Send email using EmailJS
+      const templateParams = {
+        to_email: email,
+        resetLink: resetData?.resetLink || `${window.location.origin}/reset-password`,
+        siteUrl: window.location.origin,
+        logoUrl: `${window.location.origin}/logo.png`
+      };
+
+      await emailjs.send(
+        'service_763qumt', // Your Gmail service ID
+        'template_vlk9pqy', // Your password reset template ID
+        templateParams,
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY // We'll add this to your .env file
+      );
+
+      setResetSent(true);
+    } catch (err) {
+      console.error('Password reset error:', err);
+      setError(err.message || 'Failed to send password reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.formCard}>
@@ -53,6 +92,11 @@ export default function LoginPage() {
         <form className={styles.form} onSubmit={handleLogin}>
           {error && (
             <div className={styles.error}>{error}</div>
+          )}
+          {resetSent && (
+            <div className={styles.success}>
+              Password reset email sent! Please check your inbox.
+            </div>
           )}
 
           <div className={styles.inputGroup}>
@@ -87,6 +131,15 @@ export default function LoginPage() {
             className={styles.submitButton}
           >
             {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={loading || !email}
+            className={styles.forgotPasswordButton}
+          >
+            Forgot Password?
           </button>
         </form>
 
