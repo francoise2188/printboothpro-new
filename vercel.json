@@ -18,7 +18,7 @@
   "build": {
     "env": {
       "NEXT_PUBLIC_FORCE_REBUILD": "true",
-      "NEXT_PUBLIC_BUILD_TIME": "2024-03-28-1"
+      "NEXT_PUBLIC_BUILD_TIME": "2024-03-28-2"
     }
   },
   "redirects": [
