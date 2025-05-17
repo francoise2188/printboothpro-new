@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+// Main homepage with subscription and checkout functionality
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Head from 'next/head';
