@@ -18,17 +18,18 @@
   "build": {
     "env": {
       "NEXT_PUBLIC_FORCE_REBUILD": "true",
-      "NEXT_PUBLIC_BUILD_TIME": "2024-03-28-2"
+      "NEXT_PUBLIC_BUILD_TIME": "2024-03-28-3"
     }
   },
   "redirects": [
     {
-      "source": "http://printboothpro.com",
-      "destination": "https://www.printboothpro.com",
-      "permanent": true
-    },
-    {
-      "source": "https://printboothpro.com",
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "printboothpro.com"
+        }
+      ],
       "destination": "https://www.printboothpro.com",
       "permanent": true
     }
