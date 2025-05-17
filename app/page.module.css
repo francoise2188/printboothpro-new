@@ -217,20 +217,25 @@
 }
 
 .subscribeButton {
+  display: block;
   width: 100%;
   padding: 1rem;
   background: #2d4f3c;
   color: white;
   border: none;
   border-radius: 0.5rem;
-  font-weight: 500;
-  font-size: 1rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-top: 2rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
-.subscribeButton:hover:not(.disabled) {
-  background: #1a332a;
+.subscribeButton:hover {
+  background: #1a2f24;
+  transform: translateY(-1px);
 }
 
 .disabled {
