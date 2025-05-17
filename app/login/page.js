@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Link from 'next/link';
@@ -15,6 +15,11 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false);
   const router = useRouter();
   const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    // Initialize EmailJS with your public key
+    emailjs.init('-zdSrFA-DDgNeXp82');
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -45,7 +50,18 @@ export default function LoginPage() {
       setLoading(true);
       setError('');
 
-      // Generate reset link
+      // First, check if the email exists in Supabase
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (userError || !userData) {
+        throw new Error('No account found with this email address');
+      }
+
+      // Generate reset link with the correct redirect URL
       const { data: resetData, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
@@ -54,17 +70,20 @@ export default function LoginPage() {
 
       // Send email using EmailJS
       const templateParams = {
+        from_name: 'PrintBooth Pro',
+        from_email: 'noreply@printboothpro.com',
+        to_name: email.split('@')[0],
         to_email: email,
-        resetLink: resetData?.resetLink || `${window.location.origin}/reset-password`,
-        siteUrl: window.location.origin,
-        logoUrl: `${window.location.origin}/logo.png`
+        subject: 'Reset Your PrintBooth Pro Password',
+        message: `Click the link below to reset your password: ${window.location.origin}/reset-password`,
+        reply_to: 'support@printboothpro.com'
       };
 
       await emailjs.send(
-        'service_763qumt', // Your Gmail service ID
-        'template_vlk9pqy', // Your password reset template ID
+        'service_763qumt',
+        'template_daiienw', // Using the same template as contact form
         templateParams,
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY // We'll add this to your .env file
+        '-zdSrFA-DDgNeXp82'
       );
 
       setResetSent(true);
