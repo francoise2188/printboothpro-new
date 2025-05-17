@@ -1,5 +1,6 @@
 'use client';
 
+// Reset password page with Suspense boundary for client-side rendering
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
