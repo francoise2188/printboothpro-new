@@ -385,11 +385,11 @@ export default function MarketTemplate({ marketId }) {
   }, []);
 
   const templateStyle = {
-    width: '207mm',  // 8.151 inches in mm
+    width: '207mm',
     height: '207mm',
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 69mm)',  // 2.717 inches in mm
-    gap: '2mm',
+    gridTemplateColumns: 'repeat(3, 69mm)',
+    gap: '1mm',
     backgroundColor: '#fff',
     padding: '0',
     margin: '0 auto'
@@ -399,7 +399,7 @@ export default function MarketTemplate({ marketId }) {
     width: '69mm',
     height: '69mm',
     position: 'relative',
-    border: '1px dashed #ddd',
+    border: '1px dashed #aaaaaa',
     boxSizing: 'border-box',
     backgroundColor: '#f8f9fa',
     overflow: 'visible'
@@ -418,8 +418,8 @@ export default function MarketTemplate({ marketId }) {
   };
 
   const photoStyle = {
-    width: '50.8mm',  // 2 inches
-    height: '50.8mm', // 2 inches
+    width: '50.8mm',
+    height: '50.8mm',
     position: 'absolute',
     top: '9.1mm',
     left: '9.1mm',
@@ -427,9 +427,11 @@ export default function MarketTemplate({ marketId }) {
   };
 
   const photoContainerStyle = {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
+    width: '50.8mm',
+    height: '50.8mm',
+    position: 'absolute',
+    top: '9.1mm',
+    left: '9.1mm',
     backgroundColor: '#f8f9fa',
     borderRadius: '2px',
     overflow: 'hidden'
@@ -438,13 +440,12 @@ export default function MarketTemplate({ marketId }) {
   const cuttingGuideStyle = {
     position: 'absolute',
     pointerEvents: 'none',
-    border: '2px solid #bbb',  // Changed from #999 to #bbb for even lighter gray
-    width: '69mm',     // 2.717 inches
-    height: '69mm',    // 2.717 inches
-    top: '0',
-    left: '0',
-    zIndex: 1,
-    boxSizing: 'border-box'
+    border: '1px dashed #aaaaaa',
+    width: '50.8mm',
+    height: '50.8mm',
+    top: '9.1mm',
+    left: '9.1mm',
+    zIndex: 10
   };
 
   const cellControlsStyle = {
@@ -864,31 +865,45 @@ export default function MarketTemplate({ marketId }) {
           <head>
             <title>Print Template</title>
             <style>
-              @page { size: 216mm 279mm; margin: 0; }
-              body { margin: 0; padding: 0; background: white; }
+              @page { 
+                size: 216mm 279mm;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+                min-height: 100vh;
+              }
               .print-template {
-                width: 207mm !important;
-                height: 207mm !important;
-                display: grid !important;
-                grid-template-columns: repeat(3, 67.66mm) !important;
-                gap: 2mm !important;
-                background-color: white !important;
-                margin: 0 auto !important;
-                position: fixed !important;
-                left: 50% !important;
-                top: 50% !important;
-                transform: translate(-50%, -50%) !important;
+                width: 207mm;
+                height: 207mm;
+                display: grid;
+                grid-template-columns: repeat(3, 69mm);
+                gap: 2mm;
+                margin-left: 2mm;
+                margin-right: 0;
+                padding: 0;
+                background-color: white;
               }
               .print-cell {
-                width: 67.66mm !important;
-                height: 67.66mm !important;
-                border: 1px solid black !important;
-                background-color: white !important;
-                overflow: hidden !important;
-                box-sizing: border-box !important;
-                position: static !important;
+                width: 69mm;
+                height: 69mm;
+                position: relative;
+                border: 1px solid black;
+                box-sizing: border-box;
+                overflow: hidden;
               }
-              .print-cell img { width: 50.8mm; height: 50.8mm; position: absolute; top: 9.1mm; left: 9.1mm; object-fit: cover; }
+              .print-cell img {
+                width: 50.8mm;
+                height: 50.8mm;
+                position: absolute;
+                top: 9.1mm;
+                left: 9.1mm;
+                object-fit: cover;
+              }
               .website-url {
                 position: absolute;
                 width: 50.8mm;
@@ -1155,8 +1170,13 @@ export default function MarketTemplate({ marketId }) {
   // Print Preview function (like handlePrint, but does NOT call window.print())
   const handlePrintPreview = async () => {
     try {
-      const photosToPrint = template.filter(photo => photo !== null);
-      if (photosToPrint.length === 0) {
+      // Always build a 3x3 grid for printing
+      const printGrid = Array(9).fill(null);
+      template.filter(photo => photo !== null).forEach((photo, idx) => {
+        if (idx < 9) printGrid[idx] = photo;
+      });
+
+      if (printGrid.every(cell => cell === null)) {
         toast.error('No photos to preview');
         return;
       }
@@ -1172,78 +1192,94 @@ export default function MarketTemplate({ marketId }) {
           <head>
             <title>Print Preview</title>
             <style>
-              @page { 
-                size: 216mm 279mm;
-                margin: 0;
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: flex-start;
-                align-items: center;
-                min-height: 100vh;
+              @page { size: 216mm 279mm; margin: 0; }
+              body { margin: 0; padding: 0; background: white; }
+              #printArea {
+                position: fixed !important;
+                left: 50% !important;
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                width: 207mm !important;
+                height: 207mm !important;
               }
               .print-template {
-                width: 207mm;
-                height: 207mm;
-                display: grid;
-                grid-template-columns: repeat(3, 69mm);
-                gap: 2mm;
-                margin-left: 2mm;
-                margin-right: 0;
-                padding: 0;
-                background-color: white;
+                width: 207mm !important;
+                height: 207mm !important;
+                position: absolute !important;
+                left: 50% !important;
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                background-color: white !important;
               }
               .print-cell {
-                width: 69mm;
-                height: 69mm;
-                position: relative;
-                border: 1px solid black;
-                box-sizing: border-box;
-                overflow: hidden;
+                position: absolute !important;
+                width: 68.33mm !important;
+                height: 68.33mm !important;
+                border: 1px solid black !important;
+                background-color: white !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
               }
-              .print-cell img {
-                width: 50.8mm;
-                height: 50.8mm;
-                position: absolute;
-                top: 9.1mm;
-                left: 9.1mm;
-                object-fit: cover;
+              .print-cell:nth-child(1) { left: 0mm !important; top: 0mm !important; }
+              .print-cell:nth-child(2) { left: 69.33mm !important; top: 0mm !important; }
+              .print-cell:nth-child(3) { left: 138.66mm !important; top: 0mm !important; }
+              .print-cell:nth-child(4) { left: 0mm !important; top: 69.33mm !important; }
+              .print-cell:nth-child(5) { left: 69.33mm !important; top: 69.33mm !important; }
+              .print-cell:nth-child(6) { left: 138.66mm !important; top: 69.33mm !important; }
+              .print-cell:nth-child(7) { left: 0mm !important; top: 138.66mm !important; }
+              .print-cell:nth-child(8) { left: 69.33mm !important; top: 138.66mm !important; }
+              .print-cell:nth-child(9) { left: 138.66mm !important; top: 138.66mm !important; }
+              .order-code {
+                visibility: visible !important;
+                display: block !important;
+                position: absolute !important;
+                width: 69mm !important;
+                text-align: center !important;
+                font-size: 10px !important;
+                color: black !important;
+                font-family: Arial !important;
+                top: 4mm !important;
+                left: 0 !important;
+                z-index: 20 !important;
               }
               .website-url {
-                position: absolute;
-                width: 50.8mm;
-                text-align: center;
-                top: calc(0.3585in + 2.05in);
-                left: 0.3585in;
-                font-size: 8pt;
-                color: black;
-                font-family: Arial, sans-serif;
-                transform: rotate(180deg);
-              }
-              .order-code {
-                position: absolute;
-                width: 69mm;
-                text-align: center;
-                font-size: 10px;
-                color: black;
-                font-family: Arial;
-                top: 4mm;
-                left: 0;
+                visibility: visible !important;
+                display: block !important;
+                position: absolute !important;
+                width: 2in !important;
+                text-align: center !important;
+                top: calc(0.3585in + 2.05in) !important;
+                left: 0.3585in !important;
+                font-size: 8pt !important;
+                color: black !important;
+                font-family: Arial, sans-serif !important;
+                transform: rotate(180deg) !important;
+                z-index: 20 !important;
               }
             </style>
           </head>
           <body>
-            <div class="print-template">
-              ${photosToPrint.map(photo => `
-                <div class="print-cell">
-                  <img src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}" />
-                  <div class="website-url">${websiteUrl}</div>
-                  <div class="order-code">${photo.order_code || 'No Code'}</div>
-                </div>
-              `).join('')}
+            <div id="printArea">
+              <div class="print-template">
+                ${printGrid.map((photo, idx) => photo ? `
+                  <div class="print-cell">
+                    <div class="order-code">${photo.order_code || 'No Code'}</div>
+                    <img src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}" style="width:50.8mm;height:50.8mm;position:absolute;top:9.1mm;left:9.1mm;object-fit:cover;" />
+                    <div class="website-url">${websiteUrl}</div>
+                  </div>
+                ` : `
+                  <div class="print-cell"></div>
+                `).join('')}
+              </div>
             </div>
+            <script>
+              window.onload = function() {
+                window.print();
+                window.onafterprint = function() {
+                  window.close();
+                };
+              };
+            </script>
           </body>
         </html>
       `);
@@ -1525,29 +1561,30 @@ export default function MarketTemplate({ marketId }) {
 
       <style jsx global>{`
         @media print {
-          @page { 
+          @page {
             size: 216mm 279mm;
             margin: 0;
           }
-          
-          /* Hide everything by default */
-          body * { 
+          body * {
             visibility: hidden;
           }
-          
-          /* Show only essential print elements */
           #printArea,
-          #printArea .print-template,
-          #printArea .print-cell,
-          #printArea .reactEasyCrop_Container,
-          #printArea .reactEasyCrop_Image,
-          #printArea .website-url,
-          #printArea .order-code {
+          #printArea .print-template {
             visibility: visible !important;
           }
-
-          /* Hide all controls and non-essential elements */
-          .print\\:hidden,
+          #printArea .print-cell:empty,
+          #printArea .print-cell:not(:has(img)) {
+            display: none !important;
+            visibility: hidden !important;
+          }
+          #printArea .print-cell:not(:empty),
+          #printArea .reactEasyCrop_Container,
+          #printArea .reactEasyCrop_Image,
+          #printArea .order-code,
+          #printArea .website-url {
+            visibility: visible !important;
+          }
+          .print\:hidden,
           button,
           input,
           .empty-slot,
@@ -1559,46 +1596,49 @@ export default function MarketTemplate({ marketId }) {
             visibility: hidden !important;
             opacity: 0 !important;
           }
-
-          body {
-            display: flex !important;
-            justify-content: flex-start !important;
-            align-items: center !important;
-            min-height: 100vh !important;
-          }
-
           #printArea {
-            position: relative !important;
+            position: fixed !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
             width: 207mm !important;
             height: 207mm !important;
-            margin-left: 2mm !important;
-            margin-right: 0 !important;
           }
-
           .print-template {
             width: 207mm !important;
             height: 207mm !important;
-            display: grid !important;
-            grid-template-columns: repeat(3, 69mm) !important;
-            gap: 2mm !important;
-            margin-left: 2mm !important;
-            margin-right: 0 !important;
-            padding: 0 !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
             background-color: white !important;
           }
-
           .print-cell {
-            width: 69mm !important;
-            height: 69mm !important;
-            position: relative !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            position: absolute !important;
+            width: 68.33mm !important;
+            height: 68.33mm !important;
             border: 1px solid black !important;
             background-color: white !important;
             overflow: hidden !important;
+            box-sizing: border-box !important;
           }
-
-          /* Style the order code */
+          .print-cell:nth-child(1) { left: 0mm !important; top: 0mm !important; }
+          .print-cell:nth-child(2) { left: 69.33mm !important; top: 0mm !important; }
+          .print-cell:nth-child(3) { left: 138.66mm !important; top: 0mm !important; }
+          .print-cell:nth-child(4) { left: 0mm !important; top: 69.33mm !important; }
+          .print-cell:nth-child(5) { left: 69.33mm !important; top: 69.33mm !important; }
+          .print-cell:nth-child(6) { left: 138.66mm !important; top: 69.33mm !important; }
+          .print-cell:nth-child(7) { left: 0mm !important; top: 138.66mm !important; }
+          .print-cell:nth-child(8) { left: 69.33mm !important; top: 138.66mm !important; }
+          .print-cell:nth-child(9) { left: 138.66mm !important; top: 138.66mm !important; }
+          .cutting-guide {
+            visibility: hidden !important;
+            display: none !important;
+          }
+          .print-cutting-guide {
+            visibility: hidden !important;
+            display: none !important;
+          }
           .order-code {
             visibility: visible !important;
             display: block !important;
@@ -1612,13 +1652,11 @@ export default function MarketTemplate({ marketId }) {
             left: 0 !important;
             z-index: 20 !important;
           }
-
-          /* Style the website URL */
           .website-url {
             visibility: visible !important;
             display: block !important;
             position: absolute !important;
-            width: 50.8mm !important;
+            width: 2in !important;
             text-align: center !important;
             top: calc(0.3585in + 2.05in) !important;
             left: 0.3585in !important;
@@ -1628,6 +1666,25 @@ export default function MarketTemplate({ marketId }) {
             transform: rotate(180deg) !important;
             z-index: 20 !important;
           }
+        }
+        .reactEasyCrop_Container {
+          position: relative;
+          width: 100% !important;
+          height: 100% !important;
+          background: #f8f9fa;
+        }
+        .reactEasyCrop_Image {
+          max-width: none !important;
+          max-height: none !important;
+          width: 100%;
+          height: 100%;
+          object-fit: cover !important;
+          transform-origin: center !important;
+        }
+        .reactEasyCrop_CropArea {
+          width: 50.8mm !important;
+          height: 50.8mm !important;
+          color: rgba(255, 255, 255, 0.3);
         }
       `}</style>
     </div>
