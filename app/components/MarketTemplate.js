@@ -43,6 +43,9 @@ export default function MarketTemplate({ marketId }) {
   const [initialOrderLoaded, setInitialOrderLoaded] = useState(false);
   const [lastSuccessfulLoadTimestamp, setLastSuccessfulLoadTimestamp] = useState(null); // New state for polling
 
+  // New state for editing protection
+  const [isEditing, setIsEditing] = useState(false);
+
   // Moved function definitions up
   const synchronizeState = async () => {
     console.log('=== SYNCHRONIZING STATE ===');
@@ -72,6 +75,10 @@ export default function MarketTemplate({ marketId }) {
   };
 
   const loadNextOrder = async () => {
+    if (isEditing) {
+      console.log('User is editing, skipping loadNextOrder');
+      return;
+    }
     console.log('=== LOAD NEXT ORDER START ===');
     
     // Synchronize state before loading next order
@@ -287,7 +294,10 @@ export default function MarketTemplate({ marketId }) {
   }, [marketId, initialOrderLoaded]); // Removed currentOrderCode from dependencies
 
   const pollForNewOrders = async () => {
-    if (!marketId || isLoadingOrder) {
+    if (!marketId || isLoadingOrder || isEditing) {
+      if (isEditing) {
+        console.log('User is editing, skipping pollForNewOrders');
+      }
       return;
     }
 
@@ -310,21 +320,13 @@ export default function MarketTemplate({ marketId }) {
       }
 
       if (count && count > 0) {
-        console.log(`[Polling] Found ${count} new or updated photo(s) pending.`);
         // Check if the current template is empty
         const isTemplateEmpty = template.every(slot => slot === null) && !currentOrderCode;
-        console.log('[Polling] Template state:', { 
-          isTemplateEmpty, 
-          hasCurrentOrder: !!currentOrderCode,
-          templateSlots: template.map(t => t?.id || null)
-        });
-
         if (isTemplateEmpty) {
-          console.log('[Polling] Template is empty. Triggering loadNextOrder.');
+          // Only load next order if the template is empty
           loadNextOrder();
         } else {
-          console.log('[Polling] Template is NOT empty. Notifying user instead of auto-loading.');
-          console.log('[DEBUG] About to show toast for new photos:', count);
+          // Just notify the user, do not reload or reset the template
           toast.success(`(${count}) New photos available. Finish current order to load.`, { duration: 5000 });
         }
       }
@@ -357,14 +359,18 @@ export default function MarketTemplate({ marketId }) {
 
   // Load initial order when marketId changes
   useEffect(() => {
-    console.log('[Effect marketId] Hook evaluated. marketId:', marketId); // We'll keep this top log
+    console.log('[Effect marketId] Hook evaluated. marketId:', marketId);
     if (marketId) {
       console.log('[Effect marketId] marketId is present. Preparing to call loadNextOrder. Current initialOrderLoaded:', initialOrderLoaded);
       setInitialOrderLoaded(false); // Reset before loading new market
       setProcessedPhotoIds(new Set()); // Clear processedPhotoIds when market is selected
-      console.log('[Effect marketId] About to call loadNextOrder().');
-      loadNextOrder();
-      console.log('[Effect marketId] Called loadNextOrder().');
+      if (!isEditing) {
+        console.log('[Effect marketId] About to call loadNextOrder().');
+        loadNextOrder();
+        console.log('[Effect marketId] Called loadNextOrder().');
+      } else {
+        console.log('[Effect marketId] User is editing, skipping loadNextOrder.');
+      }
     } else {
       console.log('[Effect marketId] marketId is null or undefined. Clearing order and setting initialOrderLoaded to false.');
       setTemplate(Array(9).fill(null));
@@ -774,6 +780,7 @@ export default function MarketTemplate({ marketId }) {
       ...prev,
       [photoId]: true
     }));
+    setIsEditing(true); // User is now editing
   };
 
   const handleSaveEdit = async (photo) => {
@@ -799,7 +806,7 @@ export default function MarketTemplate({ marketId }) {
         delete next[photo.id];
         return next;
       });
-
+      setIsEditing(false); // Editing done after save
       toast.success('Changes saved successfully');
     } catch (error) {
       console.error('Error saving photo edit:', error.message);
