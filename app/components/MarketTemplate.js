@@ -1028,31 +1028,26 @@ export default function MarketTemplate({ marketId }) {
   // *** UPDATE FUNCTION: Fetch photos from the LAST PRINTED BATCH ***
   const fetchReprintPhotos = async () => {
     if (!marketId) return;
-    if (lastPrintedBatchIds.length === 0) {
-      toast('No photos were recorded in the last print batch.');
-      setReprintPhotos([]);
-      return;
-    }
 
     setIsLoadingReprint(true);
     try {
-      console.log(`Fetching details for last printed batch IDs: ${lastPrintedBatchIds.join(', ')}`);
+      console.log('Fetching recent photos for market:', marketId);
       const { data, error } = await supabase
         .from('market_photos')
         .select('*')
-        .eq('market_id', marketId) // Still filter by market for safety
-        .in('id', lastPrintedBatchIds); // Fetch photos by IDs stored in state
+        .eq('market_id', marketId)
+        .in('status', ['printed', 'in_template']) // Include both printed and template photos
+        .order('created_at', { ascending: false }) // Most recent first
+        .limit(100); // Show up to 100 photos
 
       if (error) throw error;
       
-      // Optional: Sort the results to match the order they were printed?
-      // Or keep the order returned by the DB.
       setReprintPhotos(data || []);
       console.log('Fetched reprint photos:', data);
 
     } catch (error) {
-      console.error('Error fetching reprint photos by ID:', error);
-      toast.error('Failed to load details for the last print batch.');
+      console.error('Error fetching reprint photos:', error);
+      toast.error('Failed to load recent photos.');
       setReprintPhotos([]);
     } finally {
       setIsLoadingReprint(false);
@@ -1061,12 +1056,8 @@ export default function MarketTemplate({ marketId }) {
 
   // *** UPDATE FUNCTION: Show reprint modal and fetch data ***
   const handleShowReprintModal = () => {
-    if (lastPrintedBatchIds.length === 0) {
-       toast('No photos were recorded in the last print batch.');
-       return;
-    }
     setShowReprintModal(true);
-    fetchReprintPhotos(); // fetchReprintPhotos now uses the state IDs
+    fetchReprintPhotos(); // Now fetches more photos
   };
 
   // *** UPDATE FUNCTION: Add selected REPRINT photo back to template ***
@@ -1545,23 +1536,52 @@ export default function MarketTemplate({ marketId }) {
       {/* *** UPDATE MODAL BACK: Reprint Photos *** */}
       {showReprintModal && (
         <Modal onClose={() => setShowReprintModal(false)}>
-          <h2>Recently Printed Photos</h2>
+          <h2>Recent Photos</h2>
           {isLoadingReprint ? (
             <p>Loading...</p>
           ) : reprintPhotos.length === 0 ? (
-            <p>No recently printed photos found.</p>
+            <p>No recent photos found.</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+              gap: '10px',
+              maxHeight: '70vh',
+              overflowY: 'auto',
+              padding: '10px'
+            }}>
               {reprintPhotos.map(photo => (
-                <div key={photo.id} style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => handleAddReprintPhoto(photo)}>
+                <div 
+                  key={photo.id} 
+                  style={{ 
+                    textAlign: 'center', 
+                    cursor: 'pointer',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    padding: '5px',
+                    backgroundColor: photo.status === 'printed' ? '#f0f0f0' : 'white'
+                  }} 
+                  onClick={() => handleAddReprintPhoto(photo)}
+                >
                   <img 
                     src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}`}
                     alt={`Photo ${photo.id}`}
-                    style={{ width: '100px', height: '100px', objectFit: 'cover', border: '1px solid #ccc' }}
+                    style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      objectFit: 'cover', 
+                      border: '1px solid #ccc',
+                      borderRadius: '2px'
+                    }}
                   />
                   <p style={{ fontSize: '0.8rem', marginTop: '5px' }}>ID: {photo.id}</p>
-                  <p style={{ fontSize: '0.8rem' }}>Status: {photo.status}</p> {/* Should be 'printed' */}
-                  <p style={{ fontSize: '0.8rem' }}>Printed: {photo.printed_at ? new Date(photo.printed_at).toLocaleString() : 'N/A'}</p>
+                  <p style={{ fontSize: '0.8rem' }}>Status: {photo.status}</p>
+                  <p style={{ fontSize: '0.8rem' }}>
+                    {photo.status === 'printed' 
+                      ? `Printed: ${photo.printed_at ? new Date(photo.printed_at).toLocaleString() : 'N/A'}`
+                      : `Added: ${new Date(photo.created_at).toLocaleString()}`
+                    }
+                  </p>
                 </div>
               ))}
             </div>
