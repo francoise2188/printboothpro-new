@@ -440,7 +440,10 @@ export default function MarketTemplate({ marketId }) {
     left: '9.1mm',
     backgroundColor: '#f8f9fa',
     borderRadius: '2px',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   };
 
   const cuttingGuideStyle = {
@@ -1685,7 +1688,7 @@ export default function MarketTemplate({ marketId }) {
           max-height: none !important;
           width: 100%;
           height: 100%;
-          object-fit: cover !important;
+          object-fit: contain !important;
           transform-origin: center !important;
         }
         .reactEasyCrop_CropArea {
