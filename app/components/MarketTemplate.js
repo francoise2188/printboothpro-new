@@ -275,23 +275,21 @@ export default function MarketTemplate({ marketId }) {
 
   // Polling for new orders
   useEffect(() => {
-    console.log('[Polling useEffect] Evaluating. marketId:', marketId, 'initialOrderLoaded:', initialOrderLoaded);
-    if (!marketId || !initialOrderLoaded) {
-      console.log('[Polling useEffect] Conditions not met (no marketId or initialOrderLoaded is false). Polling will not start/restart yet.');
+    // Only start polling if the template is empty
+    const isTemplateEmpty = template.every(slot => slot === null);
+    if (!marketId || !initialOrderLoaded || !isTemplateEmpty) {
+      console.log('[Polling useEffect] Polling paused (marketId:', marketId, ', initialOrderLoaded:', initialOrderLoaded, ', isTemplateEmpty:', isTemplateEmpty, ')');
       return;
     }
-
-    // Always poll, even if there's a current order
-    console.log('[Polling useEffect] Polling will run regardless of current order.');
+    console.log('[Polling useEffect] Polling started.');
     const pollInterval = setInterval(() => {
       pollForNewOrders();
     }, 30000); // 30 seconds
-
     return () => {
       console.log('[Polling] Clearing polling interval.');
       clearInterval(pollInterval);
     };
-  }, [marketId, initialOrderLoaded]); // Removed currentOrderCode from dependencies
+  }, [marketId, initialOrderLoaded, template]);
 
   const pollForNewOrders = async () => {
     if (!marketId || isLoadingOrder || isEditing) {
