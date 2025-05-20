@@ -1454,30 +1454,16 @@ export default function MarketTemplate({ marketId }) {
                       onZoomChange={(zoom) => handleCropChange(photo.id)({ ...crops[photo.id], zoom })}
                       showGrid={false}
                       cropSize={{ width: 192, height: 192 }}
-                      objectFit="contain"
+                      objectFit="cover"
                       minZoom={0.2}
                       maxZoom={3}
                       zoomSpeed={0.1}
-                      restrictPosition={true}
+                      restrictPosition={false}
                       style={{
                         containerStyle: {
-                          width: '50.8mm',
-                          height: '50.8mm',
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          backgroundColor: 'white'
-                        },
-                        cropAreaStyle: {
-                          width: '50.8mm',
-                          height: '50.8mm',
-                          color: 'rgba(255, 255, 255, 0.3)'
-                        },
-                        mediaStyle: {
                           width: '100%',
                           height: '100%',
-                          objectFit: 'contain'
+                          backgroundColor: 'white'
                         }
                       }}
                     />
