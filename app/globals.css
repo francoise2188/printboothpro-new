@@ -78,4 +78,19 @@ input:focus {
   outline: none;
   border-color: var(--secondary-sage) !important;
   transition: border-color 0.3s ease;
+}
+
+/* Hide elements with .print-only except when printing */
+.print-only {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 } 

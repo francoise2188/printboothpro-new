@@ -1119,7 +1119,7 @@ export default function MarketTemplate({ marketId }) {
                   <div class="print-cell">
                     <div class="order-code">${photo.order_code || 'No Code'}</div>
                     <img src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/market_photos/${photo.photo_url}" style="width:50.8mm;height:50.8mm;position:absolute;top:9.1mm;left:9.1mm;object-fit:cover;" />
-                    <div class="website-url">${websiteUrl}</div>
+                    <div className="website-url">${websiteUrl}</div>
                   </div>
                 ` : `
                   <div class="print-cell"></div>
@@ -1324,41 +1324,12 @@ export default function MarketTemplate({ marketId }) {
                   </div>
                   
                   {/* Website URL */}
-                  <div className="website-url"
-                    style={{
-                      position: 'absolute',
-                      width: '50.8mm',
-                      textAlign: 'center',
-                      bottom: '5mm',  // Changed from 3mm to 5mm to move it closer to photo
-                      left: '50%',
-                      transform: 'translateX(-50%) rotate(180deg)',
-                      fontSize: '8pt',
-                      color: 'black',
-                      fontFamily: 'Arial, sans-serif',
-                      pointerEvents: 'none',
-                      zIndex: 10
-                    }}
-                  >
+                  <div className="website-url print-only">
                     {websiteUrl}
                   </div>
 
                   {/* Order Code */}
-                  <div className="order-code"
-                    style={{
-                      position: 'absolute',
-                      width: 'auto',
-                      textAlign: 'center',
-                      top: '50%',
-                      left: '7mm',
-                      fontSize: '8pt',
-                      color: 'black',
-                      fontFamily: 'Arial, sans-serif',
-                      transform: 'translateY(-50%) rotate(-90deg)',
-                      transformOrigin: 'left center',
-                      pointerEvents: 'none',
-                      zIndex: 9999
-                    }}
-                  >
+                  <div className="order-code print-only">
                     {photo.order_code || 'No Code'}
                   </div>
                 </>
