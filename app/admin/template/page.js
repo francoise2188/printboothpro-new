@@ -75,35 +75,32 @@ export default function TemplatePage() {
       });
       // Hide the print-capture-area again
       input.style.display = prevDisplay;
+
+      // Check canvas size
+      console.log('Canvas size:', canvas.width, canvas.height);
+      if (canvas.width === 0 || canvas.height === 0) {
+        alert('Error: The print area could not be captured. Make sure it is visible and has content.');
+        return null;
+      }
       
       const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = 612;
-      const pdfHeight = 792;
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: 'letter'
-      });
-
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = imgProps.width;
-      const imgHeight = imgProps.height;
-      const pageAspect = pdfWidth / pdfHeight;
-      const imgAspect = imgWidth / imgHeight;
-      let finalImgWidth, finalImgHeight;
-
-      if (imgAspect > pageAspect) {
-        finalImgWidth = pdfWidth;
-        finalImgHeight = pdfWidth / imgAspect;
-      } else {
-        finalImgHeight = pdfHeight;
-        finalImgWidth = pdfHeight * imgAspect;
+      console.log('imgData:', imgData.slice(0, 50)); // Should start with 'data:image/png'
+      if (!imgData.startsWith('data:image/png')) {
+        alert('Error: The captured image is not a valid PNG.');
+        return null;
       }
 
-      const xPos = (pdfWidth - finalImgWidth) / 2;
-      const yPos = (pdfHeight - finalImgHeight) / 2;
+      // Use your template size for the PDF
+      const pdfWidth = 211.0354; // mm
+      const pdfHeight = 211.0354; // mm
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [pdfWidth, pdfHeight]
+      });
 
-      pdf.addImage(imgData, 'PNG', xPos, yPos, finalImgWidth, finalImgHeight);
+      // Add the image to the PDF, filling the page
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
       const pdfDataUri = pdf.output('datauristring');
       console.log("PDF data URI generated.");
