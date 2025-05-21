@@ -275,29 +275,19 @@ export default function MarketTemplate({ marketId }) {
 
   // Polling for new orders
   useEffect(() => {
-    // Only start polling if the template is empty
-    const isTemplateEmpty = template.every(slot => slot === null);
-    if (!marketId || !initialOrderLoaded || !isTemplateEmpty) {
-      console.log('[Polling useEffect] Polling paused (marketId:', marketId, ', initialOrderLoaded:', initialOrderLoaded, ', isTemplateEmpty:', isTemplateEmpty, ')');
-      return;
-    }
-    console.log('[Polling useEffect] Polling started.');
+    if (!marketId) return;
     const pollInterval = setInterval(() => {
       pollForNewOrders();
     }, 30000); // 30 seconds
-    return () => {
-      console.log('[Polling] Clearing polling interval.');
-      clearInterval(pollInterval);
-    };
-  }, [marketId, initialOrderLoaded, template]);
+    return () => clearInterval(pollInterval);
+  }, [marketId]);
 
   const pollForNewOrders = async () => {
-    if (!marketId || isLoadingOrder || isEditing) {
-      if (isEditing) {
-        console.log('User is editing, skipping pollForNewOrders');
-      }
-      return;
-    }
+    if (!marketId || isLoadingOrder || isEditing) return;
+
+    // Only do anything if the template is empty and not editing
+    const isTemplateEmpty = template.every(slot => slot === null) && !currentOrderCode;
+    if (!isTemplateEmpty) return;
 
     try {
       let query = supabase
@@ -305,10 +295,6 @@ export default function MarketTemplate({ marketId }) {
         .select('id, created_at', { count: 'exact', head: true })
         .eq('market_id', marketId)
         .eq('status', 'in_template');
-
-      if (lastSuccessfulLoadTimestamp) {
-        query = query.gt('created_at', new Date(lastSuccessfulLoadTimestamp).toISOString());
-      }
 
       const { count, error } = await query;
 
@@ -318,15 +304,8 @@ export default function MarketTemplate({ marketId }) {
       }
 
       if (count && count > 0) {
-        // Check if the current template is empty
-        const isTemplateEmpty = template.every(slot => slot === null) && !currentOrderCode;
-        if (isTemplateEmpty) {
-          // Only load next order if the template is empty
-          loadNextOrder();
-        } else {
-          // Just notify the user, do not reload or reset the template
-          toast.success(`(${count}) New photos available. Finish current order to load.`, { duration: 5000 });
-        }
+        toast.success(`New order received! Loading now...`);
+        loadNextOrder();
       }
     } catch (error) {
       console.error('[Polling] Exception during poll:', error);
