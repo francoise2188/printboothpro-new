@@ -75,10 +75,12 @@ export default function MarketTemplate({ marketId }) {
   };
 
   const loadNextOrder = async () => {
+    // Don't load if we're editing
     if (isEditing) {
       console.log('User is editing, skipping loadNextOrder');
       return;
     }
+
     console.log('=== LOAD NEXT ORDER START ===');
     
     // Synchronize state before loading next order
@@ -100,6 +102,19 @@ export default function MarketTemplate({ marketId }) {
       setIsLoadingOrder(false);
       setInitialOrderLoaded(true);
       setLastSuccessfulLoadTimestamp(Date.now());
+      return;
+    }
+
+    // Don't proceed if we're still editing
+    if (isEditing) {
+      console.log('User started editing during load, aborting');
+      return;
+    }
+
+    // Only reset template if we're actually loading a new order
+    const hasActivePhotos = template.some(photo => photo !== null);
+    if (hasActivePhotos) {
+      console.log('Template has active photos, skipping reset');
       return;
     }
 
@@ -276,39 +291,76 @@ export default function MarketTemplate({ marketId }) {
   // Polling for new orders
   useEffect(() => {
     if (!marketId) return;
+
+    // Check if template has any photos
+    const hasPhotos = template.some(photo => photo !== null);
+    if (hasPhotos) {
+      console.log('Template has photos, polling paused');
+      return;
+    }
+
     const pollInterval = setInterval(() => {
       pollForNewOrders();
     }, 30000); // 30 seconds
+
     return () => clearInterval(pollInterval);
-  }, [marketId]);
+  }, [marketId, template]); // Add template to dependencies to re-run when it changes
 
   const pollForNewOrders = async () => {
-    if (!marketId || isLoadingOrder || isEditing) return;
+    // Don't poll if we're editing or loading
+    if (!marketId || isLoadingOrder || isEditing) {
+      console.log('Skipping poll - editing or loading:', { isEditing, isLoadingOrder });
+      return;
+    }
 
-    // Only do anything if the template is empty and not editing
-    const isTemplateEmpty = template.every(slot => slot === null) && !currentOrderCode;
-    if (!isTemplateEmpty) return;
+    // Double check template is empty before polling
+    const hasPhotos = template.some(photo => photo !== null);
+    if (hasPhotos) {
+      console.log('Template has photos, skipping poll');
+      return;
+    }
 
     try {
-      let query = supabase
-        .from('market_photos')
-        .select('id, created_at', { count: 'exact', head: true })
-        .eq('market_id', marketId)
-        .eq('status', 'in_template');
+      console.log('Checking for new orders...');
+      
+      // First verify we have a valid marketId
+      if (!marketId) {
+        console.log('No marketId available, skipping poll');
+        return;
+      }
 
-      const { count, error } = await query;
+      // Make the query more specific and add error handling
+      const { data, error, count } = await supabase
+        .from('market_photos')
+        .select('id, created_at', { count: 'exact' })
+        .eq('market_id', marketId)
+        .eq('status', 'in_template')
+        .limit(1);
 
       if (error) {
-        console.error('[Polling] Error checking for new photos:', error);
+        console.error('[Polling] Database error:', error.message);
+        return;
+      }
+
+      // Check if we got valid data
+      if (!data) {
+        console.log('[Polling] No data returned from query');
         return;
       }
 
       if (count && count > 0) {
-        toast.success(`New order received! Loading now...`);
-        loadNextOrder();
+        console.log('New order found, loading...');
+        await loadNextOrder();
+      } else {
+        console.log('No new orders found');
       }
     } catch (error) {
-      console.error('[Polling] Exception during poll:', error);
+      // More detailed error logging
+      console.error('[Polling] Exception during poll:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      });
     }
   };
 
@@ -1132,7 +1184,7 @@ export default function MarketTemplate({ marketId }) {
                 position: absolute !important;
                 width: 2in !important;
                 text-align: center !important;
-                top: calc(0.3585in + 2.05in) !important;
+                top: calc(0.3585in + 2.08in) !important;
                 left: 0.3585in !important;
                 font-size: 8pt !important;
                 color: black !important;
@@ -1528,7 +1580,7 @@ export default function MarketTemplate({ marketId }) {
             position: absolute !important;
             width: 2in !important;
             text-align: center !important;
-            top: calc(0.3585in + 2.05in) !important;
+            top: calc(0.3585in + 2.08in) !important;
             left: 0.3585in !important;
             font-size: 8pt !important;
             color: black !important;
