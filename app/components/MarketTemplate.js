@@ -46,6 +46,38 @@ export default function MarketTemplate({ marketId }) {
   // New state for editing protection
   const [isEditing, setIsEditing] = useState(false);
 
+  // Add useEffect to fetch overlay URL
+  useEffect(() => {
+    async function fetchOverlay() {
+      if (!marketId) return;
+      
+      try {
+        console.log('Fetching overlay for market:', marketId);
+        const { data, error } = await supabase
+          .from('market_camera_settings')
+          .select('border_url')
+          .eq('market_id', marketId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching overlay:', error);
+          return;
+        }
+
+        if (data?.border_url) {
+          console.log('Found overlay URL:', data.border_url);
+          setOverlayUrl(data.border_url);
+        } else {
+          console.log('No overlay URL found for market:', marketId);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    fetchOverlay();
+  }, [marketId]);
+
   // Moved function definitions up
   const synchronizeState = async () => {
     console.log('=== SYNCHRONIZING STATE ===');
