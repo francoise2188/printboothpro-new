@@ -959,36 +959,48 @@ export default function MarketTemplate({ marketId }) {
     }
 
     return (
-      <img 
-        src={overlayUrl}
-        alt="Border overlay"
-        className="print-overlay"
-        style={{
-          width: '50.8mm',
-          height: '50.8mm',
-          position: 'absolute',
-          top: '9.1mm',
-          left: '9.1mm',
-          pointerEvents: 'none',
-          objectFit: 'contain',
-          zIndex: 5
-        }}
-        onError={(e) => {
-          console.error('❌ Overlay failed to load:', {
-            url: overlayUrl,
-            error: e.target.src,
-            marketId: marketId,
-            photoId: photo?.id
-          });
-        }}
-        onLoad={() => {
-          console.log('✅ Overlay loaded successfully:', {
-            url: overlayUrl,
-            marketId: marketId,
-            photoId: photo?.id
-          });
-        }}
-      />
+      <div style={{
+        position: 'absolute',
+        top: '0%',
+        left: '-2.5%',
+        right: '-2.5%',
+        bottom: '0%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+        zIndex: 10
+      }}>
+        <img 
+          src={overlayUrl}
+          alt="Border overlay"
+          className="print-overlay"
+          style={{
+            width: '105%',
+            height: '100%',
+            objectFit: 'contain',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
+          onError={(e) => {
+            console.error('❌ Overlay failed to load:', {
+              url: overlayUrl,
+              error: e.target.src,
+              marketId: marketId,
+              photoId: photo?.id
+            });
+          }}
+          onLoad={() => {
+            console.log('✅ Overlay loaded successfully:', {
+              url: overlayUrl,
+              marketId: marketId,
+              photoId: photo?.id
+            });
+          }}
+        />
+      </div>
     );
   };
 
